@@ -4,6 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
   <title>MathJax example</title>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+
+</script>
+
  	<script type="text/javascript" async
     src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async>
 	</script>
@@ -13,15 +23,127 @@
 </head>
 <body>
 <div class="jumbotron">
-  <h1>Bootstrap Tutorial</h1>      
+  <h1>Minimalist RNN - python code perspective</h1>      
   <p>Bootstrap is the most popular HTML, CSS, and JS framework for developing responsive, mobile-first projects on the web.</p>
+</div>
+
+<div class="container-fluid">
+<div class="row">
+<div class="col-sm-2 col-lg-2"></div>
+<div class="col-sm-8 col-lg-8">
+
+Simple chain rule gives the following partial derivative a time step n:
+
+$$
+\frac{\partial Loss^n}{\partial W^{xh}}=\frac{\partial Loss^n}{\partial p^n}\cdot\frac{\partial p^n}{\partial y^n}\cdot\frac{\partial y^n}{\partial h^n}\cdot\frac{\partial h^n}{\partial z^n}\cdot\frac{\partial z^n}{\partial W^{xh}}
+$$
+
+It would be tempting to put the pen down and start implementing code but we are not done with the derivation - note that there is both a direct and an indirect dependence between $z^n$ and $W^{xh}$ via $h^{n-1}$:
+
+$$
+\frac{\partial z^n}{\partial W^{xh}}=\frac{\partial z^n}{\partial W^{xh}}+\frac{\partial z^n}{\partial h^{n-1}}\cdot\frac{\partial h^{n-1}}{\partial z^{n-1}}\cdot\frac{\partial z^{n-1}}{\partial W^{xh}}
+$$
+
+The first term in the above sum is the direct dependence and the second term is the indirect dependence. Next, note that the same dependence applies via previous time steps, for example:
+
+$$
+\frac{\partial z^{n-1}}{\partial W^{xh}}=\frac{\partial z^{n-1}}{\partial W^{xh}}+\frac{\partial z^{n-1}}{\partial h^{n-2}}\cdot\frac{\partial h^{n-2}}{\partial z^{n-2}}\cdot\frac{\partial z^{n-2}}{\partial W^{xh}}
+$$
+
+And it continues until $h^0$ so the partial derivative becomes
+$$
+\frac{\partial Loss^n}{\partial W^{xh}}=\frac{\partial Loss^n}{\partial p^n}\cdot\frac{\partial p^n}{\partial y^n}\cdot\frac{\partial y^n}{\partial h^n}\cdot\frac{\partial h^n}{\partial z^n}\sum_{t=1}^{n}\frac{\partial z^t}{\partial h^{t-1}}\cdot\frac{\partial h^{t-1}}{\partial z^{t-1}}\cdot\frac{\partial z^{t-1}}{\partial W^{xh}}
+\tag{1}\label{1}
+$$
+
+In the above formula, it is obvious that there is a long chain of dependences, which is why vanilla RNN are subject to vanishing gradients, as explained in this article. This is why in practice people use more complex hidden neurons like GRU and LSTM units.
+<br><br>
+RNN derivations stop here and most articles about Karpathy's RNN code would not explain further, suggesting that the code just implements the above equation. But that's not true and if you look at lines [x-y] you may wonder how the code ties back to the sum above.
+<br><br>
+Basically, here is what happens in code: as the author loops through each time step in reverse order, he does not compute all the elements from the above sum. Instead, at time step n, he computes the direct dependence but he leaves indirect dependences to be computed at previous steps. Might sound confusing so let's see how it works in detail.
+<br><br>
+At time step n, let's define the recursive error term e:
+$$
+e^{nfn}=\frac{\partial Loss^n}{\partial p^n}\cdot\frac{\partial p^n}{\partial y^n}\cdot\frac{\partial y^n}{\partial h^n}
+$$
+The first index in this term's superscript refers to the indirect dependences back in time, for example step (n-1) is $e^{n-1fn}=\frac{\partial Loss^n}{\partial p^n}\cdot\frac{\partial p^n}{\partial y^n}\cdot\frac{\partial y^n}{\partial h^n}\cdot\frac{\partial h^n}{\partial z^n}\cdot\frac{\partial z^n}{\partial h^{n-1}}$. And since the term is recursive we can write   $e^{n-1fn}=e^{nfn}\cdot\frac{\partial h^n}{\partial z^n}\cdot\frac{\partial z^n}{\partial h^{n-1}}$. For step t this gives 
+
+$$
+e^{tfn}=e^{t+1fn}\cdot\frac{\partial h^{t+1}}{\partial z^{t+1}}\cdot\frac{\partial z^{t+1}}{\partial h^{t}}
+$$
+
+Using this notation, loss equation (1) becomes
+$$
+\frac{\partial Loss^n}{\partial W^{xh}}=\sum_{t=1}^{n}e^{tfn}\cdot\frac{\partial h^t}{\partial z^t}\cdot\frac{\partial z^t}{\partial W^{xh}}
+$$
+
+In the code the BPTT loop visits each time step n but only computes $e^{nfn}$, the error for the direct dependence; the loop also collects previously computed error terms from variable dh, which allows to update dwxh in the following way:
+$$ 
+dwxh += \sum_{m=n}^N e^{nfm}\cdot\frac{\partial h^n}{\partial z^n}\cdot\frac{\partial z^n}{\partial W^{xh}}
+$$
+
+This is equivalent to computing (3) but it's more efficient from a code point-of-view.
+
+At this stage the code should make sense. If not, here is a detailed example for 3 time steps.
+
+<!--
+$$
+\begin{align}
+dy \leftarrow \frac{\partial Loss^1}{\partial p^1}\cdot\frac{\partial p^1}{\partial y^1} \\
+dh \leftarrow e^{1f1} + e^{1f2} + e^{1f3} \\
+dhraw \leftarrow (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1} \\
+dwxh \leftarrow (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1}\cdot\frac{\partial z^1}{\partial W^{xh}} 
+\end{align}
+$$
+-->
+
+$$ dy \leftarrow \frac{\partial Loss^3}{\partial p^3}\cdot\frac{\partial p^3}{\partial y^3}$$
+$$ dh \leftarrow e^{3f3}$$
+$$ dhraw \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3} $$
+$$ dWxh \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3}\cdot\frac{\partial z^3}{\partial W^{xh}} $$
+
+ 
+Note that <code>dh = np.dot(Why.T, dy) + dhnext</code> means $dh \leftarrow dy\cdot\frac{\partial y^3}{\partial h^3}$ i.e. $ dh \leftarrow e^{3f3}$
+Notes: add dWhh and dhnext as dhnext is e2f3
+
+$$ dy \leftarrow \frac{\partial Loss^3}{\partial p^3}\cdot\frac{\partial p^3}{\partial y^3}$$
+$$ dh \leftarrow e^{3f3}$$
+$$ dhraw \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3} $$
+$$ dWxh \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3}\cdot\frac{\partial z^3}{\partial W^{xh}} $$
+
+
+$$ dy \leftarrow \frac{\partial Loss^1}{\partial p^1}\cdot\frac{\partial p^1}{\partial y^1}$$
+$$ dh \leftarrow e^{1f1} + e^{1f2} + e^{1f3}$$
+$$ dhraw \leftarrow (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1} $$
+$$ dWxh \leftarrow (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1}\cdot\frac{\partial z^1}{\partial W^{xh}} $$
+
+
+    <pre> 
+        <code> 
+            <!-- Lines of code starts -->
+      inputs = [char_to_ix[ch] for ch in data[p:p+seq_length]]
+      targets = [char_to_ix[ch] for ch in data[p+1:p+seq_length+1]]
+            <!-- Lines of code ends -->
+        </code> 
+    </pre> 
+
+This is $\sum_{i=0}^n i^2 = \frac{(n^2+n)(2n+1)}{6}$ a test
+
+```python
+inputs = [char_to_ix[ch] for ch in data[p:p+seq_length]]
+targets = [char_to_ix[ch] for ch in data[p+1:p+seq_length+1]]
+```
+
+
+
+</div>
+<div class="col-sm-2 col-lg-2"></div>
+</div>
 </div>
 
 
 
-<p>
-  When \(a \ne 0\), there are two solutions to \(ax^2 + bx + c = 0\) and they are
-  $$x = {-b \pm \sqrt{b^2-4ac} \over 2a}.$$
-</p>
+
+    
 </body>
 </html>
