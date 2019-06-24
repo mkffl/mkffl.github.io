@@ -32,6 +32,25 @@
 <div class="col-sm-2 col-lg-2"></div>
 <div class="col-sm-8 col-lg-8">
 
+<h2>Forward pass</h2>
+
+Recurrent neural networks are a type of neural nets that can model sequences of inputs by memorising the contribution of previous inputs at each time step. Although challenged by recent model architectures like the Transformer which are faster to train, recurrent nets are still widely used as they achieve high accuracy on various tasks like text generation, sentence classification, text-to-speech recognition or time series forecasting.
+<br><br>
+To understand how neural nets work, I find simplified implementations more useful than looking at the source code from well known packages like Tensorflow or PyTorch. Strip out all the tricks and boiler plate code to focus on the maths behind a model, and suddently complex neural net architectures make sense. 
+<br><br>
+The maths behind recurrent nets have been covered extensively and a few simplified implementations are available. Probably the most famous was published 4 years ago by A. K. along with an interesting article that explains the reasons behind their good performance. Others have used and commented Karpathy's code, including this excellent article by E. B.
+<br><br>
+However, even after reading carefully every comment in E. B.'s version of Karpathy's code I still found myself with more questions than answers. The backward pass in lines x-y are especially cryptic. It took me some time and quite a few pages of maths derivation to really understand what was going on.
+<br><br>
+Here I look at recurrent neural nets from the perspective of a code implementation. For a refresh on the inner workings of recurrent neural net, in particular backpropagation throufh time, I recommend the following web posts. Below, I take E. B.'s fork as the reference code base and focus on the forward and backward pass, found in lossFunc (lines x-y).
+
+
+<h2>Forward pass</h2>
+
+abc
+
+<h2>Backward pass</h2>
+
 Simple chain rule gives the following partial derivative a time step n:
 
 $$
@@ -84,57 +103,47 @@ $$
 
 This is equivalent to computing (3) but it's more efficient from a code point-of-view.
 
-At this stage the code should make sense. If not, here is a detailed example for 3 time steps.
+At this stage the backward pass in the code should make sense. Below is a detailed view for Wxh's backpropagation in a simple example with 3 time steps. I explicit the values stored in the code variables at each time step to clarify what they do. Also stripped out the code comments. Lines of interest are:
 
-<!--
-$$
-\begin{align}
-dy \leftarrow \frac{\partial Loss^1}{\partial p^1}\cdot\frac{\partial p^1}{\partial y^1} \\
-dh \leftarrow e^{1f1} + e^{1f2} + e^{1f3} \\
-dhraw \leftarrow (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1} \\
-dwxh \leftarrow (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1}\cdot\frac{\partial z^1}{\partial W^{xh}} 
-\end{align}
-$$
--->
+<pre> <code> 
+  dy = np.copy(ps[t])
+  dy[targets[t]] -= 1
+
+  dh = np.dot(Why.T, dy) + dhnext
+
+  dhraw = (1 - hs[t] * hs[t]) * dh
+
+  dWxh += np.dot(dhraw, xs[t].T)
+
+  dhnext = np.dot(Whh.T, dhraw)
+</code></pre> 
+
+<h4>Time step 3</h4>
+<h5><i>(Remember, we are going in reverse time order)</i></h5>
 
 $$ dy \leftarrow \frac{\partial Loss^3}{\partial p^3}\cdot\frac{\partial p^3}{\partial y^3}$$
-$$ dh \leftarrow e^{3f3}$$
+$$ dh \leftarrow dy\cdot\frac{\partial y^3}{\partial h^3} + \vec{0} = e^{3f3} $$
 $$ dhraw \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3} $$
-$$ dWxh \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3}\cdot\frac{\partial z^3}{\partial W^{xh}} $$
-
+$$ dWxh += e^{3f3}\cdot\frac{\partial h^3}{\partial z^3}\cdot\frac{\partial z^3}{\partial W^{xh}} $$
+$$ dhnext \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3}\cdot\frac{\partial z^3}{\partial h^2} = e^{2f3}$$
  
-Note that <code>dh = np.dot(Why.T, dy) + dhnext</code> means $dh \leftarrow dy\cdot\frac{\partial y^3}{\partial h^3}$ i.e. $ dh \leftarrow e^{3f3}$
-Notes: add dWhh and dhnext as dhnext is e2f3
 
-$$ dy \leftarrow \frac{\partial Loss^3}{\partial p^3}\cdot\frac{\partial p^3}{\partial y^3}$$
-$$ dh \leftarrow e^{3f3}$$
-$$ dhraw \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3} $$
-$$ dWxh \leftarrow e^{3f3}\cdot\frac{\partial h^3}{\partial z^3}\cdot\frac{\partial z^3}{\partial W^{xh}} $$
+<h4>Time step 2</h4>
 
+$$ dy \leftarrow \frac{\partial Loss^2}{\partial p^2}\cdot\frac{\partial p^2}{\partial y^2}$$
+$$ dh \leftarrow e^{2f2} + e^{2f3}$$
+$$ dhraw \leftarrow (e^{2f2} + e^{2f3})\cdot\frac{\partial h^2}{\partial z^2} $$
+$$ dWxh += (e^{2f2} + e^{2f3})\cdot\frac{\partial h^2}{\partial z^2}  \cdot\frac{\partial z^2}{\partial W^{xh}} $$
+$$ dhnext \leftarrow e^{1f2} + e^{1f3}$$
+
+<h4>Time step 1</h4>
 
 $$ dy \leftarrow \frac{\partial Loss^1}{\partial p^1}\cdot\frac{\partial p^1}{\partial y^1}$$
 $$ dh \leftarrow e^{1f1} + e^{1f2} + e^{1f3}$$
 $$ dhraw \leftarrow (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1} $$
-$$ dWxh \leftarrow (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1}\cdot\frac{\partial z^1}{\partial W^{xh}} $$
+$$ dWxh += (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1}\cdot\frac{\partial z^1}{\partial W^{xh}} $$
 
-
-    <pre> 
-        <code> 
-            <!-- Lines of code starts -->
-      inputs = [char_to_ix[ch] for ch in data[p:p+seq_length]]
-      targets = [char_to_ix[ch] for ch in data[p+1:p+seq_length+1]]
-            <!-- Lines of code ends -->
-        </code> 
-    </pre> 
-
-This is $\sum_{i=0}^n i^2 = \frac{(n^2+n)(2n+1)}{6}$ a test
-
-```python
-inputs = [char_to_ix[ch] for ch in data[p:p+seq_length]]
-targets = [char_to_ix[ch] for ch in data[p+1:p+seq_length+1]]
-```
-
-
+By the time we complete t=1, variable dWxh has accumulated all the gradients associated with each recursive error terms. Hence its final value is $\frac{\partial Loss^n}{\partial W^{xh}}$. A simple way to see it is to add up all the lines for dWxh and re-order them to get exactly (1).
 
 </div>
 <div class="col-sm-2 col-lg-2"></div>
