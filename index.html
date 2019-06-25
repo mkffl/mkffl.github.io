@@ -32,7 +32,10 @@
 <div class="col-sm-2 col-lg-2"></div>
 <div class="col-sm-8 col-lg-8">
 
-<h2>Forward pass</h2>
+
+
+
+<h2>Intro</h2>
 
 Recurrent neural networks are a type of neural nets that can model sequences of inputs by memorising the contribution of previous inputs at each time step. Although challenged by recent model architectures like the Transformer which are faster to train, recurrent nets are still widely used as they achieve high accuracy on various tasks like text generation, sentence classification, text-to-speech recognition or time series forecasting.
 <br><br>
@@ -45,9 +48,62 @@ However, even after reading carefully every comment in E. B.'s version of Karpat
 Here I look at recurrent neural nets from the perspective of a code implementation. For a refresh on the inner workings of recurrent neural net, in particular backpropagation throufh time, I recommend the following web posts. Below, I take E. B.'s fork as the reference code base and focus on the forward and backward pass, found in lossFunc (lines x-y).
 
 
+<h2>Notations used</h2>
+
+I stay close to the symboles used in the code for easy code-math comparisons:
+
+<ul style="list-style-type:disc;">
+  <li>$z^n = W^{xh}\cdot x + W^{hh}\cdot h^{n-1}$</li>
+  <li>$h^n = tanh(z^n)$</li>
+  <li>$y^n = W^{hy}\cdot h^n)$</li>
+  <li>$p^n = softmax(y^n)$</li>
+  <li>$Loss^n = crossEntropy(p^n, targets^n)$</li>
+</ul>  
+
+$W^{xh}$, $W^{hh}$ and $W^{hy}$ are the parameters we want to optimise with backpropagation. $W^{xh}$ turns the one-hot encoded character vectors into embeddings of size vocab_size. 
+$y$ is the vector of unnormalised scores, $p$ refers to the probabilities after normalising $y$ with softmax, $targets$ is the one-hot vector of labels, and $Loss$ is the loss function used for optimisation.
+
+
+<h2>General comments</h2>
+
+<h4>Input/Outputs</h4>
+
+For reminders, RNNs take a whole sequence as inputs. In this example, sequences are made of characters, of length seq_length and instantiated on lines 245-246:
+<pre> <code> 
+inputs = [char_to_ix[ch] for ch in data[p:p+seq_length]]
+targets = [char_to_ix[ch] for ch in data[p+1:p+seq_length+1]]
+</code></pre> 
+
+The code follows the standard feed-forward / backprop programme for RNNs:
+<ol>
+  <li>take a sequence of inputs (characters) and their correponding output (next character)</li>
+  <li>Run inputs chronologically through the forward and backward passes</li>
+  <li>Add up the losses and gradients at each input step, and update gradients after the last input is processed</li>
+</ol>
+
+<h4>BPTT</h4>
+
+lossFun takes sequences of fixed size instead of e.g. variable sentence-length sequences.
+
+
+```python
+inputs = [char_to_ix[ch] for ch in data[p:p+seq_length]]
+targets = [char_to_ix[ch] for ch in data[p+1:p+seq_length+1]]
+```
+
+That's because the code implements Truncated Backpropagation Through Time. Some sentences can be very long i.e. include many time steps, which would a) require a lot of memory and b) pose computational problems. On a), unrolling the RNN for a very long sequence requires to save the history of all activations. In lossFunc you can see that via the t index for each activation, see for example
+
+```python
+# Hidden state value at time step t
+ hs[t] = np.tanh(np.dot(Wxh, xs[t]) + np.dot(Whh, hs[t-1]) + bh)
+```
+
+As regards b), this refers to the vanishing gradient problem, a limit of vanilla RNN which more sophisticated memory cells like GRU can solve. This point is well covered here.
+
 <h2>Forward pass</h2>
 
-abc
+
+
 
 <h2>Backward pass</h2>
 
