@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width">
-  <title>MathJax example</title>
+  <title>Minimalist RNN</title>
 <script type="text/x-mathjax-config">
   MathJax.Hub.Config({
     tex2jax: {
@@ -26,8 +26,8 @@
 </head>
 <body>
 <div class="jumbotron">
-  <h1>Minimalist RNN - python code perspective</h1>      
-  <p>Bootstrap is the most popular HTML, CSS, and JS framework for developing responsive, mobile-first projects on the web.</p>
+  <h1>Minimalist Recurrent Neural Network</h1>
+  <p>Making sense of a popular python code implementation</p>
 </div>
 
 <div class="container-fluid">
@@ -38,15 +38,15 @@
 
 <h2>Intro</h2>
 
-Recurrent neural networks are a type of neural nets that can model sequences of inputs by memorising the contribution of previous inputs at each time step. Although challenged by recent model architectures like the Transformer which are faster to train, recurrent nets are still widely used as they achieve high accuracy on various tasks like text generation, sentence classification, text-to-speech recognition or time series forecasting.
+Recurrent neural networks are a type of NN that can model sequences of inputs by memorising the contribution of previous inputs at each time step. Although challenged by recent model architectures like the Transformer which are faster to train, recurrent nets are still widely used as they achieve high accuracy on various tasks like text generation, sentence classification, text-to-speech recognition or time series forecasting.
 <br><br>
-To understand how neural nets work, I find simplified implementations more useful than looking at the source code from well known packages like Tensorflow or PyTorch. Strip out all the tricks and boiler plate code to focus on the maths behind a model, and suddently complex neural net architectures make sense. 
+To understand how neural nets work in practice, I find writing simplified implementations more useful than looking at the source code from packages like Tensorflow or PyTorch. Strip out all the boilerplate, efficiency tricks and modular code, to focus on the logic of a model. Although not efficient and probably unstable, minimalist implementations can help make sense of the most complex NN architectures.
 <br><br>
-The maths behind recurrent nets have been covered extensively and a few simplified implementations are available. Probably the most famous was published 4 years ago by A. K. along with an interesting article that explains the reasons behind their good performance. Others have used and commented Karpathy's code, including this excellent article by E. B.
+The maths behind RNN's have been covered extensively and a few simplified implementations are available. Probably the most famous was the character-based RNN code published 4 years ago by Andrej Karpathy along with an <a href="http://karpathy.github.io/2015/05/21/rnn-effectiveness/">article</a> that explains the reasons behind their good performance. Others have used and commented Karpathy's code, including this <a href="https://eli.thegreenplace.net/2018/understanding-how-to-implement-a-character-based-rnn-language-model/">blog post</a> which comes with a <a href="https://github.com/eliben/deep-learning-samples/blob/master/min-char-rnn/min-char-rnn.py">fork</a> of the original code that includes more commentary.
 <br><br>
-However, even after reading carefully every comment in E. B.'s version of Karpathy's code I still found myself with more questions than answers. The backward pass in lines x-y are especially cryptic. It took me some time and quite a few pages of maths derivation to really understand what was going on.
+However, even after reading every comment in Eli Bendersky's gist above, I found myself with more questions than answers. The backward pass in lines 128-153 are especially cryptic. It took me some time and a few pages of maths derivation to really understand what was going on.
 <br><br>
-Here I look at recurrent neural nets from the perspective of a code implementation. For a refresh on the inner workings of recurrent neural net, in particular backpropagation throufh time, I recommend the following web posts. Below, I take E. B.'s fork as the reference code base and focus on the forward and backward pass, found in lossFunc (lines x-y).
+Here I look at recurrent neural nets from the perspective of a code implementation. I take Eli B's forked code as the reference code base and I attempt to break down the forward and backward passes in <code>lossFunc</code> (lines 73-159). For a refresh on the inner workings of RNNs, in particular backpropagation through time (BPTT), I include a few references at the bottom of this article.
 
 
 <h2>Notations</h2>
@@ -56,7 +56,7 @@ I stay close to the symboles used in the code for easy code-math comparisons:
 <ul style="list-style-type:disc;">
   <li>$z^n = W^{xh}\cdot x + W^{hh}\cdot h^{n-1}$</li>
   <li>$h^n = tanh(z^n)$</li>
-  <li>$y^n = W^{hy}\cdot h^n)$</li>
+  <li>$y^n = W^{hy}\cdot h^n$</li>
   <li>$p^n = softmax(y^n)$</li>
   <li>$Loss^n = crossEntropy(p^n, targets^n)$</li>
 </ul>
@@ -84,7 +84,7 @@ The code follows the standard feed-forward / backprop programme for RNNs:
 
 <h4>Truncated BPTT</h4>
 
-lossFun takes sequences of fixed size instead of e.g. variable sentence-length sequences.
+<code>lossFun</code> takes sequences of fixed size instead of e.g. variable sentence-length sequences.
 
 
 <pre> <code>
@@ -92,24 +92,25 @@ inputs = [char_to_ix[ch] for ch in data[p:p+seq_length]]
 targets = [char_to_ix[ch] for ch in data[p+1:p+seq_length+1]]
 </code></pre>
 
-That's because the code implements Truncated Backpropagation Through Time. Some sentences can be very long i.e. include many time steps, which would a) require a lot of memory and b) pose computational problems. On a), unrolling the RNN for a very long sequence requires to save the history of all activations. In lossFunc you can see that via the t index for each activation, see for example
+That's because the code implements Truncated Backpropagation Through Time. Some sentences can be very long i.e. include many time steps, which would a) require a lot of memory and b) pose computational problems. Regarding a), unrolling the RNN for a very long sequence requires to save the history of all activations. In lossFunc you can see that via the <code>t</code> index for each activation, see for example
 
 <pre> <code>
 # Hidden state value at time step t
  hs[t] = np.tanh(np.dot(Wxh, xs[t]) + np.dot(Whh, hs[t-1]) + bh)
 </code></pre>
 
-As regards b), this refers to the vanishing gradient problem, a limit of vanilla RNN which more sophisticated memory cells like GRU can solve. This point is well covered here.
+As regards b), this refers to the vanishing gradient problem, a limit of vanilla RNN which more sophisticated memory cells like GRU can solve. This point is well covered in this <a href="http://www.wildml.com/2015/10/recurrent-neural-networks-tutorial-part-3-backpropagation-through-time-and-vanishing-gradients/">WildML article</a>.
 
 <h4>Forward pass</h4>
 
 Not much to say; lines 92-115 are pretty straightforward and the cross-entropy calculation is well detailed in the comments.
 
 <h2>Backward pass</h2>
+This section covers the second half of <code>lossFun</code> on lines 128-153
 
 <h4>dWhy</h4>
 
-The first parameter to update is $W^{hy}$, the matrix that turns the hidden layer into a score vector p. The jacobian ha the same size as $W^{hy}$ which is (vocab_size x hidden_size). Note that vocab_size is equal to the number of classes (often named K, as the model predicts the next character among K options.
+The first parameter to update is $W^{hy}$, the matrix that turns the hidden layer into a score vector p. The jacobian ha the same size as $W^{hy}$ which is (vocab_size x hidden_size). Note that vocab_size is equal to the number of classes, often denoted K in the literature, as a character-based RNN predicts the next character among K options.
 <br><br>
 The value of the derivative is
 $$
@@ -119,8 +120,8 @@ $$
     p_i\cdot h_j,              & \text{otherwise}
 \end{cases}
 $$
-Here is an intuitive explanation and here is the rigorous derivation.
-The following lines implement the above
+<a href="http://cs231n.github.io/neural-networks-case-study/#grad">Here</a> is an intuitive explanation and a detailed derivation is available <a href="https://eli.thegreenplace.net/2016/the-softmax-function-and-its-derivative/">here</a>.
+The following lines implement the above equation:
 
 <pre> <code>
 dy = np.copy(ps[t])
@@ -130,12 +131,12 @@ dy[targets[t]] -= 1
 dWhy += np.dot(dy, hs[t].T)
 </code></pre>
 
-A quick check confirms that the resulting jacobian matrix, dWhy, has the right size: dy is (vocab_size x 1) and the transpose of hs[t] is (1 x hidden_size). Also the second line substracts 1 from dy where $i = y_k$ so the vector dot product returns the same result as the equation above.
+A quick check confirms that the resulting jacobian matrix, dWhy, has the right size: dy is (vocab_size x 1) and the transpose of hs[t] is (1 x hidden_size). Also the second line substracts 1 from dy where $i = y_k$ so the vector dot product returns the same result as the equation above - it takes 30 sec to write it down to get convinced.
 
 <h4>dWxh and dWhh</h4>
 
-The next lines in the code address the derivatives for $W^{xh}$ and $W^{hh}$. The approach is similar for both and I will take $W^{xh}$ as an example.
-
+The next lines in the code address the derivatives for $W^{xh}$ and $W^{hh}$. The approach is similar for both and I will take $W^{xh}$ as an example. I found these lines to be the most difficult to make sense of.
+<br><br>
 Simple chain rule gives the following partial derivative a time step n:
 
 $$
@@ -162,9 +163,9 @@ $$
 
 In the above formula, it is obvious that there is a long chain of dependences, which is why vanilla RNN are subject to vanishing gradients, as explained in this article. This is why in practice people use more complex hidden neurons like GRU and LSTM units.
 <br><br>
-RNN derivations stop here and most articles about Karpathy's RNN code would not explain further, suggesting that the code just implements the above equation. But that's not true and if you look at lines [x-y] you may wonder how the code ties back to the sum above.
+RNN derivations stop here and most articles about Karpathy's RNN code would not explain further, suggesting that the code just implements the above equation. But that's not true and if you look at lines 141-148 you may wonder how the code ties back to the sum above.
 <br><br>
-Basically, here is what happens in code: as the author loops through each time step in reverse order, he does not compute all the elements from the above sum. Instead, at time step n, he computes the direct dependence but he leaves indirect dependences to be computed at previous steps. Might sound confusing so let's see how it works in detail.
+Basically, here is what happens in code: as the author loops through each time step in reverse order, he does not compute all the elements from the above sum. Instead, at time step n, he computes the direct dependence and leaves indirect dependences to be computed at previous steps. Might sound confusing so let's see how it works in detail.
 <br><br>
 At time step n, let's define the recursive error term e:
 $$
@@ -186,9 +187,9 @@ $$
 dwxh += \sum_{m=n}^N e^{nfm}\cdot\frac{\partial h^n}{\partial z^n}\cdot\frac{\partial z^n}{\partial W^{xh}}
 $$
 
-This is equivalent to computing (3) but it's more efficient from a code point-of-view.
+This is equivalent to computing (1) but it's more efficient from a code point-of-view.
 
-At this stage the backward pass in the code should make sense. Below is a detailed view for Wxh's backpropagation in a simple example with 3 time steps. I explicit the values stored in the code variables at each time step to clarify what they do. Also stripped out the code comments. Lines of interest are:
+At this stage the backward pass in the code should make sense. Below is a detailed view for Wxh's backpropagation in a simple example with 3 time steps. I explicit the values stored in the code variables at each time step to clarify what they do. Lines of interest are (I stripped out the comments):
 
 <pre> <code> 
   dy = np.copy(ps[t])
@@ -232,11 +233,12 @@ By the time we complete t=1, variable dWxh has accumulated all the gradients ass
 
 <hr/>
 
-Useful references
+Useful references - make sure to read the commentaries under each article
 <ul style="list-style-type:disc;">
-  <li>EB article</li>
-  <li>Will Wolf article</li>
-  <li>WildML article</li>
+  <li><a href="https://eli.thegreenplace.net/2018/understanding-how-to-implement-a-character-based-rnn-language-model/">Understanding how to implement a character-based RNN language model</a></li>
+  <li><a href="http://www.wildml.com/2015/10/recurrent-neural-networks-tutorial-part-3-backpropagation-through-time-and-vanishing-gradients/">Recurrent Neural Networks Tutorial, Part 3 – Backpropagation Through Time and Vanishing Gradients"></a></li>
+  <li><a href="http://willwolf.io/2016/10/18/recurrent-neural-network-gradients-and-lessons-learned-therein/">Recurrent Neural Network Gradients, and Lessons Learned Therein</a></li>
+  <li><a href="https://www.deeplearningbook.org/contents/rnn.html">RNN section in the Deep Learning book</a></li>
 </ul>
 
 </div>
