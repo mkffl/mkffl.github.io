@@ -26,8 +26,8 @@
 </head>
 <body>
 <div class="jumbotron">
-  <h1>Minimalist Recurrent Neural Network</h1>
-  <p>Making sense of a popular python code implementation</p>
+  <h1 style="margin-left: 80px">Minimalist Recurrent Neural Network</h1>
+  <p style="margin-left: 80px">Deep dive in python code implementation</p>
 </div>
 
 <div class="container-fluid">
@@ -35,8 +35,10 @@
 <div class="col-sm-2 col-lg-2"></div>
 <div class="col-sm-8 col-lg-8">
 
+<h4 align="center"><font face="palatino" >Michel Kiffel</font></h4>
+<h4 align="center"><font face="palatino" color="#666699">8 July 2019</font></h4>
 
-<h2>Intro</h2>
+<h2>Motivations</h2>
 
 Recurrent neural networks are a type of NN that can model sequences of inputs by memorising the contribution of previous inputs at each time step. Although challenged by recent model architectures like the Transformer which are faster to train, recurrent nets are still widely used as they achieve high accuracy on various tasks like text generation, sentence classification, text-to-speech recognition or time series forecasting.
 <br><br>
@@ -161,7 +163,7 @@ $$
 \tag{1}\label{1}
 $$
 
-In the above formula, it is obvious that there is a long chain of dependences, which is why vanilla RNN are subject to vanishing gradients, as explained in this article. This is why in practice people use more complex hidden neurons like GRU and LSTM units.
+In the above formula, it is obvious that there is a long chain of dependences, which is why vanilla RNN are subject to vanishing gradients, as explained <a href="http://www.wildml.com/2015/10/recurrent-neural-networks-tutorial-part-3-backpropagation-through-time-and-vanishing-gradients/">in this article</a>. This is why in practice people use more complex hidden neurons like GRU and LSTM units.
 <br><br>
 RNN derivations stop here and most articles about Karpathy's RNN code would not explain further, suggesting that the code just implements the above equation. But that's not true and if you look at lines 141-148 you may wonder how the code ties back to the sum above.
 <br><br>
@@ -187,7 +189,7 @@ $$
 dwxh += \sum_{m=n}^N e^{nfm}\cdot\frac{\partial h^n}{\partial z^n}\cdot\frac{\partial z^n}{\partial W^{xh}}
 $$
 
-This is equivalent to computing (1) but it's more efficient from a code point-of-view.
+This is equivalent to computing equation (1) but it's more efficient from a code point-of-view.
 
 At this stage the backward pass in the code should make sense. Below is a detailed view for Wxh's backpropagation in a simple example with 3 time steps. I explicit the values stored in the code variables at each time step to clarify what they do. Lines of interest are (I stripped out the comments):
 
@@ -231,8 +233,12 @@ $$ dWxh += (e^{1f1} + e^{1f2} + e^{1f3})\cdot\frac{\partial h^1}{\partial z^1}\c
 
 By the time we complete t=1, variable dWxh has accumulated all the gradients associated with each recursive error terms. Hence its final value is $\frac{\partial Loss^n}{\partial W^{xh}}$. A simple way to see it is to add up all the lines for dWxh and re-order them to retrieve equation (1).
 
-<hr/>
+The last two lines in <code>lossFunc</code> update gradients and clip values to a range between -5 and 5.
 
+<hr/>
+<h5 align="center">Any questions of comments, feel free to <a href="mailto:m.kiffel@gmail.com?Subject=RNN" target="_top">email me</a>.</h5>
+<br>
+<br>
 Useful references - make sure to read the commentaries under each article
 <ul style="list-style-type:disc;">
   <li><a href="https://eli.thegreenplace.net/2018/understanding-how-to-implement-a-character-based-rnn-language-model/">Understanding how to implement a character-based RNN language model</a></li>
