@@ -40,7 +40,7 @@
 
 <h2>Motivations</h2>
 
-Recurrent neural networks are a type of NN that can model sequences of inputs by memorising the contribution of previous inputs at each time step. Although challenged by recent model architectures like the Transformer which are faster to train, recurrent nets are still widely used as they achieve high accuracy on various tasks like text generation, sentence classification, text-to-speech recognition or time series forecasting.
+Recurrent neural networks are a type of NN that can model sequences of inputs by capturing the contribution of previous inputs at all time steps. Although challenged by recent model architectures like the Transformer which are faster to train, recurrent nets are still widely used as they achieve high accuracy on various tasks like text generation, sentence classification, text-to-speech recognition or time series forecasting.
 <br><br>
 To understand how neural nets work in practice, I find writing simplified implementations more useful than looking at the source code from packages like Tensorflow or PyTorch. Strip out all the boilerplate, efficiency tricks and modular code, to focus on the logic of a model. Although not efficient and probably unstable, minimalist implementations can help make sense of the most complex NN architectures.
 <br><br>
@@ -48,7 +48,7 @@ The maths behind RNN's have been covered extensively and a few simplified implem
 <br><br>
 However, even after reading every comment in Eli Bendersky's gist above, I found myself with more questions than answers. The backward pass in lines 128-153 are especially cryptic. It took me some time and a few pages of maths derivation to really understand what was going on.
 <br><br>
-Here I look at recurrent neural nets from the perspective of a code implementation. I take Eli B's forked code as the reference code base and I attempt to break down the forward and backward passes in <code>lossFunc</code> (lines 73-159). For a refresh on the inner workings of RNNs, in particular backpropagation through time (BPTT), I include a few references at the bottom of this article.
+Here I look at recurrent neural nets from the perspective of a code implementation. I take the forked code mentioned above as the reference code base and I attempt to break down the forward and backward passes in <code>lossFunc</code> (lines 73-159, and copied at the end for convenience). For a refresh on the inner workings of RNNs, in particular backpropagation through time (BPTT), I include a few references at the bottom of this article.
 
 
 <h2>Notations</h2>
@@ -68,6 +68,7 @@ $y$ is the vector of unnormalised scores, $p$ refers to the probabilities after 
 
 
 <h2>General comments</h2>
+Underlying code available <a href="https://github.com/eliben/deep-learning-samples/blob/master/min-char-rnn/min-char-rnn.py">here</a>.
 
 <h4>Input/Outputs</h4>
 
@@ -240,13 +241,62 @@ End of <code>lossFunc</code>. The last two lines update gradients and clip value
 <h5 align="center">Any questions of comments, feel free to <a href="mailto:m.kiffel@gmail.com?Subject=RNN" target="_top">email me</a>.</h5>
 <br>
 <br>
-Useful references - make sure to read the commentaries under each article
+Useful references
 <ul style="list-style-type:disc;">
   <li><a href="https://eli.thegreenplace.net/2018/understanding-how-to-implement-a-character-based-rnn-language-model/">Understanding how to implement a character-based RNN language model</a></li>
   <li><a href="http://www.wildml.com/2015/10/recurrent-neural-networks-tutorial-part-3-backpropagation-through-time-and-vanishing-gradients/">Recurrent Neural Networks Tutorial, Part 3 – Backpropagation Through Time and Vanishing Gradients"></a></li>
   <li><a href="http://willwolf.io/2016/10/18/recurrent-neural-network-gradients-and-lessons-learned-therein/">Recurrent Neural Network Gradients, and Lessons Learned Therein</a></li>
   <li><a href="https://www.deeplearningbook.org/contents/rnn.html">RNN section in the Deep Learning book</a></li>
 </ul>
+
+<hr/>
+
+<a href="https://github.com/eliben/deep-learning-samples/blob/master/min-char-rnn/min-char-rnn.py">Source</a>
+<pre> <code> 
+def lossFun(inputs, targets, hprev):
+  """Runs forward and backward passes through the RNN.
+  inputs, targets: Lists of integers. For some i, inputs[i] is the input
+                   character (encoded as an index into the ix_to_char map) and
+                   targets[i] is the corresponding next character in the
+                   training data (similarly encoded).
+  hprev: Hx1 array of initial hidden state
+  returns: loss, gradients on model parameters, and last hidden state
+  """
+  # Caches that keep values computed in the forward pass at each time step, to
+  # be reused in the backward pass.
+  xs, hs, ys, ps = {}, {}, {}, {}
+
+  # Initial incoming state.
+  hs[-1] = np.copy(hprev)
+  loss = 0
+  # Forward pass
+  for t in range(len(inputs)):
+    # Input at time step t is xs[t]. Prepare a one-hot encoded vector of shape
+    # (V, 1). inputs[t] is the index where the 1 goes.
+    xs[t] = np.zeros((vocab_size,1)) # encode in 1-of-k representation
+    xs[t][inputs[t]] = 1
+
+    # Compute h[t] from h[t-1] and x[t]
+    hs[t] = np.tanh(np.dot(Wxh, xs[t]) + np.dot(Whh, hs[t-1]) + bh)
+
+    # Compute ps[t] - softmax probabilities for output.
+    ys[t] = np.dot(Why, hs[t]) + by
+    ps[t] = np.exp(ys[t]) / np.sum(np.exp(ys[t]))
+
+    # Cross-entropy loss for two probability distributions p and q is defined as
+    # follows:
+    #
+    #   xent(q, p) = -Sum q(k)log(p(k))
+    #                  k
+    #
+    # Where k goes over all the possible values of the random variable p and q
+    # are defined for.
+    # In our case taking q is the "real answer" which is 1-hot encoded; p is the
+    # result of softmax (ps). targets[t] has the only index where q is not 0,
+    # so the sum simply becomes log of ps at that index.
+    loss += -np.log(ps[t][targets[t],0])
+
+</code></pre> 
 
 </div>
 <div class="col-sm-2 col-lg-2"></div>
