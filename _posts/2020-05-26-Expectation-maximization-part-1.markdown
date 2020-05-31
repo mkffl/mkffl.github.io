@@ -36,7 +36,8 @@ synthetic data generation, forecasting with confidence intervals, or clustering.
     
 #### References:
 This blog article draws on explanations found in the popular [PRML texbook by C. Bishop](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1)
-and [the Bayesian Methods for Machine Learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning) MOOC.
+and [the Bayesian Methods for Machine Learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning) online
+course.
 
 ## A univariate example
     
@@ -184,7 +185,7 @@ $$
 \end{equation}
 $$
 
-As explained in Bishop:
+As explained in PRML:
 
 
 > The presence of the sum prevents the logarithm from acting directly on the
@@ -390,7 +391,7 @@ $$
 \end{equation}
 $$
 
-The log-likelihood is the sum of of the lower bound and the KL divergence.
+The log-likelihood is the sum of the lower bound and the KL divergence.
 
 ### Putting it all together
 
@@ -443,13 +444,11 @@ It may help to visualise it
 ![Distribution of orders](/assets/donkey-final.png){: width="700px"}
 {: refdef}
 
-$ll$ refers to the log-likelihood and $q_*^d$ is $P(t=c \vert x_i)$ with $d$ iteration round. 
-Mario can be sure that the EM path can only go up and or be flat. If he chooses this path
-he will find Pauline after only 2 rounds. 
+$ll$ refers to the log-likelihood and $q_*^d$ is $P(t=c \vert x_i)$ with $d$ being the iteration round. 
+If Mario chooses the EM path, he will either go uphill or flat, but not down. In this case 
+he will find Pauline after only 2 EM rounds.
 
-The alternative path (MLE) goes straight up, 
-which is tempting, however he will have to put up a fight with Kong. Mario is not after the
-shorter path, he just wants to find his fiancé, so he'll choose EM.
+The alternative path (MLE) goes straight up, which is tempting, however he will have to put up a fight with Kong. Mario is not after the shortest path, he just wants to find his fiancé, so he'll choose EM.
 
 
 
