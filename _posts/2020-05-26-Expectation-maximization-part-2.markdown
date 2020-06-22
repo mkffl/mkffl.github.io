@@ -30,6 +30,16 @@ The diagram below compares the generative process from the latent space to the d
 For discrete models the parameters to estimate are the latent variable priors and the condititional distributions rv parameters, 
 e.g. for gaussians the mean and variance. 
 
+<figure align="center">
+  <img src="{{site.url}}/assets/vae-vs-gmm.png" alt="my alt text"/>
+    <figcaption>
+    Prior probability and transformation: the Poisson mixture prior is drawn from a categorical RV with weights $\pi$ vs an isometric gaussian (or other continuous distributions) for VAEs. The VAE then passes the $t$ sample to $f$ to output the parameters of the conditional probability.
+    Conditional probability: conditional parameters are $\lambda_c$ in the discrete Poisson case vs $f(t \vert \theta)$ in the continuous case, which corresponds to a vector of 784 probabilities of success (one for every pixel/dimension in $x_i$).
+    Marginal probability: in the discrete case the blue outline that denotes the complex marginal probability is the combination of single probabilities; the marginal probability of a VAE can’t easily be plotted but random draws from the pink region in the prior distribution would results in images that share similarities e.g. 7 and 9 digits (source image taken from the Tensorflow documentation).
+    </figcaption>
+</figure>
+
+
 With a discrete latent space the number of parameters to estimate depend on the number of mixture components. With a continuous space there is no finite number of mixture components so instead the parameters to estimate are the coefficiences of the transformation from $t$ to 
 the parameters of the mixture random variable, e.g. probability of success $p$ for a Bernoulli rv. 
 
@@ -119,21 +129,21 @@ $$
 
 The previous form, sometimes called "free energy", can be seen as maximising the observed component function even as latent components are not observed. As described with the Poisson mixture, the posterior $q$ is the best substitute for the unobserved latent variable.
 
-The new form, sometimes called "penalised model fit", can be seen as a regularised function, e.g. as with the Lasso regression where L1 acts as the regularisation term. The LHS expression measures the model fit through the marginal probability, while the KL divergence as a regularisation term as it forces the posterior approximation close to an isometric gaussian.
+The new form, sometimes called "penalised model fit", can be seen as a regularised function, e.g. as with the Lasso regression where L1 acts as the regularisation term. The LHS expression measures the model fit through the marginal probability, while the KL divergence acts a regularisation term as it forces the posterior approximation close to an isometric gaussian.
 
 
 #### Variational Bayes
 
-EM sets $q$ equal to the posterior $p(t  \vert x)$ to bring the lower bound to the log-likelihood using Bayes' formula, which was possible in the presence of a close form solution for mixture distributions.
+EM sets $q$ equal to the posterior $p(t \vert x)$ so the lower bound is equal to the log-likelihood using Bayes' formula, which was possible in the presence of a closed form solution for mixture distributions. With the complex function $f$ it would be hard because the denominator of Bayes' formula is an integral of a function with no closed-form solution. 
 
-As the VAE distribution is parametrised with a complex function $f$, this is no longer an option, however it is possible to approximate the posterior and this is where EM and the VAE optimising scheme differ.
+The VAE optimiation scheme proposed in the article, called Auto Encoding Variational Bayes (AEVB), differs from EM because it uses an approximation of the posterior instead of plugging the result from E into the M objective function. At a high level, AEVB sets q to be a simple random variable, typically a symmetric gaussian distribution, parametrised by a neural network based transformation $g$ with weights $\phi$. The lower bound $L(\theta, \phi)$ is then a function of two sets of parameters optimised jointly with batch gradient descent methods. 
 
-The short answer for the solution to $q$ is that VAEs approximate the posterior distribution with a simple random variable, typically a symmetric gaussian distribution. As with the function $f$ described above, the posterior distribution is "parametrised" by a neural network function $g$, with weights $\phi$. The function $g$ and its parameters are plugged into the lowerbound, with SGD optimising jointly $\theta$ and $\phi$.
-
-Two questions may be Why does this approach converge to local or global maxmima and How is it implemented in practice? The first question, which I find more interesting, is not covered here as the answer would take more than the few paragraphs left - I am also still looking for the right Donkey Kong chart to visualise it. The second question is well covered in the original paper and in subsequent blog articles with examples listed at the bottom. Some elements are covered now.
+The reason why this scheme converges to a local optimum is beyond the present scope and can be found in the stochastic variational inference literature - references at the bottom. The implementation details are well covered in the article and most neural network packages documentation. The following glosses over some key implementation aspects using a detailed formulation of the objective function $L$, which I find is often missing in articles, blogs and other documentation. 
 
 
-How is it possible to estimate the real posterior with an approximating function if the posterior is not observed? Well, in a sense this is what statistical inference is all about - guessing the values of invisible parameters by doing stuff with the visible output. If, like myself, you are not familiar with variational inference, it may feel unsettling because the variational function to estimate is an input into another function with weights that we also estimate. So this problem has a lot of parameters, but hopefully it comes with a lot of data.
+Finally, it took me some time to comprehend how AEVB approximates the unseen posterior with a function. What I found unsettling is that the variational function to estimate is an input into another function, $f$, whose parameters are alos estimated. This is probably because I did not come to VAEs with a background in variational inference. However this type of inference problems is similar to other statistical estimation - guess the values of invisible parameters by doing stuff with the visible output.
+
+The variational assumptions are
 
 $$
 q(t \vert \ x_i) \sim \mathcal{N} (\mu, \Sigma)
@@ -147,21 +157,65 @@ $$
 \Sigma = g_{\Sigma} (x_i \vert \phi)
 $$
 
+The first line means that $q$, which approximates the complicated posterior, is set to be a gaussian distribution. Its covariance $\Sigma$ is symmetric i.e. latent variables are assumed independent. It is unlikely to be true but it reduces the number of parameters vs a free covariance matrix. The second and third lines mean that $g$ has two outputs corresponding to the two parameters of the distribution that it parameterises, $q$.
 
-$
-\sum_i^N\ \int P_{\mathcal{N}}(t \vert \mu, \Sigma) \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t, \theta)) dt  - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
-$
+Plugging this into the lower bound,
 
-$
+
+$$
+L(\theta, \phi) = \sum_i^N\ \int P_{\mathcal{N}}(t \vert \mu, \Sigma) \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t, \theta)) dt  - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
+$$
+
+The integral is approximated as before but M=1 [note on variance]. $t^{\ast}$ refers to that one sample drawn from {\mathcal{N}}(\mu, \Sigma). 
+
+$$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t^{\ast}, \theta)) dt  - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
-$
+$$
 
-$
+To be accurate the sample $\epsilon$ is drawn from ${\mathcal{N}}(0, I)$ then multiplied by $\Sigma$ and added to $\mu$. This location-scale transformation does not change $t$'s distribution but [TBC] allows $\phi$ to remain fixed during backprogagation. It's called the "reparameterization trick" and can be reflected in the lower bound as
+
+$$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t = g_{\mu} (x_i \vert \phi) + g_{\Sigma} (x_i \vert \phi) * \epsilon^{\ast}, \theta)) dt - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
-$
+$$
+
+Nesting the conditions makes the reconstruction loss look busy but the encoder-decoder framework appears if we unnest it. Starting with the innermost condition, $g_{\mu} (x_i \vert \phi) + g_{\Sigma} (x_i \vert \phi) * \epsilon^{\ast}$ is the encoder i.e. mapping $x_i$ to the latent space. Then $f(x_i \vert t)$ is the decoder i.e. the transformation from $t$ to the observed space, and $P_{\rm Bernoulli}$ is the distributional assumption for the marginal likelihood.
+
+Finally it helps to see a code implementation of this objective objective function. For example a popular article on the [Keras blog](https://blog.keras.io/building-autoencoders-in-keras.html) blog implements it as 
+
+```python
+def vae_loss(x, x_decoded_mean):
+    xent_loss = objectives.binary_crossentropy(x, x_decoded_mean)
+    kl_loss = - 0.5 * K.mean(1 + z_log_sigma - K.square(z_mean) - K.exp(z_log_sigma), axis=-1)
+    return xent_loss + kl_loss
+
+vae.compile(optimizer='rmsprop', loss=vae_loss)
+```
+
+`x_ent` corresponds to the recontruction loss whereas `kl_loss` is the regularisation term. Binary cross entropy is the information theoretical version of a Bernoulli density, best seen by looking at the Keras [source implementation](https://github.com/tensorflow/tensorflow/blob/2b96f3662bd776e277f86997659e61046b56c315/tensorflow/python/keras/backend.py#L4668) 
+
+```python
+  # Compute cross entropy from probabilities.
+  bce = target * math_ops.log(output + epsilon())
+  bce += (1 - target) * math_ops.log(1 - output + epsilon())
+  return -bce
+```
+
+Minimising the inverse of `bce` is equivalent to maximising the Bernoulli probability density. If the ground truth $x_i$ is denoted `target` and the predicted output `x_decoded_mean` then
+
+$$
+\log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t)) = {\rm target}_i \log f(x_i \vert t) + (1-{\rm target}_i) \log (1-f(x_i \vert t))
+$$
+
+$$
+= - {\rm target}_i \log f({\rm x\_decoded\_mean}) + (1-{\rm target}_i) \log (1-{\rm x\_decoded\_mean})
+$$
+
+[Meaning of decoded mean]
+
+`kl_loss` implements the [closed form solution](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions) for the KL divergence of two gaussians. 
 
 
 
-The parameters of $g$ are estimated using mini-batch stochastic gradient descent for both $\phi$ and $\theta$. The details for how and why this schema converges are found in the variational inference literaturre which is beyond the scope of this text. 
+
 
 
