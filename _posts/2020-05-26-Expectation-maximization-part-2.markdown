@@ -54,19 +54,17 @@ $$
 and as with previous examples the log-likelihood can be marginalised out
 
 $$
+\begin{equation}
+\begin{aligned}
+
 \sum_{i=1}^N \log P(x_i|\theta)
-$$
+& = \sum_{i=1}^N \log \int  P(x_i, t \vert \theta) dt \\
+& = \sum_{i=1}^N \log \int P_{\mathcal{N}}(t \vert 0, I) * P_{\rm Bernoulli}(x_i \vert f(t \vert \theta)) dt
 
+\end{aligned}
+\end{equation}
+\tag{4.1}
 $$
-= \sum_{i=1}^N \log \int  P(x_i, t \vert \theta) dt
-$$
-
-$$
-= \sum_{i=1}^N \log \int P_{\mathcal{N}}(t \vert 0, I) * P_{\rm Bernoulli}(x_i \vert f(t \vert \theta)) dt
-$$
-
-
-
 
 #### Maximium Likelihood Estimation
 
@@ -93,22 +91,24 @@ It is like a tourist asking for directions by enumerating all the wrong routes t
 
 Both EM and the VAE aim to maximise a lower bound on the log-likelihood of the joint probability. These two methods are connected via the lower bound. The derivation that gave equation (4) in part 1 applies to continuous latent models with minimum changes. $q$ still refers to any probability distribution over the hidden variables
 
-$
+$$
 \sum_{i=1}^N \log P(x_i|\theta) = L(\theta) + KL(q(t)\parallel p(t|x,\theta))
-$
+$$
 
 As with discrete mixtures, the objective function can be written as the sum of a lower bound and a measure of the divergence between the latent variable posterior distribution and the arbitrary distribution $q$. In the handwritten digit example, the posterior probability returns the most likely latent value $t$ for a given MNIST picture.
 
 The lower bound is 
 
-$
+$$
 L(\theta) = \sum_i^N\{ \int q(t) \log P(x_i, t) dt - \int q(t) \log q(t) dt \}
-$
+
+\tag{4.2}
+$$
 
 We will assume to have a good approximation of the posterior distribution, $q_{magic}(t \vert x_i) \approx p(t_i \vert x_i)$. $q_{magic}$ is a temporary placeholder to focus on the similarities with EM. Solving for $\theta$ then corresponds to
 
 $$
-{argmax}{\theta} L(\theta) = \sum_i^N\ \int q_{magic}(t) \log P(x_i, t) dt
+{argmax}{_\theta} L(\theta) = \sum_i^N\ \int q_{magic}(t) \log P(x_i, t) dt
 $$
 
 
@@ -116,15 +116,19 @@ As with the discrete mixture case this is close to the observed component likeli
 
 $$
 \approx \sum_i^N\ \sum_{m=1}^M q_{magic}(t_m) \log \{ P_{\mathcal{N}}(t \vert 0, I) * P_{\rm Bernoulli}(x_i \vert f(x_i \vert t, \theta)) \} dt
+
+\tag{4.3}
 $$
 
 This quantity, which can be evaluated with stochastic gradient methods, contrasts with the direct log-likelihood function above because sampling over the approximate posterior is more efficient than sampling over the prior distribution. Instead of looping through many unlikely $t$ values, the model is forced to loop throuh the most likely latent values that generated the observations, which $q_{magic}$ does as an approximation of the posterior.
 
 
-Finally, the VAE optimises a rearranged version of the lower bound that is more aligned with the machine learning view. Moving the prior probability $p(t)$ to the RHS expression the lower bound can be written as 
+Finally, the VAE optimises a rearranged version of the lower bound that is more aligned with the machine learning view. Moving the prior probability $p(t)$ to the RHS expression then (4.3) can be written
 
 $$
 \sum_i^N\ \int q(t \vert x_i) \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t, \theta)) dt  - KL(q(t \vert x_i) \parallel P_{\mathcal{N}}(t \vert 0, I))
+
+\tag{4.4}
 $$
 
 The previous form, sometimes called "free energy", can be seen as maximising the observed component function even as latent components are not observed. As described with the Poisson mixture, the posterior $q$ is the best substitute for the unobserved latent variable.
@@ -164,9 +168,11 @@ Plugging this into the lower bound,
 
 $$
 L(\theta, \phi) = \sum_i^N\ \int P_{\mathcal{N}}(t \vert \mu, \Sigma) \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t, \theta)) dt  - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
+
+\tag{4.5}
 $$
 
-The integral is approximated as before but M=1 [note on variance]. $t^{\ast}$ refers to that one sample drawn from {\mathcal{N}}(\mu, \Sigma). 
+The integral is approximated as before but M=1 [note on variance]. $t^{\ast}$ refers to that one sample drawn from ${\mathcal{N}}(\mu, \Sigma)$. 
 
 $$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t^{\ast}, \theta)) dt  - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
@@ -176,11 +182,15 @@ To be accurate the sample $\epsilon$ is drawn from ${\mathcal{N}}(0, I)$ then mu
 
 $$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t = g_{\mu} (x_i \vert \phi) + g_{\Sigma} (x_i \vert \phi) * \epsilon^{\ast}, \theta)) dt - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
+
+\tag{4.6}
 $$
 
-Nesting the conditions makes the reconstruction loss look busy but the encoder-decoder framework appears if we unnest it. Starting with the innermost condition, $g_{\mu} (x_i \vert \phi) + g_{\Sigma} (x_i \vert \phi) * \epsilon^{\ast}$ is the encoder i.e. mapping $x_i$ to the latent space. Then $f(x_i \vert t)$ is the decoder i.e. the transformation from $t$ to the observed space, and $P_{\rm Bernoulli}$ is the distributional assumption for the marginal likelihood.
+The encoder-decoder framework helps make sense of the LHS nested conditional probability. Starting with the innermost condition, $g_{\mu} (x_i \vert \phi) + g_{\Sigma} (x_i \vert \phi) * \epsilon^{\ast}$ is the encoder i.e. mapping $x_i$ to the latent space. Then $f(x_i \vert t)$ is the decoder i.e. the transformation from $t$ to the observed space, and $P_{\rm Bernoulli}$ is the distributional assumption for the marginal likelihood.
 
-Finally it helps to see a code implementation of this objective objective function. For example a popular article on the [Keras blog](https://blog.keras.io/building-autoencoders-in-keras.html) blog implements it as 
+#### Lower bound code example
+
+The [Keras blog](https://blog.keras.io/building-autoencoders-in-keras.html) provides a slick code implementation of the above objective function in (4.6)
 
 ```python
 def vae_loss(x, x_decoded_mean):
@@ -191,7 +201,7 @@ def vae_loss(x, x_decoded_mean):
 vae.compile(optimizer='rmsprop', loss=vae_loss)
 ```
 
-`x_ent` corresponds to the recontruction loss whereas `kl_loss` is the regularisation term. Binary cross entropy is the information theoretical version of a Bernoulli density, best seen by looking at the Keras [source implementation](https://github.com/tensorflow/tensorflow/blob/2b96f3662bd776e277f86997659e61046b56c315/tensorflow/python/keras/backend.py#L4668) 
+In `vae_loss`, `x_ent` corresponds to the recontruction loss and `kl_loss` is the regularisation term. The former uses binary cross entropy, which is the information theoretical equivalent of a Bernoulli density, best seen by looking at the Keras [source implementation](https://github.com/tensorflow/tensorflow/blob/2b96f3662bd776e277f86997659e61046b56c315/tensorflow/python/keras/backend.py#L4668) 
 
 ```python
   # Compute cross entropy from probabilities.
@@ -200,19 +210,22 @@ vae.compile(optimizer='rmsprop', loss=vae_loss)
   return -bce
 ```
 
-Minimising the inverse of `bce` is equivalent to maximising the Bernoulli probability density. If the ground truth $x_i$ is denoted `target` and the predicted output `x_decoded_mean` then
+The optimiser will minimise the loss function, and minimising the inverse of `bce` is equivalent to maximising the Bernoulli probability density. If the ground truth $x_i$ is denoted `target` and the predicted output is denoted `x_decoded_mean` then equation 4.6 is similar to the Keras BCE function
 
 $$
-\log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t)) = {\rm target}_i \log f(x_i \vert t) + (1-{\rm target}_i) \log (1-f(x_i \vert t))
+\begin{equation}
+\begin{aligned}
+
+\log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t)) 
+& = {\rm target}_i \log f(x_i \vert t) + (1-{\rm target}_i) \log (1-f(x_i \vert t)) \\
+& = - {\rm target}_i \log f({\rm x\_decoded\_mean}) + (1-{\rm target}_i) \log (1-{\rm x\_decoded\_mean})
+
+\end{aligned}
+\end{equation}
 $$
 
-$$
-= - {\rm target}_i \log f({\rm x\_decoded\_mean}) + (1-{\rm target}_i) \log (1-{\rm x\_decoded\_mean})
-$$
 
-[Meaning of decoded mean]
-
-`kl_loss` implements the [closed form solution](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions) for the KL divergence of two gaussians. 
+Last, `kl_loss` implements the [closed form solution](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions) for the KL divergence of two gaussians. 
 
 
 
