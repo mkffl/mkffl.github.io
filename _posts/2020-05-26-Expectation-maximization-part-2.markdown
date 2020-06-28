@@ -3,41 +3,254 @@ title: Introduction to Expectation Maximization - part 2 (draft)
 layout: post
 ---
 
-## Beyond Gaussian Mixtures
+## A mixture of gaussians
 
-### PCA, LDA and HMM
+### EM for GMM
 
-- Discrete to continuous latent spaces
+The difference between a Poisson and a Gaussian mixture is that the observed data is assumed to be normally distributed, so $P(x_{i} \vert t_{i}=c)$ has two parameters, $\mu_c$ and  $\sigma_c^{2}$. The log-likelihood 1.3 is 
 
-- Exact to approximate inference
+$$
+\sum_i^N\log\sum_c^2P(t_{i}=c)P(x_{i} | t_{i}=c)
+= \sum_i^N\log\sum_c^2\pi_c\mathcal{N}(x_i|\mu_c,\Sigma_c)
+\tag{3.1}
+$$
 
-- Non iid data
+There are 6 parameters to estimate vs. 4 with Poisson distributions
+
+$$
+\theta = \{\pi_1, \pi_2, \mu_1,  \mu_2, \Sigma_1, \Sigma_2\}
+$$
+
+The EM programme described in the previous part will provide the solution to $\theta$.
+
+#### Initialisation
+
+Initialise $\theta$ using random or fixed values. For example $\mu$ can be sampled from a normal distribution centered around the sampling average of tha data set, and the $\pi$ coefficients can be set at 0.5 each.
+
+#### E step
+
+Updating 2.3 with a multivariate normal density function gives a posterior probability for every observation
+
+$$
+P(t_i=c|x_i)=\frac{\mathcal{N}(x_i|\mu_c,\Sigma_c)\pi_c}{\sum_j^2\mathcal{N}(x_i|\mu_j,\Sigma_j)\pi_j}
+\tag{3.2}
+$$
+
+#### M step
+
+As with the Poisson mixture, the solution for $\theta$ is not too far from the single distribution results albeit with membership assignments acting as weights.
+
+Solving for $\mu$, equation 2.4 gives
+
+$$
+\sum_i^N\sum_c^2P(t_i=c|x_i)\{\log\pi_c-\log Z-\frac{1}{2}\frac{(x_i-\mu_c)^2}{\Sigma_c}\}
+\tag{3.3}
+$$
+
+where Z is a constant wrt $\mu$. Setting the derivative to 0, the solution is the sample average weighted by the posterior probability
+
+$$
+\mu_c = \frac{\sum_i^NP(t_i|x_i)x_i}{\sum_i^NP(t_i|x_i)}
+\tag{3.4}
+$$
+
+The prior $\pi_c$ is the fraction of observations generated from component $c$. The solution involves the same steps as with the Poisson mixture.
+
+$$
+{\pi_c} = \frac{P(t_i|x_i)}{N}
+\tag{3.5}
+$$
+
+Finally the solution for the covariance matrix is a weighted average of the single Gaussian MLE result. The computation is a bit more involved and detailed in textbooks like Bishop:
+
+$$
+\Sigma_c = \sum_i^N\frac{p(t_i=c|x_i)(x_i - \mu_c)(x_i - \mu_c)^T}{p(t_i=c|x_i)}
+\tag{3.6}
+$$
+
+### Example with code
+
+I have paired a popular wine data set with another imaginary story to flesh out the dry equations above, and try to demonstrate why EM is a simple and smart way to solve a difficult problem. The data set is available on the UCL [refs]
+
+Kate's restaurant menu features a popular bottle of red wine that she has purchased from the same local Italian wine maker for years.
+
+Lately she has noticed a lack of consistency in taste and quality across bottles and she suspects that the wine maker may use different grapes, perhaps as a way to cut costs. She runs sample analyses for random bottles and investigates two attributes that drive taste, phenols and malic acid. Although the producer denies any change in the underlying grapes, she suspects that new bottles have less phenols and more malic acid than the traditional bottles.
+
+The scatter plot below shows the results
+
+Title: phenols and malic acid for sampled wine bottles
+
+A quick eyeball at the data suggests that the observations may come from two components corresponding to the two different grapes. To test her hypothesis Kate uses a Gaussian mixture model with 2 components to model phenols and malic acid. If the resulting components seem totally random she will reject her hypothesis* but if not, she will urge her supplier to be more transparent about product sourcing and she will have a tool to categorise new bottles. 
+
+
+The code for GMM is from Martin Krasser's github repo. I have made it slightly more modular to accomodate other distributions of the exponential family, in particular the Poisson distribution.
+
+In the code implementation GMM converges in 10 iterations and the chart shows the E step on the 9th round. 
+
+
+The E step computes the posterior distribution using Bayes' formula detailed in equation in equation 3.2. It assigns an observation to a component by dividing the component joint probability by all components' probabilities. The higher a component's joint probability, the higher its membership assignment. 
+
+In this example prior probabilities are roughly equal as $\pi_1 = 0.49$ so the likelihood drives most of the membership assignment. On the E step chart below, the contour plots represent the gaussian likelihood for each component. 
+
+Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, which means that the component 1 posterior probability  is close to 1. On the contrary, observation $x_2$ is several standard deviations away from the mean of both components, so membership assignment will sit on the fence i.e. the posterior probability is around to 0.5.
+
+
+{:refdef: style="text-align: center;"}
+![E step GMM](/assets/e-step-gmm.png){: width="700px"}
+{: refdef}
+
+The function `e_step` below implements the E step, which is best seen in `q / np.sum(q, axis=-1, keepdims=True)` where q is the joint likelihood of a probability distribution, a multivarite normal in the current example.
+
+```python
+def e_step(likelihood: Callable) -> Callable:
+    """ 
+    Implements the E step of the EM algorithm.
+    
+    Args:
+    likelihood: The mixture probability function
+                e.g. Poisson, binomial or multivarite normal
+
+    Returns: 
+        The posterior distribution for observations X using 
+        the mixture parameters estimated in the M step
+    """
+    def general_e_step(X, pi, distribution_params):
+        N = X.shape[0]
+        C = pi.shape[0]
+
+        q = np.zeros((N, C))
+
+        for c in range(C):
+            q[:, c] = likelihood(c, distribution_params, X) * pi[c]
+        return q / np.sum(q, axis=-1, keepdims=True)
+    return general_e_step
+
+def gaussian_likelihood(c: int, mixture_params: Tuple[Any], X: np.array) -> np.array:
+    """
+    Multivariate normal function using the mixture parameters.
+    Implements equation 3.2.
+
+    Args:
+      c: Component index
+      mixture_params: Distribution parameters i.e. prior proba, mean and variance
+      X: Observations
+    
+    Returns:
+         Gaussian probability density for X
+    """
+    mu = mixture_params[1]
+    sigma = mixture_params[2]
+    return mvn(mu[c], sigma[c]).pdf(X)
+
+e_step_gaussian = e_step(likelihood=gaussian_likelihood)
+```
+
+The next chart shows the posterior probabilities computed above, which become the input for the M step. The probabilities are for component 1 i.e. a proba close to 1 means that the observation is assigned to component 1. 
+
+The side histograms represent value counts weighted by the posterior probabilities, which is a visual representation of equation 3.4. The mean for malic acid at the top is around 2 and the mean for phenols on the right side is around than 3, suggesting that $\mu_1$ is close to (2.0, 3.0) on iteration 9. Its actual value is (1.8, 2.8).
+
+{:refdef: style="text-align: center;"}
+![M step GMM](/assets/m-step-gmm.png){: width="700px"}
+{: refdef}
+
+[Talk about chicken egg]
+
+```python
+def m_step(mixture_m_step):
+    def general_m_step(X: np.array, q: np.array) -> Callable:
+        """
+        Computes parameters from data and posterior probabilities.
+
+        Args:
+            X: data (N, D).
+            q: posterior probabilities (N, C).
+
+        Returns:
+            mixture_params, a tuple of
+            - prior probabilities (C,).
+            - mixture component lambda (C, D).
+        """    
+        
+        N, D = X.shape
+        C = q.shape[1]    
+        
+        # Equation 3.5
+        pi = np.sum(q, axis=0) / N
+
+        mixture_params = mixture_m_step(X, q, C, D)
+            
+        return (pi, ) + mixture_params
+    return general_m_step
+
+
+def mixture_m_step_gaussian(X: np.array, q: np.array, C: int, D: int) -> Tuple[Any]:
+    """
+
+    """
+    # Equation 3.4
+    mu = q.T.dot(X) / np.sum(q.T, axis=1, keepdims=True)
+    
+    sigma = np.zeros((C, D, D))
+    # Equation 3.6
+    for c in range(C):
+        delta = (X - mu[c])
+        sigma[c] = (q[:, [c]] * delta).T.dot(delta) / np.sum(q[:, c])
+    return (mu, sigma)
+
+m_step_gaussian = m_step(mixture_m_step_gaussian)
+```
+
+### The power of the posterior
+
+Looking at model fit with different numbers of components confirms Kate's initial hypothesis. A single gaussian does not fit the data distribution well as there are barely any observations around its mean. With 3 components, the 3rd gaussians unnecessarily overlaps the other two. Granted, the "eyeballing" approach may lack scientific rigour but it is probably enough to quickly test her hunch against data.
+
+
+{:refdef: style="text-align: center;"}
+![3 numbers of components](/assets/vary-c-gmm.png){: width="1200px"}
+{: refdef}
+
+With confidence in her gaussian mixture model, Kate now needs to identify if a new shipment corresponds to bottles of type 1 or 2. The posterior probabilities provide a great way to "operationalise" a GMM. After measuring malic acid and phenol contents for a batch of bottles $X_{new}$, she can just feed the data into $P(t=1 \vert X_{new})$. If probabilities are low then the bottles likely come from component 2 and she will take the necessary actions.
+
+The posterior probas are more than just a cog in the EM machine. They allow to organise and summarise data observations into one of the K components, which is why discrete models and GMM in particular are widely used for clustering, e.g. in [scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html) where `predict` methods all refer to classification using the fit model's posterior probabilities. More generally, the posterior probas encode data from a complex space with potentially many dimensions into a simpler space, which the next latent model example will illustrate.
+
+
+## Beyond discrete mixture models
+
+### Relaxing some assumptions
+
+EM can be extended to address other, potentially more difficult modelling problems. This part provides an non exhaustive overview of some of these extensions.
+
+The discrete mixture case can be easily extended to other probability distributions of the exponential family and to continuous latent probability spaces. An example of continuous latent space is probabilistic PCA (PPCA), an alternative to traditional Principal Component Analysis that is robust to missing observations.
+
+An assumption that often must be dropped in applied work is that observations are independently drawn from the same process. Hidden Markov Models (HMM) account for correlation and can be solved with an algorithm that is essentially a special case of EM.
+
+Next, one can assume that, unlike in equation 3.2, the posterior probability distribution $P(t \vert x)$ is too complex to have a closed form solution. EM still applies if we approximate it with a simpler distribution with a closed form. This allows to apply EM to more complex cases, for example topic modelling with Latent Dirichlet Allocation (LDA).
+
+This so-called variational EM approach is also used to estimate Maximum A Posteriori (MAP) parameters for latent models like GMM. The usual benefits of bayesian estimation then apply to latent variable models by providing a probability distributions for the parameters, and therefore predictions. 
+
+Kate may find the above GMM limited in cases when posterior probas are close to 0.5. Knowing that a bottle's membership assignment to cluster 1 is 0.6 only tells her that the most likely cluster is 1. How certain can she be that this value is not, say 0.52 or 0.45? Bayesian GMM can provide an answer to that question, which makes for a more informed decision process. [Rephrase last sentence]
+
+So far, probability distributions can be applied directly to the observed value. Relaxing this assumption provides the ability to apply a transformation function before going to/from the latent space, which is useful for problems where data dimensions have non linear correlations, e.g. image pixels or sound waves. The next part describes a solution to optimise such models which bears some resemblance with EM.
 
 ### Variational Autoencoders
 
-VAEs are a recent type of machine learning models that have expanded the applications of generative models
-to new data types, including images and audio signals, by combining variational Bayes with deep learning architectures. 
-Expectation Maximization and VAE both maximise a lower bound of the maximum likelihood function so many aspects uncovered previously
-will come in handy.
+VAEs are a recent type of machine learning models that have expanded the applications of generative models to new data types, including images and audio signals, by combining variational Bayes with deep learning architectures. Expectation Maximization and VAE both maximise a lower bound of the maximum likelihood function so many aspects uncovered previously will come in handy.
 
-The following will emphasize some of the key similarities between EM and VAEs but it is not intended
-to provide a comprehensive treatment of VAEs. Others have done it better than I could hope to and
-interested readers can refer to [cite Kingma] and other papers listed at the end.
+The following will emphasize some of the key similarities between EM and VAEs but it is not intended to provide a comprehensive treatment of VAEs. Others have done it better than I could hope to and interested readers can refer to [cite Kingma] and other papers listed at the end.
 
 #### Continuous latent space
 
-The diagram below compares the generative process from the latent space to the data space for VAEs vs discrete mixture models. 
-For discrete models the parameters to estimate are the latent variable priors and the condititional distributions rv parameters, 
-e.g. for gaussians the mean and variance. 
+The diagram below compares the generative process from the latent space to the data space for VAEs vs discrete mixture models. For discrete models the parameters to estimate are the latent variable priors and the condititional distributions rv parameters, e.g. for gaussians the mean and variance. 
 
 <figure align="center">
-  <img src="{{site.url}}/assets/vae-vs-gmm.png" alt="my alt text"/>
+  <img width="1000" src="{{site.url}}/assets/vae-vs-gmm.png" alt="alt text"/>
     <figcaption>
     Prior probability and transformation: the Poisson mixture prior is drawn from a categorical RV with weights $\pi$ vs an isometric gaussian (or other continuous distributions) for VAEs. The VAE then passes the $t$ sample to $f$ to output the parameters of the conditional probability.
     Conditional probability: conditional parameters are $\lambda_c$ in the discrete Poisson case vs $f(t \vert \theta)$ in the continuous case, which corresponds to a vector of 784 probabilities of success (one for every pixel/dimension in $x_i$).
-    Marginal probability: in the discrete case the blue outline that denotes the complex marginal probability is the combination of single probabilities; the marginal probability of a VAE can’t easily be plotted but random draws from the pink region in the prior distribution would results in images that share similarities e.g. 7 and 9 digits (source image taken from the Tensorflow documentation).
+    Marginal probability: in the discrete case the blue outline that denotes the complex marginal probability is the combination of single probabilities; the marginal probability of a VAE can’t easily be plotted but random draws from the blue region in the prior distribution return images looking like 0's, 7's and 1's with distribution shown (sourced from the Tensorflow documentation).
     </figcaption>
 </figure>
+
 
 
 With a discrete latent space the number of parameters to estimate depend on the number of mixture components. With a continuous space there is no finite number of mixture components so instead the parameters to estimate are the coefficiences of the transformation from $t$ to 
