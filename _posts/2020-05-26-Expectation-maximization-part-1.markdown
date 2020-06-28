@@ -323,7 +323,7 @@ The long answers require to have the following building bocks in place
 
 <ul>
 <li>Introduce the idea of a family of distributions $q$</li>
-<li>Use Jensen’s inequality and $q$ to write the lower bound $L$</li>
+<li>Use Jensen’s inequality and $q$ to write the lower bound $L$ [To be removed]</li>
 <li>Find an expression for the difference between $P$ and $L$</li>
 </ul>
 
@@ -340,31 +340,6 @@ because the expression is just multiplied by one. $q$ is a function of the distr
 and map them to [0, 1] with the constraint that $\sum_c^Kt_c=1$. A particular realisation of $q$ is the posterior
 $p(t_i=c|x_i)$ but the expression above is true for any distribution function.
 
-### Jensen's inequality
-
-Jensen's inequality states that for any convex function f and a set of non negative values $p_1, ..., p_K$
-that sum to 1, 
-then 
-
-$$
-f(\sum_c^Kp_cx_i) \geq \sum_c^Kp_cf(x_i)
-$$
-
-Replace $f$ by the logarithm and $p_c$ by $q(t=c)$ to get the lower bound $L(\theta, q)$ for the log-likelihood defined above
-
-$$
-\log P(X|\theta) = \sum_i^N\log\sum_c^Nq(t_i=c)\frac{p(x_i, t_i=c|\theta)}{q(t_i=c)}
-\geq \sum_i^N\sum_c^Nq(t_i=c)\log\frac{p(x_i, t_i=c|\theta)}{q(t_i=c)}
-$$
-
-The RHS can be further split out into two terms which will soon become convenient.
-
-$$
-L(\theta, q) = \sum_i^N\sum_c^Nq(t_i=c)\log p(x_i, t_i=c|\theta)
-- \sum_i^N\sum_c^Nq(t_i=c)\log q(t_i=c)
-$$
-
-$L$ is a function of $\theta$, the parameters of the mixture distribution, and $q$, a set of distributions. The LHS part of $L$ is the "quasi complete-data" log-likelihood from (4), because it is the quantity we seek to optimise when $q$ is fixed.
 
 ### Kullback Leibler divergence
 The difference between $\log P(X|\theta)$ and $L$, its lower bound, is a quantity equal to the Kullback Leilbler divergence between $q$ and the posterior $p(t_i=c|x_i)$. KL divergence is a positive or null value that measures how a distribution $q$ differs from another distribution $p$. Let's prove this result and then use it to understand how EM works.
@@ -391,13 +366,20 @@ So the KL divergence is the sum of the lower bound $L$ (LHS) and the marginalise
 Rearranging gives the expected result:
 
 $$
-\begin{equation}
 \log P(X|\theta) = L(\theta, q(t_i=c)) + KL(q(t_i=c)\parallel p(t_i=c|x_i,\theta))
-\tag{5}
-\end{equation}
+\tag{2.1}
 $$
 
+$$
+L(\theta, q) = \sum_i^N\sum_c^Nq(t_i=c)\log p(x_i, t_i=c|\theta) - \sum_i^N\sum_c^Nq(t_i=c)\log q(t_i=c)
+\tag{2.2}
+$$
+
+
 The log-likelihood is the sum of the lower bound and the KL divergence.
+
+$L$ is a function of $\theta$, the parameters of the mixture distribution, and $q$, a set of distributions. The LHS part of $L$ is the "quasi complete-data" log-likelihood from (4), because it is the quantity we seek to optimise when $q$ is fixed.
+
 
 ### Putting it all together
 
@@ -416,7 +398,12 @@ Start with a random guess, $\theta_0$, to kick off the iteratiion.
 Objective: optimise $L$ wrt. $q$ with $\theta$ fixed at the value from the previous step.
 
 
-Solution: $q = p(t_i=c \vert x_i, \theta)$.
+Solution: 
+
+$$
+q = p(t_i=c \vert x_i, \theta)
+\tag{2.3}
+$$
 
 
 From (5) $\log P(X \vert \theta)$ does not vary with $q$ so $L$ is maximised when the KL divergence is minimised i.e. $q = p(t_i=c \vert x_i)$ because the difference between a distribution and itself is zero, the minimum value for KL.
@@ -431,6 +418,7 @@ Objective: optimising $L$ wrt. $\theta$ with membership assignments fixed in the
 Solution: 
 $$
 {argmax}{_\theta} \sum_{i=1}^N \sum_{c=1}^Kq(t_i=c)\log p(t_i=c, x_i \vert \theta)
+\tag{2.4}
 $$ 
 
 The actual results depend on the mixture distribution but as with the Poisson example, the presence of the $log$ next to the joint distribution makes the solution straightforward for distributions of the [exponential family](https://en.wikipedia.org/wiki/Exponential_family).
@@ -460,6 +448,4 @@ The alternative path (MLE) goes straight up, which is tempting, however he will 
 This blog article draws on explanations found in the popular [PRML texbook by C. Bishop](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1)
 and [the Bayesian Methods for Machine Learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning) online
 course.
-
-
 
