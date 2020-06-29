@@ -305,7 +305,7 @@ MLE quickly stumbles upon a complex expression whereas in the M step Kate worked
 
 <ul>
     <li>Where does the "quasi complete-data" function come from?</li>
-    <li>How to get a posterior distribution?</li>
+    <li>How do I get a good posterior probability distribution?</li>
     <li>What guarantees of convergence to a maximum does EM provide?</li>
 </ul>
 
@@ -313,20 +313,13 @@ The short answers are
 <ul>
 <li>It's a lower bound for the likelihood function</li>
 <li>Start with random values then iterate through E and M steps</li>
-<li>There's no guarantee of global maximum, only points with zero valued gradients</li>
+<li>There's no guarantee of global maximum, however EM will lead to only points with zero valued gradients</li>
 </ul>
 
 The 3rd answer implies that EM can get stuck in local minima or saddle points, which is unsatisfying,
 hence in practice EM is run multiple times and only the best estimate is kept.
 
-The long answers require to have the following building bocks in place
-
-<ul>
-<li>Introduce the idea of a family of distributions $q$</li>
-<li>Use Jensen’s inequality and $q$ to write the lower bound $L$ [To be removed]</li>
-<li>Find an expression for the difference between $P$ and $L$</li>
-</ul>
-
+The long answers require to first define a lower bound for the log-likelihood probability. The maths gets a little but dry but the code implementation will hopefully make it more palatable.
 
 
 ### Family of distributions $q$
