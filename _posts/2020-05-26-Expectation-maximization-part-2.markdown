@@ -5,9 +5,11 @@ layout: post
 
 ## A mixture of gaussians
 
+The [first part]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-1.markdown %}) introduced the EM algorithm as an alternative to direct MLE optimisation for models with latent variables. This part builds on the previous Poisson mixture example to look at other models to apply EM, e.g. gaussian mixtures, or where elements of EM help to understand the optimisation scheme, e.g. Variational Autoencoders.
+
 ### EM for GMM
 
-The difference between a Poisson and a Gaussian mixture is that the observed data is assumed to be normally distributed, so $P(x_{i} \vert t_{i}=c)$ has two parameters, $\mu_c$ and  $\sigma_c^{2}$. The log-likelihood 1.3 is 
+The difference between a Poisson and a gaussian mixture is that the observed data is assumed to be normally distributed, so $P(x_{i} \vert t_{i}=c)$ has two parameters, $\mu_c$ and $\sigma_c^{2}$. The log-likelihood 1.4 from part 1 is 
 
 $$
 \sum_i^N\log\sum_c^2P(t_{i}=c)P(x_{i} | t_{i}=c)
@@ -29,7 +31,7 @@ Initialise $\theta$ using random or fixed values. For example $\mu$ can be sampl
 
 #### E step
 
-Updating 2.3 with a multivariate normal density function gives a posterior probability for every observation
+Updating equation 2.3 with a multivariate normal density function gives
 
 $$
 P(t_i=c|x_i)=\frac{\mathcal{N}(x_i|\mu_c,\Sigma_c)\pi_c}{\sum_j^2\mathcal{N}(x_i|\mu_j,\Sigma_j)\pi_j}
@@ -61,7 +63,7 @@ $$
 \tag{3.5}
 $$
 
-Finally the solution for the covariance matrix is a weighted average of the single Gaussian MLE result. The computation is a bit more involved and detailed in textbooks like Bishop:
+Finally the solution for the covariance matrix is a weighted average of the single Gaussian MLE result. The computation is a bit more involved and detailed in textbooks like Bishop's PRML:
 
 $$
 \Sigma_c = \sum_i^N\frac{p(t_i=c|x_i)(x_i - \mu_c)(x_i - \mu_c)^T}{p(t_i=c|x_i)}
@@ -70,27 +72,26 @@ $$
 
 ### Example with code
 
-I have paired a popular wine data set with another imaginary story to flesh out the dry equations above, and try to demonstrate why EM is a simple and smart way to solve a difficult problem. The data set is available on the UCL [refs]
+I pair a popular wine data set with another imaginary story to flesh out the equations above, and try to demonstrate why EM is a simple and smart way to solve a difficult problem. The data set is available on the [UCI data set repo](http://archive.ics.uci.edu/ml/datasets/Wine/)
 
 Kate's restaurant menu features a popular bottle of red wine that she has purchased from the same local Italian wine maker for years.
 
-Lately she has noticed a lack of consistency in taste and quality across bottles and she suspects that the wine maker may use different grapes, perhaps as a way to cut costs. She runs sample analyses for random bottles and investigates two attributes that drive taste, phenols and malic acid. Although the producer denies any change in the underlying grapes, she suspects that new bottles have less phenols and more malic acid than the traditional bottles.
+Lately she has noticed a lack of consistency in taste and quality across bottles and she suspects that the wine maker may use different types of grapes - also called cultivars - perhaps in an attempts to cut costs.
 
-The scatter plot below shows the results
+She runs sample analyses for random bottles and investigates two attributes that drive taste, phenols and malic acid. Although the supplier denies any change in the underlying grapes, she suspects that new bottles have less phenols and more malic acid than the traditional bottles.
 
-Title: phenols and malic acid for sampled wine bottles
+{:refdef: style="text-align: center;"}
+![Wine bottle samples](/assets/wine-data.png){: width="700px"}
+{: refdef}
 
-A quick eyeball at the data suggests that the observations may come from two components corresponding to the two different grapes. To test her hypothesis Kate uses a Gaussian mixture model with 2 components to model phenols and malic acid. If the resulting components seem totally random she will reject her hypothesis* but if not, she will urge her supplier to be more transparent about product sourcing and she will have a tool to categorise new bottles. 
+To test her hypothesis Kate uses a Gaussian mixture model with 2 components to model phenols and malic acid. If the resulting components seem totally random she will reject her hypothesis but if not, she will urge her supplier to be more transparent about product sourcing and she will have a tool to identify the cultivars for new bottles.
 
-
-The code for GMM is from Martin Krasser's github repo. I have made it slightly more modular to accomodate other distributions of the exponential family, in particular the Poisson distribution.
-
-In the code implementation GMM converges in 10 iterations and the chart shows the E step on the 9th round. 
+#### EM for gaussian mixtures
 
 
 The E step computes the posterior distribution using Bayes' formula detailed in equation in equation 3.2. It assigns an observation to a component by dividing the component joint probability by all components' probabilities. The higher a component's joint probability, the higher its membership assignment. 
 
-In this example prior probabilities are roughly equal as $\pi_1 = 0.49$ so the likelihood drives most of the membership assignment. On the E step chart below, the contour plots represent the gaussian likelihood for each component. 
+In this example it turns out that prior probabilities are roughly equal as $\pi_1 = 0.49$ so the likelihood drives most of the membership assignment. On the E step chart below, the contour plots represent the gaussian likelihood for each component. The code uses a single run of EM (no restarts) and converges after 10 iterations. The chart focusses on the 9th round. 
 
 Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, which means that the component 1 posterior probability  is close to 1. On the contrary, observation $x_2$ is several standard deviations away from the mean of both components, so membership assignment will sit on the fence i.e. the posterior probability is around to 0.5.
 
@@ -99,32 +100,10 @@ Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, wh
 ![E step GMM](/assets/e-step-gmm.png){: width="700px"}
 {: refdef}
 
-The function `e_step` below implements the E step, which is best seen in `q / np.sum(q, axis=-1, keepdims=True)` where q is the joint likelihood of a probability distribution, a multivarite normal in the current example.
+The code implementation was described in the previous part. The gaussian likelihood function below is plugged into the main `e_step` function.
+
 
 ```python
-def e_step(likelihood: Callable) -> Callable:
-    """ 
-    Implements the E step of the EM algorithm.
-    
-    Args:
-    likelihood: The mixture probability function
-                e.g. Poisson, binomial or multivarite normal
-
-    Returns: 
-        The posterior distribution for observations X using 
-        the mixture parameters estimated in the M step
-    """
-    def general_e_step(X, pi, distribution_params):
-        N = X.shape[0]
-        C = pi.shape[0]
-
-        q = np.zeros((N, C))
-
-        for c in range(C):
-            q[:, c] = likelihood(c, distribution_params, X) * pi[c]
-        return q / np.sum(q, axis=-1, keepdims=True)
-    return general_e_step
-
 def gaussian_likelihood(c: int, mixture_params: Tuple[Any], X: np.array) -> np.array:
     """
     Multivariate normal function using the mixture parameters.
@@ -153,39 +132,13 @@ The side histograms represent value counts weighted by the posterior probabiliti
 ![M step GMM](/assets/m-step-gmm.png){: width="700px"}
 {: refdef}
 
-[Talk about chicken egg]
+Again, the code is broadly similar as before, with `mixture_m_step_gaussian` replacing `mixture_m_step_gaussian`.
 
 ```python
-def m_step(mixture_m_step):
-    def general_m_step(X: np.array, q: np.array) -> Callable:
-        """
-        Computes parameters from data and posterior probabilities.
-
-        Args:
-            X: data (N, D).
-            q: posterior probabilities (N, C).
-
-        Returns:
-            mixture_params, a tuple of
-            - prior probabilities (C,).
-            - mixture component lambda (C, D).
-        """    
-        
-        N, D = X.shape
-        C = q.shape[1]    
-        
-        # Equation 3.5
-        pi = np.sum(q, axis=0) / N
-
-        mixture_params = mixture_m_step(X, q, C, D)
-            
-        return (pi, ) + mixture_params
-    return general_m_step
-
-
 def mixture_m_step_gaussian(X: np.array, q: np.array, C: int, D: int) -> Tuple[Any]:
     """
-
+      M step solution for GMM-specific
+      parameters i.e. $\mu$ and $\sigma$.
     """
     # Equation 3.4
     mu = q.T.dot(X) / np.sum(q.T, axis=1, keepdims=True)
@@ -236,7 +189,7 @@ So far, probability distributions can be applied directly to the observed value.
 
 VAEs are a recent type of machine learning models that have expanded the applications of generative models to new data types, including images and audio signals, by combining variational Bayes with deep learning architectures. Expectation Maximization and VAE both maximise a lower bound of the maximum likelihood function so many aspects uncovered previously will come in handy.
 
-The following will emphasize some of the key similarities between EM and VAEs but it is not intended to provide a comprehensive treatment of VAEs. Others have done it better than I could hope to and interested readers can refer to [cite Kingma] and other papers listed at the end.
+The following will highlights some of the key similarities between EM and VAEs. However it is not intended to provide a comprehensive treatment of VAEs, which can be found in the original VAE article - see [references]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-2.markdown %}#refs).
 
 #### Continuous latent space
 
@@ -439,6 +392,22 @@ $$
 
 
 Last, `kl_loss` implements the [closed form solution](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions) for the KL divergence of two gaussians. 
+
+### Conclusion
+
+TODO
+
+<a name="refs"></a>
+### References
+#### Core
+- Diederik P Kingma and Max Welling (2014). Auto-encoding variational Bayes. https://arxiv.org/abs/1312.6114
+- Diederik P Kingma and Max Welling (2019). An introduction to Variational Autoencoders. https://arxiv.org/abs/1906.02691
+- Code is from Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb) with a few adjustments to make it more modular.
+
+#### Additional sources
+- David Blei, Alp Kucukelbir and Jon D. McAuliffe. Variational Inference: A Review for Statisticians. https://arxiv.org/abs/1601.00670
+- For an intuitive guide to VAEs: Brian Keng's blog article "Variational Autoencoders". http://bjlkeng.github.io/posts/variational-autoencoders/
+- For further details on the probabilistic vs ML perspectives: Jan Altosaar's blog article "Tutorial - What is a variational autoencoder?". https://jaan.io/what-is-variational-autoencoder-vae-tutorial/
 
 
 
