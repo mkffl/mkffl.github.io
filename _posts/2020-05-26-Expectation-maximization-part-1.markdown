@@ -117,7 +117,7 @@ The next step is to apply a logarithm to simplify the expression. The log-likeli
 $$
 \begin{equation}
 \sum_{i=1}^N\sum_{c=1}^2 {[t_i=c]}\{\log\pi_c+x_i\log\lambda_c-\lambda_c-\log(x_i!)\} =
-\tag{1}
+\tag{1.1}
 \end{equation}
 $$
 
@@ -137,7 +137,7 @@ $$
 $$
 \begin{equation}
 \lambda_c = \frac{\sum_i^Nx_{ic}}{n_c}
-\tag{2}
+\tag{1.2}
 \end{equation}
 $$
     
@@ -162,6 +162,7 @@ Then
 
 $$
 \pi_c = \frac{n_c}{N}
+\tag{1.3}
 $$
 
 Which means that the prior probability $P({t_i=c})$ is the proportion of observations from component c over all observations N
@@ -188,7 +189,7 @@ And the log-likelihood is
 $$
 \begin{equation}
 \log P(X|\theta) = \sum_i^N\log\sum_c^2P(t_{i}=c)P(x_{i} | t_{i}=c)
-\tag{3}
+\tag{1.4}
 \end{equation}
 $$
 
@@ -216,7 +217,7 @@ that the orders are managed by Uber Eats or Deliveroo. We can use this posterior
 $$
 \begin{equation}
 \sum_{i=1}^N\sum_{c=1}^2 P(t_i=c|x_i)\log P(x_i, t_i=c) = 
-\tag{4}
+\tag{1.5}
 \end{equation}
 $$
 
@@ -224,11 +225,9 @@ $$
 \sum_{i=1}^N\sum_{c=1}^2 P(t_i=c|x_i)\{\log\pi_c+x_i\log\lambda_c-\lambda_c-\log(x_i!)\}
 $$
 
-Note how similar the last expression is from (1). The indicator variable is replaced by the posterior, 
-i.e. our best guess for the true component that generated ${x_i}$. 
+Note how similar the last expression is to (1.1). The indicator variable is replaced by the posterior, i.e. our best guess for the true component that generated ${x_i}$. 
 
-I think of it as a "quasi complete-data" likelihood, 
-a state of knowledge that is halfway through the complete data (omniscient) and the incomplete data (ignorant) states.
+I think of equation 1.5 as a "quasi complete-data" likelihood function, a state of knowledge that is halfway through the complete-data (omniscient) and the incomplete-data (ignorant) states. In the literature it is sometimes referred to as the "expectation of the complete-data" likelihood and denoted $\mathcal{Q}$.
 
 The log-likelihood function can be solved for $\theta$ because the $\log$ "acts directly on the joint distribution". Let's unpack this.
 
@@ -240,13 +239,12 @@ $$
 
 $$
 \lambda_c = \frac{\sum_i^NP(t_i|x_i)x_i}{\sum_i^NP(t_i|x_i)}
+\tag{1.6}
 $$
 
-This solution is close to (2). It is the average weighted by the membership assignments.
-We don't know which component $x_i$ comes from so we use the best approximation available, $P(t_i|x_i)$
+The solution is close to the solution in 1.2. It is the average weighted by the membership assignments. We don't know which component $x_i$ comes from so we use the best approximation available, $P(t_i|x_i)$.
 
-The latent component solution for the prior probability includes the same steps seen before.
-Using a Lagrangian and setting the derivative wrt. $\pi_c$ gives
+The latent component solution for the prior probability includes the same steps seen before. Using a Lagrangian and setting the derivative wrt. $\pi_c$ gives
 
 $$
 \sum_{i=1}^N \frac{P(t_i=c|x_i)}{\pi_c}+  \delta = 0
@@ -256,52 +254,40 @@ And the solution is
 
 $$
 \pi_c = \frac{\sum_i^NP(t_i|x_i)}{N}
+\tag{1.7}
 $$
 
-The prior probability for a component is the proportion of observations from that 
-component, using the posterior probability as an approximation for membership 
-assignment.
+The prior probability for a component is the proportion of observations from that component, using the posterior probability as an approximation for membership 
+assignment. 
 
-We have estimated $\hat\theta$, which corresponds to the "M" step of Expectation Maximiization. Kate can use the mixture of Poisson estimates to support her business 
-decisions. 
+We have estimated $\hat\theta$, which corresponds to the "M" step of Expectation Maximiization. Kate can use the mixture of Poisson estimates to support her business decisions. 
 
-For example, if her restaurant is open for take-away from 7pm she can
-estimate the probability of having at least 5 order in the first 20 minutes or, 
-using the relationship between Poisson and exponential distributions, she can 
-evaluate the probability that the first requests will occur after 7.10pm.
+For example, if her restaurant is open for take-away from 7pm she can estimate the probability of having at least 5 order in the first 20 minutes or, using the relationship between Poisson and exponential distributions, she can evaluate the probability that the first requests will occur after 7.10pm.
 
 Furthermore, if Kate thought that her friend's black box programme can be further refined she could use $\hat\theta$ to "update" the posterior probabilities using Bayes' rule
 
 $$
 P(t_i=c|x_i)=\frac{P(x_i|t_i=c,\theta)P(t_i=c)}{\sum_j^2P(x_i|t_i=j,\theta)P(t_i=j)}
+\tag{1.8}
 $$
 
-All the ingredients on the RHS of this equation are available. The chart below illustrates
-the relationship between mixture parameters and the posterior distribution. Assume that
-$(\pi_1, \pi_2, \lambda_1, \lambda_2) = (0.54, 0.46, 1.3, 2.7)$
+All the ingredients on the RHS of this equation are available. The chart below illustrates the relationship between mixture parameters and the posterior distribution. Assume that $(\pi_1, \pi_2, \lambda_1, \lambda_2) = (0.54, 0.46, 1.3, 2.7)$
 
 {:refdef: style="text-align: center;"}
 ![Distribution of orders](/assets/poissono-estep2.png){: width="700px"}
 {: refdef}
 
-Looking at component 1 the posterior probability for $x=1$ is high at 0.7 whereas
-5 orders are less likely to come from this component with a probability of 0.04.
-With prior probabilities roughly the same, posterior probabilities are close to 
-the likelihoood hence the results above make sense. The likelihood of component 1
-is higher than component 2 around $x=1$ as its parameter, which is also its
-expected value, is close to 1. 
+Looking at component 1 the posterior probability for $x=1$ is high at 0.7 whereas 5 orders are less likely to come from this component with a probability of 0.04.
+With prior probabilities roughly the same, posterior probabilities are close to the likelihoood hence the results above make sense. The likelihood of component 1
+is higher than component 2 around $x=1$ as its parameter, which is also its expected value, is close to 1. 
 
-## The EM programme
+## Expectation maximization
 
 
-The imaginary example above suggests why expectation maximization is useful. It's an optimization programme 
-used to estimate parameters for probability distributions with latent variables when your best friend can't provide 
-reasonably good estimates of the posterior $P(t=c|{x_i})$.
+The imaginary example above suggests why expectation maximization is useful. It's an optimization programme used to estimate parameters for probability distributions with latent variables when your best friend can't provide reasonably good estimates of the posterior $P(t=c \vert {x_i})$.
 
 
-EM addresses the same problem as MLE but takes a different, iterative approach to it. As shown before 
-MLE quickly stumbles upon a complex expression whereas in the M step Kate worked around it using the 
-"quasi complete-data" likelihood. At this stage three questions are left unanswered:
+EM addresses the same problem as MLE but takes a different, iterative approach to it. As shown before MLE quickly stumbles upon a complex expression whereas in the M step Kate worked around it using the "quasi complete-data" likelihood. At this stage three questions are left unanswered:
 
 <ul>
     <li>Where does the "quasi complete-data" function come from?</li>
@@ -313,40 +299,62 @@ The short answers are
 <ul>
 <li>It's a lower bound for the likelihood function</li>
 <li>Start with random values then iterate through E and M steps</li>
-<li>There's no guarantee of global maximum, however EM will lead to only points with zero valued gradients</li>
+<li>There's no guarantee of global maximum, however EM will lead to points with zero valued gradients</li>
 </ul>
 
-The 3rd answer implies that EM can get stuck in local minima or saddle points, which is unsatisfying,
-hence in practice EM is run multiple times and only the best estimate is kept.
+The 3rd answer implies that EM can get stuck in local minima or saddle points, which is unsatisfying, so in practice EM goes through several iterations to only keep the best estimate.
 
-The long answers require to first define a lower bound for the log-likelihood probability. The maths gets a little but dry but the code implementation will hopefully make it more palatable.
+The long answers require to first define a lower bound for the log-likelihood probability. The maths gets a little dry but the code implementation will hopefully make it more palatable.
 
+### The lower bound
 
-### Family of distributions $q$
-The log-likelihood $\log P(X|\theta)$ from (3), which is hard to solve directly, can be written as
+The log-likelihood function can be written as the sum of two functions, $L$ and $KL$ for any value $\theta$ and any probability distribution $q$
 
 $$
-\log P(X|\theta) = \sum_i^N\log\sum_c^Nq(t_i=c)\frac{p(x_i, t_i=c|\theta)}{q(t_i=c)}
+\log P(X|\theta) = L(\theta, q(t_i=c)) + KL(q(t_i=c)\parallel p(t_i=c|x_i,\theta))
+\tag{2.1}
 $$
 
-because the expression is just multiplied by one. $q$ is a function of the distributions $t_i$ i.e. a set of functions that take discrete values $t_1, …, t_K$ 
-and map them to [0, 1] with the constraint that $\sum_c^Kt_c=1$. A particular realisation of $q$ is the posterior
-$p(t_i=c|x_i)$ but the expression above is true for any distribution function.
+With
 
+$$
+L(\theta, q) = \sum_i^N\sum_c^Nq(t_i=c)\log p(x_i, t_i=c|\theta)
+- \sum_i^N\sum_c^Nq(t_i=c)\log q(t_i=c)
+\tag{2.2}
+$$
 
-### Kullback Leibler divergence
-The difference between $\log P(X|\theta)$ and $L$, its lower bound, is a quantity equal to the Kullback Leilbler divergence between $q$ and the posterior $p(t_i=c|x_i)$. KL divergence is a positive or null value that measures how a distribution $q$ differs from another distribution $p$. Let's prove this result and then use it to understand how EM works.
-
-Start from the KL divergence to get to the expected result:
+And
 
 $$
 KL(q(t_i=c)\parallel p(t_i=c|x_i,\theta)) = -\sum_i^N\sum_c^Kq(t_i=c)\log\frac{p(t_i=c|x_i,\theta)}{q(t_i=c)}
 $$
 
-Separate out the ratio inside the $\log$ and apply Bayes' theorem to the posterior $p(t_i=c \vert x_i,\theta)$
+$L$ is a lower bound for the log-likelihood, a function that is at most equal to $\log P$ for any $\theta$ and $q$. That is because $KL$, the Kullback Leibler measure of divergence, is greater than or equal to zero. Just like the smallest possible distance between your home and your office is zero, the smallest possible divergence between $q$ and the posterior probability distribution is zero i.e. $q(t_i=c) = p(t_i=c \vert x_i,\theta)$.
+
+$q$ is a probability distribution function over the latent variable $t_i$, in this case a probability mass function i.e. something that takes discrete values $(t_1, t_2, …, t_K)$ and maps them to [0, 1] with the constraint that $\sum_c^Kt_c=1$. A particular realisation of $q$ is the posterior $p(t_i=c \vert x_i)$ but the expression above is true for any distribution function, e.g. $(0, 0, … 1)$ or $(\frac{1}{K}, \frac{1}{K}, … \frac{1}{K})$.
+
+The point of this decomposition is that the lower bound has nicer mathematical properties than the log-likelihood and $KL$ is easy to reason with. So instead of an ugly objective function we have two attractive expressions. 
+
+The appeal of the lower bound is apparent when optimising wrt $\theta$ as she can be written as $\sum_i^N\sum_c^Nq(t_i=c)\log p(x_i, t_i=c \vert \theta) + C$ which is the "quasi complete" expression in 1.4.
+
+$KL$ is handy because for a fixed value of $\theta$, she is equal to zero when $q$ is equal to the posterior probability. The EM game is about alternating between $L$ and $KL$ until we reach the apex of the log-likelihood. The details and code example will be served after the proof of the decomposition.
+
+
+### Proof of the decomposition
+
+The proof starts from the KL divergence and breaks it down to get equation 2.1. First, separate out the ratio inside the $\log$ and apply Bayes' theorem to the posterior $p(t_i=c \vert x_i,\theta)$
+
 
 $$
-\sum_i^N\sum_c^Kq(t_i=c)\log q(t_i=c) - \sum_i^N\sum_c^Kq(t_i=c)\log \frac{p(t_i=c, x_i|\theta)}{p(x_i|\theta)}
+\begin{equation}
+\begin{aligned}
+
+KL(q(t_i=c)\parallel p(t_i=c|x_i,\theta)) 
+& = -\sum_i^N\sum_c^Kq(t_i=c)\log\frac{p(t_i=c|x_i,\theta)}{q(t_i=c)} \\
+& = \sum_i^N\sum_c^Kq(t_i=c)\log q(t_i=c) - \sum_i^N\sum_c^Kq(t_i=c)\log \frac{p(t_i=c, x_i|\theta)}{p(x_i|\theta)}
+
+\end{aligned}
+\end{equation}
 $$
 
 Further split out the fraction inside the $\log$ on the RHS expression, rearrange the resulting terms and use the fact that $p(x_i \vert \theta)$ does not depend on c and $\sum_c^K q(t_i=c)=1$ as $q$ is a distribution. The KL divergence is equal to
@@ -356,25 +364,9 @@ $$
 $$
 
 So the KL divergence is the sum of the lower bound $L$ (LHS) and the marginalised log-likelihood $\log P(X|\theta)$ (RHS).
-Rearranging gives the expected result:
+Rearranging gives 2.1.
 
-$$
-\log P(X|\theta) = L(\theta, q(t_i=c)) + KL(q(t_i=c)\parallel p(t_i=c|x_i,\theta))
-\tag{2.1}
-$$
-
-$$
-L(\theta, q) = \sum_i^N\sum_c^Nq(t_i=c)\log p(x_i, t_i=c|\theta) - \sum_i^N\sum_c^Nq(t_i=c)\log q(t_i=c)
-\tag{2.2}
-$$
-
-
-The log-likelihood is the sum of the lower bound and the KL divergence.
-
-$L$ is a function of $\theta$, the parameters of the mixture distribution, and $q$, a set of distributions. The LHS part of $L$ is the "quasi complete-data" log-likelihood from (4), because it is the quantity we seek to optimise when $q$ is fixed.
-
-
-### Putting it all together
+### EM with code implementation
 
 The EM framework starts with a random initialisation of either membership assignment or the parameters, then alternates between updating the membership assignment given the parameters, and updating the parameters given the membership assignments.
 
@@ -382,13 +374,38 @@ After each round the log-likelihood increases, and this goes on until there are 
 
 Let's look at each step in detail
 
-#### Step 0
+#### Initialisation
 
-Start with a random guess, $\theta_0$, to kick off the iteratiion.
+Start with a random guess of $\theta_0$ to kick off the iteration process. The code implementation uses different heuristics for the parameters. The prior probability $\pi_c$ is set at a fixed value of $\frac{1}{K}$ while $\lambda_c$ is assigned a random draw from a Poisson RV with a rate parameter equal to the sample average.
+
+
+```python
+def random_init_params(mixture_init_params):
+    '''
+        Initialise mixture distribution parameters.
+    '''
+    def general_random_init_params(X, C):
+        D = X.shape[1]
+        pi = np.ones(C) / C
+        mixture_params = mixture_init_params(X, C, D)
+        return (pi, ) + mixture_params
+    return general_random_init_params
+
+def mixture_init_params_poisson(X, C, D):
+    '''
+        Initialise Poisson mixture param by drawing 
+        samples from a Poisson RV with rate equals to the 
+        sample mean.
+    '''
+    return (poisson(mu=np.mean(X, axis=0)).rvs(C).reshape(C, 1), )
+
+random_init_params_poisson = random_init_params(mixture_init_params=mixture_init_params_poisson)
+```
+
 
 #### E step
 
-Objective: optimise $L$ wrt. $q$ with $\theta$ fixed at the value from the previous step.
+Objective: optimise $L$ wrt $q$ with $\theta$ fixed at the value from the previous step.
 
 
 Solution: 
@@ -398,33 +415,137 @@ q = p(t_i=c \vert x_i, \theta)
 \tag{2.3}
 $$
 
+In equation 2.1 $\log P(X \vert \theta)$ does not vary with $q$ so $L$ is maximised when the KL divergence is minimised i.e. $q = p(t_i=c \vert x_i)$. If $L$ are red marbles, $q$ are blue marbles and $\log P(X \vert \theta)$ is a jar, the only way to fill it up with red marbles is to remove all the blues.
 
-From (5) $\log P(X \vert \theta)$ does not vary with $q$ so $L$ is maximised when the KL divergence is minimised i.e. $q = p(t_i=c \vert x_i)$ because the difference between a distribution and itself is zero, the minimum value for KL.
+With a Poisson mixture, equation 2.3 is equivalent to equation 1.8. The function `e_step` below returns `q / np.sum(q, axis=-1, keepdims=True)` which is the solution in 1.8 because `q` is assigned one line above as a joint probability with the conditional probability $P(x \vert t)$ equal to a Poisson likelihood . 
 
-If $L$ are red marbles, $q$ are blue marbles and $\log P(X \vert \theta)$ is a jar, the only way to fill it up with red marbles is to remove all the blues.
+This snippet also demonstrates that EM works flexibly across different probability distributions that can just be plugged into the general E step function. In the next part `poisson_likelihood` will be replaced with a gaussian likelihood function.
+
+```python
+def e_step(likelihood: Callable) -> Callable:
+    """ 
+    Implements the E step of the EM algorithm.
+    
+    Args:
+    likelihood: The mixture probability function
+                e.g. Poisson, binomial or multivarite normal
+
+    Returns: 
+        The posterior distribution for observations X using 
+        the mixture parameters estimated in the M step
+    """
+    def general_e_step(X, pi, distribution_params):
+        N = X.shape[0]
+        C = pi.shape[0]
+
+        q = np.zeros((N, C))
+
+        for c in range(C):
+            q[:, c] = likelihood(c, distribution_params, X) * pi[c]
+        return q / np.sum(q, axis=-1, keepdims=True)
+    return general_e_step
+
+def poisson_likelihood(c: int, mixture_params: Tuple[Any], X: np.array) -> np.array:
+    """
+
+    Args:
+    c: Component index
+    mixture_params: Distribution parameters i.e. prior proba 
+                    and Poisson rate
+    X: Observations
+    
+    Returns the Poisson probability mass for X
+    """
+    lambda_param = mixture_params[1]
+    return poisson(lambda_param[c]).pmf(X)
+
+e_step_poisson = e_step(likelihood=poisson_likelihood)
+```
 
 #### M step
 
-Objective: optimising $L$ wrt. $\theta$ with membership assignments fixed in the previous step i.e. $q = p(t_i=c \vert x_i)$.
+Objective: optimise $L$ wrt $\theta$ with membership assignments fixed in the previous step i.e. $q = p(t_i=c \vert x_i)$.
 
 
-Solution: 
+Solution:
+
+
 $$
-{argmax}{_\theta} \sum_{i=1}^N \sum_{c=1}^Kq(t_i=c)\log p(t_i=c, x_i \vert \theta)
-\tag{2.4}
-$$ 
+\begin{equation}
+\begin{aligned}
 
-The actual results depend on the mixture distribution but as with the Poisson example, the presence of the $log$ next to the joint distribution makes the solution straightforward for distributions of the [exponential family](https://en.wikipedia.org/wiki/Exponential_family).
+{argmax}{_\theta} L(\theta \vert q) =
+
+{argmax}{_\theta} \sum_{i=1}^N \sum_{c=1}^Kq(t_i=c)\log p(t_i=c, x_i \vert \theta) + C
+
+\end{aligned}
+\end{equation}
+\tag{2.4}
+$$
+
+This is the expectation of the complete-data likelihood in 1.5 because the lower bound function defined in 2.2 includes a quantity that does not vary with $\theta$, denoted as a constant.
+
+The actual results depend on the mixture distribution but the presence of the $log$ next to the joint distribution makes the solution straightforward for any distributions of the [exponential family](https://en.wikipedia.org/wiki/Exponential_family). 
+
+For a Poisson mixture the solution to 2.4 are 1.6 and 1.7 which are implemented below.
+
+```python
+def m_step(mixture_m_step):
+    def general_m_step(X: np.array, q: np.array) -> Callable:
+        """
+        Computes parameters from data and posterior probabilities.
+
+        Args:
+            X: data (N, D).
+            q: posterior probabilities (N, C).
+
+        Returns:
+            mixture_params, a tuple of
+            - prior probabilities (C,).
+            - mixture component lambda (C, D).
+        """    
+        
+        N, D = X.shape
+        C = q.shape[1]    
+        
+        # Equation 3.5
+        pi = np.sum(q, axis=0) / N
+
+        mixture_params = mixture_m_step(X, q, C, D)
+            
+        return (pi, ) + mixture_params
+    return general_m_step
+
+def mixture_m_step_poisson(X: np.array, q: np.array, C: int, D: int) -> Tuple[np.array]:
+    '''
+        M step for a Poisson mixture. Implements equation 1.6.
+        
+        Returns: 
+            The updated lambda parameter (C, D).
+    '''
+    lambda_poisson = q.T.dot(X) / np.sum(q.T, axis=1, keepdims=True)
+    return (lambda_poisson, )
+
+m_step_poisson = m_step(mixture_m_step_poisson)
+
+```
 
 #### Evaluate $\log P(X|\theta)$
 
-Using the estimated parameters from M, evaluate the log-likelihood or the lower bound and stop if there is no significant increase from the previous round of E-M.
+Using the estimated parameters, evaluate the log-likelihood or $L$ and stop if there is no significant increase from the previous round. The code implementation measures $L$, defined in the `lower_bound` function. 
 
+The convergence check happens in the `train` function with iteration stopping if the current change in lower bound is less than the tolerance threshold `rtol`.
 
-Finally, what guarantees do we have that EM will converge? After each iteration $\log P(X|\theta)$ can only be equal or above its previous value because it is greater or equal than the optimised lower bound (M step), which is greater or equal than the non optimised lower bound 
-(E step), which is equal to the previous log-likelihood. 
+```python
+if prev_lb and np.abs((lb - prev_lb) / prev_lb) < rtol:
+    break
+```
 
-It may help to visualise it
+### Convergence
+
+Finally, what guarantees do we have that EM will converge? After each iteration $\log P(X|\theta)$ can only be equal or above its previous value because it is greater than or equal to the optimised lower bound (M step), which is greater than or equal to the non optimised lower bound (E step), which is equal to the previous log-likelihood. 
+
+It may help to visualise the explanation.
     
 
 {:refdef: style="text-align: center;"}
@@ -438,7 +559,8 @@ he will find Pauline after only 2 EM rounds.
 The alternative path (MLE) goes straight up, which is tempting, however he will have to put up a fight with Kong. Mario is not after the shortest path, he just wants to find his fiancé, so he'll choose EM.
 
 #### References:
-This blog article draws on explanations found in the popular [PRML texbook by C. Bishop](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1)
-and [the Bayesian Methods for Machine Learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning) online
-course.
+- [Pattern Recognition and Machine Learning](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1) by C. Bishop
+- [Bayesian Methods for Machine Learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning) online
+course
+- Code is from Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb)  with a few adjustments to make it more modular
 
