@@ -242,7 +242,7 @@ $$
 \tag{1.6}
 $$
 
-The solution is close to the solution in 1.2. It is the average weighted by the membership assignments. We don't know which component $x_i$ comes from so we use the best approximation available, $P(t_i|x_i)$.
+The solution is close to the solution in 1.2. It is the average weighted by the membership assignments. We don't know which component $x_i$ comes from so we use the best approximation available, $P(t_i \vert x_i)$.
 
 The latent component solution for the prior probability includes the same steps seen before. Using a Lagrangian and setting the derivative wrt. $\pi_c$ gives
 
