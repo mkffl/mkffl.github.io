@@ -508,7 +508,7 @@ def m_step(mixture_m_step):
         N, D = X.shape
         C = q.shape[1]    
         
-        # Equation 3.5
+        # Equation 1.7
         pi = np.sum(q, axis=0) / N
 
         mixture_params = mixture_m_step(X, q, C, D)
@@ -559,8 +559,7 @@ he will find Pauline after only 2 EM rounds.
 The alternative path (MLE) goes straight up, which is tempting, however he will have to put up a fight with Kong. Mario is not after the shortest path, he just wants to find his fiancé, so he'll choose EM.
 
 #### References:
-- [Pattern Recognition and Machine Learning](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1) by C. Bishop
-- [Bayesian Methods for Machine Learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning) online
-course
-- Code is from Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb)  with a few adjustments to make it more modular
+- C. Bishop. [Pattern Recognition and Machine Learning](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1).
+- HSE online course. [Bayesian Methods for Machine Learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning).
+- Code is from Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb) with a few adjustments to make it more modular.
 
