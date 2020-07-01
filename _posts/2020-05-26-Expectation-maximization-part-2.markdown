@@ -63,7 +63,7 @@ $$
 \tag{3.5}
 $$
 
-Finally the solution for the covariance matrix is a weighted average of the single Gaussian MLE result. The computation is a bit more involved and detailed in textbooks like Bishop's PRML:
+Finally the solution for the covariance matrix is a weighted average of the single Gaussian MLE result. The computation is a bit more involved and detailed in textbooks like [PRML]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-2.markdown %}#refs)
 
 $$
 \Sigma_c = \sum_i^N\frac{p(t_i=c|x_i)(x_i - \mu_c)(x_i - \mu_c)^T}{p(t_i=c|x_i)}
@@ -72,11 +72,9 @@ $$
 
 ### Example with code
 
-I pair a popular wine data set with another imaginary story to flesh out the equations above, and try to demonstrate why EM is a simple and smart way to solve a difficult problem. The data set is available on the [UCI data set repo](http://archive.ics.uci.edu/ml/datasets/Wine/)
+I pair a popular wine data set with another imaginary story to flesh out the equations above, and try to demonstrate why EM is a simple and smart way to solve a difficult problem. The data set is available on the [UCI data set repo](http://archive.ics.uci.edu/ml/datasets/Wine/).
 
-Kate's restaurant menu features a popular bottle of red wine that she has purchased from the same local Italian wine maker for years.
-
-Lately she has noticed a lack of consistency in taste and quality across bottles and she suspects that the wine maker may use different types of grapes - also called cultivars - perhaps in an attempts to cut costs.
+Kate's restaurant menu features a popular bottle of red wine that she has purchased from the same local Italian wine maker for years. Lately she has noticed a lack of consistency in taste and quality across bottles and she suspects that the wine maker may use different types of grapes - also called cultivars - perhaps in an attempts to cut costs.
 
 She runs sample analyses for random bottles and investigates two attributes that drive taste, phenols and malic acid. Although the supplier denies any change in the underlying grapes, she suspects that new bottles have less phenols and more malic acid than the traditional bottles.
 
@@ -86,10 +84,10 @@ She runs sample analyses for random bottles and investigates two attributes that
 
 To test her hypothesis Kate uses a Gaussian mixture model with 2 components to model phenols and malic acid. If the resulting components seem totally random she will reject her hypothesis but if not, she will urge her supplier to be more transparent about product sourcing and she will have a tool to identify the cultivars for new bottles.
 
-#### EM for gaussian mixtures
+#### Details of E and M
 
 
-The E step computes the posterior distribution using Bayes' formula detailed in equation in equation 3.2. It assigns an observation to a component by dividing the component joint probability by all components' probabilities. The higher a component's joint probability, the higher its membership assignment. 
+The E step computes the posterior distribution using Bayes' formula detailed in equation 3.2. It assigns an observation to a component by dividing the component joint probability by all components' probabilities. The higher a component's joint probability, the higher its membership assignment. 
 
 In this example it turns out that prior probabilities are roughly equal as $\pi_1 = 0.49$ so the likelihood drives most of the membership assignment. On the E step chart below, the contour plots represent the gaussian likelihood for each component. The code uses a single run of EM (no restarts) and converges after 10 iterations. The chart focusses on the 9th round. 
 
@@ -100,7 +98,7 @@ Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, wh
 ![E step GMM](/assets/e-step-gmm.png){: width="700px"}
 {: refdef}
 
-The code implementation was described in the previous part. The gaussian likelihood function below is plugged into the main `e_step` function.
+The code implementation was described in part 1 of this blog article. The gaussian likelihood function below is plugged into the main `e_step` function.
 
 
 ```python
@@ -126,7 +124,7 @@ e_step_gaussian = e_step(likelihood=gaussian_likelihood)
 
 The next chart shows the posterior probabilities computed above, which become the input for the M step. The probabilities are for component 1 i.e. a proba close to 1 means that the observation is assigned to component 1. 
 
-The side histograms represent value counts weighted by the posterior probabilities, which is a visual representation of equation 3.4. The mean for malic acid at the top is around 2 and the mean for phenols on the right side is around than 3, suggesting that $\mu_1$ is close to (2.0, 3.0) on iteration 9. Its actual value is (1.8, 2.8).
+The side histograms represent value counts weighted by the posterior probabilities, which is a visual representation of the solution to $\mu_1$ in equation 3.4. The mean for malic acid at the top is around 2 and the mean for phenols on the right side is around than 3, suggesting that $\mu_1$ is close to (2.0, 3.0) on iteration 9. Its actual value is (1.8, 2.8).
 
 {:refdef: style="text-align: center;"}
 ![M step GMM](/assets/m-step-gmm.png){: width="700px"}
@@ -164,26 +162,28 @@ Looking at model fit with different numbers of components confirms Kate's initia
 
 With confidence in her gaussian mixture model, Kate now needs to identify if a new shipment corresponds to bottles of type 1 or 2. The posterior probabilities provide a great way to "operationalise" a GMM. After measuring malic acid and phenol contents for a batch of bottles $X_{new}$, she can just feed the data into $P(t=1 \vert X_{new})$. If probabilities are low then the bottles likely come from component 2 and she will take the necessary actions.
 
-The posterior probas are more than just a cog in the EM machine. They allow to organise and summarise data observations into one of the K components, which is why discrete models and GMM in particular are widely used for clustering, e.g. in [scikit-learn](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html) where `predict` methods all refer to classification using the fit model's posterior probabilities. More generally, the posterior probas encode data from a complex space with potentially many dimensions into a simpler space, which the next latent model example will illustrate.
+The posterior probas are more than just a cog in the EM machine. They allow to organise and summarise data observations into one of the K components, which is why discrete models and GMM in particular are widely used for clustering. 
+
+For example [scikit-learn's GMM implementation](https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html) has a few prediction methods that refer to classification using the fit model's posterior probabilities. More generally, the posterior probas encode data from a complex space with potentially many dimensions into a simpler space, which the next latent model example will illustrate.
 
 
 ## Beyond discrete mixture models
 
-### Relaxing some assumptions
+### Changing some assumptions
 
-EM can be extended to address other, potentially more difficult modelling problems. This part provides an non exhaustive overview of some of these extensions.
+EM can be extended to address other, potentially more difficult modelling problems, which this section provides an non exhaustive overview of.
 
 The discrete mixture case can be easily extended to other probability distributions of the exponential family and to continuous latent probability spaces. An example of continuous latent space is probabilistic PCA (PPCA), an alternative to traditional Principal Component Analysis that is robust to missing observations.
 
-An assumption that often must be dropped in applied work is that observations are independently drawn from the same process. Hidden Markov Models (HMM) account for correlation and can be solved with an algorithm that is essentially a special case of EM.
+An assumption that often must be dropped in applied work is that observations are independently drawn from the same process. Hidden Markov Models (HMM) account for correlation between $x$ and can be solved with an algorithm that is essentially a special case of EM.
 
-Next, one can assume that, unlike in equation 3.2, the posterior probability distribution $P(t \vert x)$ is too complex to have a closed form solution. EM still applies if we approximate it with a simpler distribution with a closed form. This allows to apply EM to more complex cases, for example topic modelling with Latent Dirichlet Allocation (LDA).
+Next, one can assume that, unlike in equation 3.2, the posterior probability distribution $P(t \vert x)$ is too complex to have a closed form solution. EM still applies if we approximate it with a simpler distribution with a closed form, which allows for complex cases, for example topic modelling with Latent Dirichlet Allocation (LDA).
 
 This so-called variational EM approach is also used to estimate Maximum A Posteriori (MAP) parameters for latent models like GMM. The usual benefits of bayesian estimation then apply to latent variable models by providing a probability distributions for the parameters, and therefore predictions. 
 
-Kate may find the above GMM limited in cases when posterior probas are close to 0.5. Knowing that a bottle's membership assignment to cluster 1 is 0.6 only tells her that the most likely cluster is 1. How certain can she be that this value is not, say 0.52 or 0.45? Bayesian GMM can provide an answer to that question, which makes for a more informed decision process. [Rephrase last sentence]
+Kate may find the above GMM limited in cases when posterior probas are close to 0.5. Knowing that a bottle's membership assignment to cluster 1 is 0.6 only tells her that the most likely cluster is 1. How certain can she be that this value is not, say 0.52 or 0.45? Bayesian GMM can provide an answer to that question and better inform her decision process.
 
-So far, probability distributions can be applied directly to the observed value. Relaxing this assumption provides the ability to apply a transformation function before going to/from the latent space, which is useful for problems where data dimensions have non linear correlations, e.g. image pixels or sound waves. The next part describes a solution to optimise such models which bears some resemblance with EM.
+So far, probability distributions can be applied directly to the observed value. Relaxing this assumption provides the ability to apply a transformation function between the data space and the latent space, which is useful for problems where data dimensions have non linear correlations, e.g. image pixels or sound waves. The next part describes a solution to optimise such models which bears a resemblance to EM.
 
 ### Variational Autoencoders
 
@@ -193,7 +193,7 @@ The following will highlights some of the key similarities between EM and VAEs. 
 
 #### Continuous latent space
 
-The diagram below compares the generative process from the latent space to the data space for VAEs vs discrete mixture models. For discrete models the parameters to estimate are the latent variable priors and the condititional distributions rv parameters, e.g. for gaussians the mean and variance. 
+The diagram below compares the generative process from the latent space to the data space for VAEs vs discrete mixture models. 
 
 <figure align="center">
   <img width="1000" src="{{site.url}}/assets/vae-vs-gmm.png" alt="alt text"/>
@@ -203,7 +203,6 @@ The diagram below compares the generative process from the latent space to the d
     Marginal probability: in the discrete case the blue outline that denotes the complex marginal probability is the combination of single probabilities; the marginal probability of a VAE can’t easily be plotted but random draws from the blue region in the prior distribution return images looking like 0's, 7's and 1's with distribution shown (sourced from the Tensorflow documentation).
     </figcaption>
 </figure>
-
 
 
 With a discrete latent space the number of parameters to estimate depend on the number of mixture components. With a continuous space there is no finite number of mixture components so instead the parameters to estimate are the coefficiences of the transformation from $t$ to 
@@ -236,7 +235,7 @@ $$
 
 Using a random variable parameterised by a function that has no closed form solution means that optimisation will use approximation methods instead of analytical ones. 
 
-Removing the constraints associated with analytical solutions gives hope for direct optimisation of the log-likelihood, as it can be optimised with gradient optimisation methods after approximating the integral with a sampling method. For example, using Monte Carlo approximation, () becomes
+Removing the constraints associated with analytical solutions gives hope for direct optimisation of the log-likelihood, as it can be optimised with gradient optimisation methods after approximating the integral with a sampling method. For example, using Monte Carlo approximation, equation 4.1 becomes
 
 
 $$
@@ -246,7 +245,7 @@ $$
 
 where $t_m$ refers refers to the m'th sample from a normalised gaussian. The expression to evaluate is an unbiased estimator of the integral of the log-likelihood, which is good but not necessarily efficient. 
 
-Using a sentence from the original paper in a different context, "this series of operations can be expressed as a symbolc graph in software like Tensorflow or Chainer, and effortlessly differentiated wrt the parameters $\theta$", and I would add "although painfully computed unless using quantum machines from the future."
+Using a sentence from the original paper in a different context, "this series of operations can be expressed as a symbolic graph in software like Tensorflow or Chainer, and effortlessly differentiated wrt the parameters $\theta$", and I would add "although painfully computed unless using quantum machines from the future."
 
 The additional bit refers to sampling from $t$ being inefficient because it requires a very large number of samples to make marginal improvements. Most samples from $t$ will contribute next to nothing to the observations $x$, which means that gradients will take a lot of time to converge. As a reminder, stochastic gradient descent nudges gradients to the right direction by getting feedback from the loss function. Here feedback will often be poor as the loss function does not get many examples of correct $t$ values. 
 
@@ -255,7 +254,7 @@ It is like a tourist asking for directions by enumerating all the wrong routes t
 
 #### Lower bound
 
-Both EM and the VAE aim to maximise a lower bound on the log-likelihood of the joint probability. These two methods are connected via the lower bound. The derivation that gave equation (4) in part 1 applies to continuous latent models with minimum changes. $q$ still refers to any probability distribution over the hidden variables
+EM and the VAE are connected via the lower bound as they both aim to maximise a lower bound on the log-likelihood of the joint probability. The derivation for equation 2.1 in the previous part of this article also applies to continuous latent models with minimum changes. $q$ still refers to any probability distribution over the hidden variables
 
 $$
 \sum_{i=1}^N \log P(x_i|\theta) = L(\theta) + KL(q(t)\parallel p(t|x,\theta))
@@ -289,7 +288,7 @@ $$
 This quantity, which can be evaluated with stochastic gradient methods, contrasts with the direct log-likelihood function above because sampling over the approximate posterior is more efficient than sampling over the prior distribution. Instead of looping through many unlikely $t$ values, the model is forced to loop throuh the most likely latent values that generated the observations, which $q_{magic}$ does as an approximation of the posterior.
 
 
-Finally, the VAE optimises a rearranged version of the lower bound that is more aligned with the machine learning view. Moving the prior probability $p(t)$ to the RHS expression then (4.3) can be written
+Finally, the VAE optimises a rearranged version of the lower bound that is more aligned with the machine learning view. Moving the prior probability $p(t)$ to the RHS expression then equation 4.2 can be written
 
 $$
 \sum_i^N\ \int q(t \vert x_i) \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t, \theta)) dt  - KL(q(t \vert x_i) \parallel P_{\mathcal{N}}(t \vert 0, I))
@@ -297,7 +296,7 @@ $$
 \tag{4.4}
 $$
 
-The previous form, sometimes called "free energy", can be seen as maximising the observed component function even as latent components are not observed. As described with the Poisson mixture, the posterior $q$ is the best substitute for the unobserved latent variable.
+The previous form in 4.2, sometimes called "free energy", can be seen as maximising the observed component function even as latent components are not observed. As described with the Poisson mixture, the posterior $q$ is the best substitute for the unobserved latent variable.
 
 The new form, sometimes called "penalised model fit", can be seen as a regularised function, e.g. as with the Lasso regression where L1 acts as the regularisation term. The LHS expression measures the model fit through the marginal probability, while the KL divergence acts a regularisation term as it forces the posterior approximation close to an isometric gaussian.
 
@@ -308,10 +307,10 @@ EM sets $q$ equal to the posterior $p(t \vert x)$ so the lower bound is equal to
 
 The VAE optimiation scheme proposed in the article, called Auto Encoding Variational Bayes (AEVB), differs from EM because it uses an approximation of the posterior instead of plugging the result from E into the M objective function. At a high level, AEVB sets q to be a simple random variable, typically a symmetric gaussian distribution, parametrised by a neural network based transformation $g$ with weights $\phi$. The lower bound $L(\theta, \phi)$ is then a function of two sets of parameters optimised jointly with batch gradient descent methods. 
 
-The reason why this scheme converges to a local optimum is beyond the present scope and can be found in the stochastic variational inference literature - references at the bottom. The implementation details are well covered in the article and most neural network packages documentation. The following glosses over some key implementation aspects using a detailed formulation of the objective function $L$, which I find is often missing in articles, blogs and other documentation. 
+The reason why this scheme converges to a local optimum is beyond the scope of this text and can be found in the stochastic variational inference literature. The implementation details are well covered in the original VAE paper and most neural network packages documentation. The following glosses over some key implementation aspects using a detailed formulation of the objective function $L$, which I find is often missing in articles, blogs and other documentation. 
 
 
-Finally, it took me some time to comprehend how AEVB approximates the unseen posterior with a function. What I found unsettling is that the variational function to estimate is an input into another function, $f$, whose parameters are alos estimated. This is probably because I did not come to VAEs with a background in variational inference. However this type of inference problems is similar to other statistical estimation - guess the values of invisible parameters by doing stuff with the visible output.
+Finally, it took me some time to comprehend how AEVB approximates the unseen posterior with a function. What I found unsettling is that the variational function to estimate is an input into another function, $f$, whose parameters are also estimated - probably because I did not come to VAEs with a background in variational inference. However when you think about it, this type of inference problems is similar to other statistical estimation - guess the values of invisible parameters by doing stuff with the visible output.
 
 The variational assumptions are
 
@@ -338,13 +337,13 @@ L(\theta, \phi) = \sum_i^N\ \int P_{\mathcal{N}}(t \vert \mu, \Sigma) \log P_{\r
 \tag{4.5}
 $$
 
-The integral is approximated as before but M=1 [note on variance]. $t^{\ast}$ refers to that one sample drawn from ${\mathcal{N}}(\mu, \Sigma)$. 
+The integral is approximated as before albeit with only one sample i.e. M=1. $t^{\ast}$ refers to that one sample drawn from ${\mathcal{N}}(\mu, \Sigma)$. 
 
 $$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t^{\ast}, \theta)) dt  - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
 $$
 
-To be accurate the sample $\epsilon$ is drawn from ${\mathcal{N}}(0, I)$ then multiplied by $\Sigma$ and added to $\mu$. This location-scale transformation does not change $t$'s distribution but [TBC] allows $\phi$ to remain fixed during backprogagation. It's called the "reparameterization trick" and can be reflected in the lower bound as
+To be accurate the sample $\epsilon$ is drawn from ${\mathcal{N}}(0, I)$ then multiplied by $\Sigma$ and added to $\mu$. This location-scale transformation does not change $t$'s distribution but allows $\phi$ to remain fixed during backprogagation. It's called the "reparameterization trick" and can be reflected in the lower bound as
 
 $$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t = g_{\mu} (x_i \vert \phi) + g_{\Sigma} (x_i \vert \phi) * \epsilon^{\ast}, \theta)) dt - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
@@ -400,6 +399,7 @@ TODO
 <a name="refs"></a>
 ### References
 #### Core
+- C. Bishop. [Pattern Recognition and Machine Learning](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1) (PRML).
 - Diederik P Kingma and Max Welling (2014). Auto-encoding variational Bayes. https://arxiv.org/abs/1312.6114
 - Diederik P Kingma and Max Welling (2019). An introduction to Variational Autoencoders. https://arxiv.org/abs/1906.02691
 - Code is from Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb) with a few adjustments to make it more modular.
@@ -408,9 +408,4 @@ TODO
 - David Blei, Alp Kucukelbir and Jon D. McAuliffe. Variational Inference: A Review for Statisticians. https://arxiv.org/abs/1601.00670
 - For an intuitive guide to VAEs: Brian Keng's blog article "Variational Autoencoders". http://bjlkeng.github.io/posts/variational-autoencoders/
 - For further details on the probabilistic vs ML perspectives: Jan Altosaar's blog article "Tutorial - What is a variational autoencoder?". https://jaan.io/what-is-variational-autoencoder-vae-tutorial/
-
-
-
-
-
 
