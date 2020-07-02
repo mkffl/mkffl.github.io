@@ -343,10 +343,10 @@ $$
 Further split out the fraction inside the $\log$ on the RHS expression, rearrange the resulting terms and use the fact that $p(x_i \vert \theta)$ does not depend on c and $\sum_c^K q(t_i=c)=1$ as $q$ is a distribution. The $KL$ divergence is equal to
 
 $$
--(\sum_i^N\sum_c^Kq(t_i=c)\log p(t_i=c, x_i|\theta)+\sum_i^N\sum_c^K q(t_i=c)\log q(t_i=c))+\sum_i^Np(x_i|\theta)
+-(\sum_i^N\sum_c^Kq(t_i=c)\log p(t_i=c, x_i|\theta)+\sum_i^N\sum_c^K q(t_i=c)\log q(t_i=c))+\sum_i^N \log p(x_i|\theta)
 $$
 
-So $KL$ is the sum of the lower bound $L$ (LHS) and the marginalised log-likelihood $\log P(X|\theta)$ (RHS).
+So $KL$ is the sum of minus the lower bound $L$ (LHS) plus the marginalised log-likelihood $\log P(X|\theta)$ (RHS).
 Rearranging gives 2.1.
 
 ### EM with code implementation
