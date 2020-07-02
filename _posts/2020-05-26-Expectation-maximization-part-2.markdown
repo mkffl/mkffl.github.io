@@ -362,7 +362,7 @@ The encoder-decoder framework helps make sense of the LHS nested conditional pro
 
 #### Lower bound code example
 
-The [Keras blog](https://blog.keras.io/building-autoencoders-in-keras.html) provides a slick code implementation of the above objective function in (4.6)
+The [Keras blog](https://blog.keras.io/building-autoencoders-in-keras.html) provides a slick code implementation of the above objective function 4.6.
 
 ```python
 def vae_loss(x, x_decoded_mean):
