@@ -160,8 +160,9 @@ m_step_gaussian = m_step(mixture_m_step_gaussian)
 
 ### The power of the posterior
 
-Looking at model fit with different numbers of components confirms Kate's initial hypothesis. A single gaussian does not fit the data distribution well as there are barely any observations around its mean. With 3 components, the 3rd gaussians unnecessarily overlaps the other two. Granted, the "eyeballing" approach may lack scientific rigour but it is probably enough to quickly test her hunch against data.
+Looking at model fit with different numbers of components confirms Kate's initial hypothesis. A single gaussian does not fit the data distribution well as there are barely any observations around its mean. With 3 components, the 3rd gaussians unnecessarily overlaps the other two. 
 
+Model selection metrics support the assumption that there is more than one component as AIC and BIC drop sharply between 1 and 2 components. The mild decrease after 2 components means that there may be more than 2  grape types, which does not exactly corroborates the conclusions of the "eyeballing" approach.
 
 {:refdef: style="text-align: center;"}
 ![3 numbers of components](/assets/vary-c-gmm.png){: width="1200px"}
@@ -362,7 +363,7 @@ The encoder-decoder framework helps make sense of the LHS nested conditional pro
 
 #### Lower bound code example
 
-The [Keras blog](https://blog.keras.io/building-autoencoders-in-keras.html) provides a slick code implementation of the above objective function in (4.6)
+The [Keras blog](https://blog.keras.io/building-autoencoders-in-keras.html) provides a slick code implementation of the above objective function 4.6.
 
 ```python
 def vae_loss(x, x_decoded_mean):
