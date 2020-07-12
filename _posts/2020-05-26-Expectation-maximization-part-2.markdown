@@ -100,6 +100,8 @@ Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, wh
 
 The code implementation was described in part 1 of this blog article. The gaussian likelihood function below is plugged into the main `e_step` function.
 
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L59)
+
 
 ```python
 def gaussian_likelihood(c: int, mixture_params: Tuple[Any], X: np.array) -> np.array:
@@ -132,6 +134,7 @@ The side histograms represent value counts weighted by the posterior probabiliti
 
 Again, the code is broadly similar as before, with `mixture_m_step_gaussian` replacing `mixture_m_step_gaussian`.
 
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L113)
 ```python
 def mixture_m_step_gaussian(X: np.array, q: np.array, C: int, D: int) -> Tuple[Any]:
     """
@@ -157,6 +160,7 @@ def mixture_m_step_gaussian(X: np.array, q: np.array, C: int, D: int) -> Tuple[A
 
 m_step_gaussian = m_step(mixture_m_step_gaussian)
 ```
+
 
 ### The power of the posterior
 
@@ -389,7 +393,9 @@ In `vae_loss`, `x_ent` corresponds to the recontruction loss and `kl_loss` is th
   return -bce
 ```
 
-The optimiser will minimise the loss function, and minimising the inverse of `bce` is equivalent to maximising the Bernoulli probability density. If the ground truth $x_i$ is denoted `target` and the predicted output is denoted `x_decoded_mean` then equation 4.6 is similar to the Keras BCE function
+The optimiser will minimise the loss function, and minimising the inverse of `bce` is equivalent to maximising the Bernoulli probability density. 
+
+In the snippet above, the ground truth $x_i$ is denoted `target` and the predicted output is denoted `x_decoded_mean` - "mean" refers to $f(x_i \vert t)$ being both the parameter and the mean of the Bernoulli rv. Then equation 4.6 can be written as follows to emphasize the equivalence with the Keras BCE function
 
 $$
 \begin{equation}
@@ -402,6 +408,7 @@ $$
 \end{aligned}
 \end{equation}
 $$
+
 
 
 Last, `kl_loss` implements the [closed form solution](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions) for the KL divergence of two gaussians. 
