@@ -345,7 +345,11 @@ L(\theta, \phi) = \sum_i^N\ \int P_{\mathcal{N}}(t \vert \mu, \Sigma) \log P_{\r
 \tag{4.5}
 $$
 
-The integral is approximated as before albeit with only one sample i.e. M=1. $t^{\ast}$ refers to that one sample drawn from ${\mathcal{N}}(\mu, \Sigma)$. 
+The integral is approximated as before but M=1. Using only one sample may result in a high variance estimator however more samples would incur computational cost as they must be passed into the transformation function $f$ to estimate their lower bound values. So there's a trade-off that the authors seem to have solved empirically - quote is from the 2014 paper.
+
+> In our experiments we found that the number of samples per datapoint can be set to 1 as long as the minibatch size was large enough, e.g. size equal to 100.
+
+If $t^{\ast}$ refers to that one sample drawn from ${\mathcal{N}}(\mu, \Sigma)$, equation 4.5 can be approximated as
 
 $$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t^{\ast}, \theta)) dt  - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
