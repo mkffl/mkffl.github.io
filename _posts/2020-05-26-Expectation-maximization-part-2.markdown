@@ -165,7 +165,7 @@ Looking at model fit with different numbers of components confirms Kate's initia
 Model selection metrics support the assumption that there is more than one component as AIC and BIC drop sharply between 1 and 2 components. The mild decrease after 2 components means that there may be more than 2  grape types, which does not exactly corroborates the conclusions of the "eyeballing" approach.
 
 {:refdef: style="text-align: center;"}
-![3 numbers of components](/assets/vary-c-gmm.png){: width="1200px"}
+[![3 numbers of components](/assets/vary-c-gmm.png){: width="1200px"}](https://i.imgur.com/9MndDQS.png)
 {: refdef}
 
 With confidence in her gaussian mixture model, Kate now needs to identify if a new shipment corresponds to bottles of type 1 or 2. The posterior probabilities provide a great way to "operationalise" a GMM. After measuring malic acid and phenol contents for a batch of bottles $X_{new}$, she can just feed the data into $P(t=1 \vert X_{new})$. If probabilities are low then the bottles likely come from component 2 and she will take the necessary actions.
@@ -204,12 +204,14 @@ The following will highlights some of the key similarities between EM and VAEs. 
 The diagram below compares the generative process from the latent space to the data space for VAEs vs discrete mixture models. 
 
 <figure align="center">
-  <img width="1000" src="{{site.url}}/assets/vae-vs-gmm.png" alt="alt text"/>
-    <figcaption>
-    Prior probability and transformation: the Poisson mixture prior is drawn from a categorical RV with weights $\pi$ vs an isometric gaussian (or other continuous distributions) for VAEs. The VAE then passes the $t$ sample to $f$ to output the parameters of the conditional probability.
-    Conditional probability: conditional parameters are $\lambda_c$ in the discrete Poisson case vs $f(t \vert \theta)$ in the continuous case, which corresponds to a vector of 784 probabilities of success (one for every pixel/dimension in $x_i$).
-    Marginal probability: in the discrete case the blue outline that denotes the complex marginal probability is the combination of single probabilities; the marginal probability of a VAE can’t easily be plotted but random draws from the blue region in the prior distribution return images looking like 0's, 7's and 1's with distribution shown (sourced from the Tensorflow documentation).
-    </figcaption>
+  <a href="https://i.imgur.com/zvDN7JS.png">
+    <img width="1000" src="{{site.url}}/assets/vae-vs-gmm.png" alt="alt text"/>
+      <figcaption>
+      Prior probability and transformation: the Poisson mixture prior is drawn from a categorical RV with weights $\pi$ vs an isometric gaussian (or other continuous distributions) for VAEs. The VAE then passes the $t$ sample to $f$ to output the parameters of the conditional probability.
+      Conditional probability: conditional parameters are $\lambda_c$ in the discrete Poisson case vs $f(t \vert \theta)$ in the continuous case, which corresponds to a vector of 784 probabilities of success (one for every pixel/dimension in $x_i$).
+      Marginal probability: in the discrete case the blue outline that denotes the complex marginal probability is the combination of single probabilities; the marginal probability of a VAE can’t easily be plotted but random draws from the blue region in the prior distribution return images looking like 0's, 7's and 1's with distribution shown (sourced from the Tensorflow documentation).
+      </figcaption>
+  </a>
 </figure>
 
 
