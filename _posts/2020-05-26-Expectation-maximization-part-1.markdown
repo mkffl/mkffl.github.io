@@ -441,7 +441,7 @@ def poisson_likelihood(c: int, mixture_params: Tuple[Any], X: np.array) -> np.ar
     Returns the Poisson probability mass for X
     """
     lambda_param = mixture_params[1]
-    return poisson(lambda_param[c]).pmf(X)
+    return poisson(lambda_param[c]).pmf(X).flatten()
 
 e_step_poisson = e_step(likelihood=poisson_likelihood)
 ```
