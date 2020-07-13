@@ -415,7 +415,13 @@ Last, `kl_loss` implements the [closed form solution](https://en.wikipedia.org/w
 
 ### Conclusion
 
-TODO
+Expectation Maximization finds the parameters of a latent variable model by optimising a substitute for the log-likelihood. It can be applied to a large number of models that are useful to address business problems, and is worth knowing for this reason alone. Moreover, many alternative methods minimise the same loss function and share similar principles as EM, e.g. AEVB.
+
+With EM or related methods, the posterior probability distribution $q(t \vert x)$ is more than a means to an end as its encoding properties can power applications or generate insights. This is probably even more true for recent generative models like VAEs that often support unsupervised learning tasks by training an encoder to organise/cluster unlabelled data.
+
+In the last couple years, major improvements in the way VAEs build informative latent spaces have gotten us closer to models that can teach us something about the world around us using data. For example, the BetaVAE forces latent dimensions to represent independent data features by simply cranking up the importance of the gaussian prior in the lower bound. 
+
+This results in more meaningful latent variables tied to human concepts, e.g. the dimensions of $t$ would represent the height/width/location of a MNIST digit. While the focus in the ML industry now seems to be around “productionising” models, i.e. monetising the statistical mimicries developed in the last decade to automate low value tasks, I find these new developments exciting and refreshing.
 
 <a name="refs"></a>
 ### References
