@@ -100,7 +100,7 @@ Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, wh
 
 The code implementation was described in part 1 of this blog article. The  Gaussian likelihood function below is plugged into the main `e_step` function.
 
-[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L59)
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L63)
 
 
 ```python
@@ -134,7 +134,7 @@ The side histograms represent value counts weighted by the posterior probabiliti
 
 Again, the code is broadly similar as before, with `mixture_m_step_gaussian` replacing `mixture_m_step_gaussian`.
 
-[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L113)
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L117)
 ```python
 def mixture_m_step_gaussian(X: np.array, q: np.array, C: int, D: int) -> Tuple[Any]:
     """
@@ -164,9 +164,9 @@ m_step_gaussian = m_step(mixture_m_step_gaussian)
 
 ### The power of the posterior
 
-Looking at model fit with different numbers of components confirms Kate's initial hypothesis. A single  Gaussian does not fit the data distribution well as there are barely any observations around its mean. With 3 components, the 3rd  Gaussians unnecessarily overlaps the other two. 
+Looking at model fit with different numbers of components confirms Kate's initial hypothesis. A single  Gaussian does not fit the data distribution well as there are barely any observations around its mean. With 3 components, the 3rd Gaussians unnecessarily overlaps the other two. If $K=2$, the first component with high phenols and lower malic acid would correspond to the better wine that the supplier has historically shipped to Kate.
 
-Model selection metrics support the assumption that there is more than one component as AIC and BIC drop sharply between 1 and 2 components. The mild decrease after 2 components means that there may be more than 2  grape types, which does not exactly corroborates the conclusions of the "eyeballing" approach.
+Model selection metrics support the assumption that there is more than one component as AIC and BIC drop sharply between 1 and 2 components. The reduction in AIC/BIC after 2 components, albeit slower than after 1 component, means that there may be more than 2 grape types, which does not totally corroborates the previous "eyeballing" interpretation.
 
 {:refdef: style="text-align: center;"}
 [![3 numbers of components](/assets/vary-c-gmm.png){: width="1200px"}](https://i.imgur.com/9MndDQS.png)
