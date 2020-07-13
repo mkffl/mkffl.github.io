@@ -38,7 +38,7 @@ the corresponding mixture RV. The goal is to estimate the parameters of the join
     
 Assume the following scenario - Kate manages a restaurant that offers seatings and home delivery. 
 She thinks that the kitchen staff may be under-resourced to address sudden spikes in home deliveries between 7-8pm. 
-She wishs to compute the probability distribution of 7-8pm delivery orders to inform her resourcing decisions. 
+She wishes to compute the probability distribution of 7-8pm delivery orders to inform her resourcing decisions. 
     
 Deliveries are managed by a 3rd party aggregator app that provides the number of orders placed over 10 min intervals. 
 The chart below describes the number of orders for Mon-Thu over 3 weeks i.e. 12 days shown on the x-axis.
@@ -56,7 +56,7 @@ different order rates.
     
 Unfortunately, the aggregator logs do not break down the data by delivery company, which can thus be thought of 
 as latent variables. This is an example where going from a single to a mixture of distribution model can 
-help model the underling process more accurately.
+help capture the underling process more accurately.
 
 
 Expectation Maximization (EM) can be used here to estimate models with latent variables. To understand the strengths of EM, 
@@ -83,7 +83,7 @@ Where
 - N is the number of observations
 - ${x_i}$ is the number of orders places over a 10-min interval, and
 - ${t_i}$ is the delivery company that manages the order i.e. Uber Eats
-        (${t_i}=1$) or Deliveroo (${t_i}=2$).
+        (${t_i}=1$) or Deliveroo (${t_i}=2$)
 
 Using the indicator $[t_i=c]$ that is 1 if component 1 generated the observation,
 and 0 otherwise, and using ${\pi_c}$ to denote $P(t_{i}=c)$ the likelihood becomes
@@ -148,7 +148,7 @@ $$
 \tag{1.3}
 $$
 
-Which means that the prior probability $P({t_i=c})$ is the proportion of observations from component c over all observations N
+Which means that the prior probability $P({t_i=c})$ is the proportion of observations from component $c$ over all observations $N$
     
 
 ### Latent components with MLE
@@ -176,7 +176,7 @@ $$
 \end{equation}
 $$
 
-As explained in [PRML]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-1.markdown %}#refs):
+As explained in [PRML]({{ site.baseurl }}{% link _posts/2020-07-10-Expectation-maximization-part-1.markdown %}#refs):
 
 
 > The presence of the sum prevents the logarithm from acting directly on the
@@ -194,7 +194,7 @@ approach that works well for latent variables and distributions of the exponenti
 Imagine that Kate's best friend works at the food delivery aggregator app and can provide some information about 
 delivery companies. He's got a model to estimate the probability of the component given the observation $P(t=c|{x_i})$.
 
-In plan English, he has black box that takes a number of orders in a 10 min interval and outputs the probability
+In plain English, he has black box that takes a number of orders in a 10 min interval and outputs the probability
 that the orders are managed by Uber Eats or Deliveroo. We can use this posterior distribution to get a formula for the likelihood that's almost like the complete-data formula.
 
 $$
@@ -347,7 +347,7 @@ $$
 $$
 
 So $KL$ is the sum of minus the lower bound $L$ (LHS) plus the marginalised log-likelihood $\log P(X|\theta)$ (RHS).
-Rearranging gives 2.1.
+Rearranging gives equation 2.1 above, which breaks down the log-likelihood into the lower bound and the $KL$ divergence.
 
 ### EM with code implementation
 
@@ -361,7 +361,7 @@ Let's look at each step in detail.
 
 Start with a random guess of $\theta_0$ to kick off the iteration process. The code implementation uses different heuristics for the parameters. The prior probability $\pi_c$ is set at a fixed value of $\frac{1}{C}$ while $\lambda_c$ is assigned a random draw from a Poisson RV with a rate parameter equal to the sample average.
 
-
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L168)
 ```python
 def random_init_params(mixture_init_params):
     '''
@@ -404,6 +404,7 @@ With a Poisson mixture, equation 2.3 is equivalent to equation 1.8. The function
 
 This snippet also demonstrates that EM works flexibly across different probability distributions that can just be plugged into the general E step function. In the next part of this blog article, `poisson_likelihood` will be replaced with a gaussian likelihood function.
 
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L25)
 ```python
 def e_step(likelihood: Callable) -> Callable:
     """ 
@@ -440,7 +441,7 @@ def poisson_likelihood(c: int, mixture_params: Tuple[Any], X: np.array) -> np.ar
     Returns the Poisson probability mass for X
     """
     lambda_param = mixture_params[1]
-    return poisson(lambda_param[c]).pmf(X)
+    return poisson(lambda_param[c]).pmf(X).flatten()
 
 e_step_poisson = e_step(likelihood=poisson_likelihood)
 ```
@@ -472,6 +473,7 @@ The actual results depend on the mixture distribution but the presence of the $l
 
 For a Poisson mixture the solution to 2.4 are 1.6 and 1.7 which are implemented below.
 
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L81)
 ```python
 def m_step(mixture_m_step):
     def general_m_step(X: np.array, q: np.array) -> Callable:
@@ -519,6 +521,7 @@ Using the estimated parameters, evaluate the log-likelihood or $L$ and stop if t
 
 The convergence check happens in the `train` function with iteration stopping if the current change in lower bound is less than the tolerance threshold `rtol`.
 
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L248)
 ```python
 if prev_lb and np.abs((lb - prev_lb) / prev_lb) < rtol:
     break
@@ -545,5 +548,5 @@ The alternative path (MLE) goes straight up, which is tempting, however he will 
 #### References:
 - C. Bishop. [Pattern Recognition and Machine Learning](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1) (PRML).
 - HSE online course. [Bayesian Methods for Machine Learning](https://www.coursera.org/learn/bayesian-methods-in-machine-learning).
-- Code is from Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb) with a few adjustments to make it more modular.
+- Code is hosted on [Github](https://github.com/mkffl/mixture-models), and is mostly based on Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb).
 
