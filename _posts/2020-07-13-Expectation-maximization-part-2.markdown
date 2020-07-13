@@ -98,7 +98,7 @@ Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, wh
 ![E step GMM](/assets/e-step-gmm.png){: width="700px"}
 {: refdef}
 
-The code implementation was described in part 1 of this blog article. The  Gaussian likelihood function below is plugged into the main `e_step` function.
+The code implementation was described in part 1 of these blog posts. The  Gaussian likelihood function below is plugged into the main `e_step` function.
 
 [Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L63)
 
@@ -326,7 +326,7 @@ EM sets $q$ equal to the posterior $p(t \vert x)$ so the lower bound is equal to
 
 The VAE optimiation scheme proposed in the article, called Auto Encoding Variational Bayes (AEVB), differs from EM because it uses an approximation of the posterior instead of plugging the result from E into the M objective function. At a high level, AEVB sets q to be a simple random variable, typically a symmetric  Gaussian distribution, parametrised by a neural network based transformation $g$ with weights $\phi$. The lower bound $L(\theta, \phi)$ is then a function of two sets of parameters optimised jointly with batch gradient descent methods. 
 
-The reason why this scheme converges to a local optimum is beyond the scope of this text and can be found in the stochastic variational inference literature. The implementation details are well covered in the original VAE paper and most neural network packages documentation. The following glosses over some key implementation aspects using a detailed formulation of the objective function $L$, which I find is often missing in articles, blogs and other documentation. 
+The reason why this scheme converges to a local optimum is beyond the scope of this text and can be found in the stochastic variational inference literature. The implementation details are well covered in the original VAE paper and most neural network packages documentation. The following glosses over some key implementation aspects using a detailed formulation of the objective function $L$, which I find is often missing. 
 
 
 Finally, it took me some time to comprehend how AEVB approximates the unseen posterior with a function. What I found unsettling is that the variational function to estimate is an input into another function, $f$, whose parameters are also estimated - probably because I did not come to VAEs with a background in variational inference. However when you think about it, this type of inference problems is similar to other statistical estimation - guess the values of invisible parameters by doing stuff with the visible output.
