@@ -176,7 +176,7 @@ $$
 \end{equation}
 $$
 
-As explained in [PRML]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-1.markdown %}#refs):
+As explained in [PRML]({{ site.baseurl }}{% link _posts/2020-07-10-Expectation-maximization-part-1.markdown %}#refs):
 
 
 > The presence of the sum prevents the logarithm from acting directly on the

@@ -5,7 +5,7 @@ layout: post
 
 ## A mixture of  Gaussians
 
-The [first part]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-1.markdown %}) introduced the EM algorithm as an alternative to direct MLE optimisation for models with latent variables. This part builds on the previous Poisson mixture example to look at other models to apply EM, e.g.  Gaussian mixtures, or where elements of EM help to understand the optimisation scheme, e.g. Variational Autoencoders.
+The [first part]({{ site.baseurl }}{% link _posts/2020-07-10-Expectation-maximization-part-1.markdown %}) introduced the EM algorithm as an alternative to direct MLE optimisation for models with latent variables. This part builds on the previous Poisson mixture example to look at other models to apply EM, e.g.  Gaussian mixtures, or where elements of EM help to understand the optimisation scheme, e.g. Variational Autoencoders.
 
 ### EM for GMM
 
@@ -63,7 +63,7 @@ $$
 \tag{3.5}
 $$
 
-Finally the solution for the covariance matrix is a weighted average of the single Gaussian MLE result. The computation is a bit more involved and detailed in textbooks like [PRML]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-2.markdown %}#refs)
+Finally the solution for the covariance matrix is a weighted average of the single Gaussian MLE result. The computation is a bit more involved and detailed in textbooks like [PRML]({{ site.baseurl }}{% link _posts/2020-07-13-Expectation-maximization-part-2.markdown %}#refs)
 
 $$
 \Sigma_c = \sum_i^N\frac{p(t_i=c|x_i)(x_i - \mu_c)(x_i - \mu_c)^T}{p(t_i=c|x_i)}
@@ -201,7 +201,7 @@ So far, probability distributions can be applied directly to the observed value.
 
 VAEs are a recent type of machine learning models that have expanded the applications of generative models to new data types, including images and audio signals, by combining variational Bayes with deep learning architectures. Expectation Maximization and VAE both maximise a lower bound of the maximum likelihood function so many aspects uncovered previously will come in handy.
 
-The following will highlights some of the key similarities between EM and VAEs. However it is not intended to provide a comprehensive treatment of VAEs, which can be found in the original VAE article - see [references]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-2.markdown %}#refs).
+The following will highlights some of the key similarities between EM and VAEs. However it is not intended to provide a comprehensive treatment of VAEs, which can be found in the original VAE article - see [references]({{ site.baseurl }}{% link _posts/2020-07-13-Expectation-maximization-part-2.markdown %}#refs).
 
 #### Continuous latent space
 
