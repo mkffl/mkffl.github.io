@@ -3,13 +3,13 @@ title: Introduction to Expectation Maximization - part 2 (draft)
 layout: post
 ---
 
-## A mixture of gaussians
+## A mixture of  Gaussians
 
-The [first part]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-1.markdown %}) introduced the EM algorithm as an alternative to direct MLE optimisation for models with latent variables. This part builds on the previous Poisson mixture example to look at other models to apply EM, e.g. gaussian mixtures, or where elements of EM help to understand the optimisation scheme, e.g. Variational Autoencoders.
+The [first part]({{ site.baseurl }}{% link _posts/2020-05-26-Expectation-maximization-part-1.markdown %}) introduced the EM algorithm as an alternative to direct MLE optimisation for models with latent variables. This part builds on the previous Poisson mixture example to look at other models to apply EM, e.g.  Gaussian mixtures, or where elements of EM help to understand the optimisation scheme, e.g. Variational Autoencoders.
 
 ### EM for GMM
 
-The difference between a Poisson and a gaussian mixture is that the observed data is assumed to be normally distributed, so $P(x_{i} \vert t_{i}=c)$ has two parameters, $\mu_c$ and $\sigma_c^{2}$. The log-likelihood 1.4 from part 1 is 
+The difference between a Poisson and a  Gaussian mixture is that the observed data is assumed to be normally distributed, so $P(x_{i} \vert t_{i}=c)$ has two parameters, $\mu_c$ and $\sigma_c^{2}$. The log-likelihood 1.4 from part 1 is 
 
 $$
 \sum_i^N\log\sum_c^2P(t_{i}=c)P(x_{i} | t_{i}=c)
@@ -27,7 +27,7 @@ The EM programme described in the previous part will provide the solution to $\t
 
 #### Initialisation
 
-Initialise $\theta$ using random or fixed values. For example $\mu$ can be sampled from a normal distribution centered around the sampling average of tha data set, and the $\pi$ coefficients can be set at 0.5 each.
+Initialise $\theta$ using random or fixed values. For example $\mu$ can be sampled from a normal distribution centered around the sampling average of the data set, and the $\pi$ coefficients can be set at 0.5 each.
 
 #### E step
 
@@ -49,7 +49,7 @@ $$
 \tag{3.3}
 $$
 
-where Z is a constant wrt $\mu$. Setting the derivative to 0, the solution is the sample average weighted by the posterior probability
+where $Z$ is a constant wrt $\mu$. Setting the derivative to 0, the solution is the sample average weighted by the posterior probability
 
 $$
 \mu_c = \frac{\sum_i^NP(t_i|x_i)x_i}{\sum_i^NP(t_i|x_i)}
@@ -89,7 +89,7 @@ To test her hypothesis Kate uses a Gaussian mixture model with 2 components to m
 
 The E step computes the posterior distribution using Bayes' formula detailed in equation 3.2. It assigns an observation to a component by dividing the component joint probability by all components' probabilities. The higher a component's joint probability, the higher its membership assignment. 
 
-In this example it turns out that prior probabilities are roughly equal as $\pi_1 = 0.49$ so the likelihood drives most of the membership assignment. On the E step chart below, the contour plots represent the gaussian likelihood for each component. The code uses a single run of EM (no restarts) and converges after 10 iterations. The chart focusses on the 9th round. 
+In this example it turns out that prior probabilities are roughly equal as $\pi_1 = 0.49$ so the likelihood drives most of the membership assignment. On the E step chart below, the contour plots represent the  Gaussian likelihood for each component. The code uses a single run of EM (no restarts) and converges after 10 iterations. The chart focusses on the 9th round. 
 
 Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, which means that the component 1 posterior probability  is close to 1. On the contrary, observation $x_2$ is several standard deviations away from the mean of both components, so membership assignment will sit on the fence i.e. the posterior probability is around to 0.5.
 
@@ -98,7 +98,7 @@ Observation $x_1$ lies close to $\mu_1$ i.e. has a high component likelihood, wh
 ![E step GMM](/assets/e-step-gmm.png){: width="700px"}
 {: refdef}
 
-The code implementation was described in part 1 of this blog article. The gaussian likelihood function below is plugged into the main `e_step` function.
+The code implementation was described in part 1 of this blog article. The  Gaussian likelihood function below is plugged into the main `e_step` function.
 
 [Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L59)
 
@@ -164,7 +164,7 @@ m_step_gaussian = m_step(mixture_m_step_gaussian)
 
 ### The power of the posterior
 
-Looking at model fit with different numbers of components confirms Kate's initial hypothesis. A single gaussian does not fit the data distribution well as there are barely any observations around its mean. With 3 components, the 3rd gaussians unnecessarily overlaps the other two. 
+Looking at model fit with different numbers of components confirms Kate's initial hypothesis. A single  Gaussian does not fit the data distribution well as there are barely any observations around its mean. With 3 components, the 3rd  Gaussians unnecessarily overlaps the other two. 
 
 Model selection metrics support the assumption that there is more than one component as AIC and BIC drop sharply between 1 and 2 components. The mild decrease after 2 components means that there may be more than 2  grape types, which does not exactly corroborates the conclusions of the "eyeballing" approach.
 
@@ -172,7 +172,7 @@ Model selection metrics support the assumption that there is more than one compo
 [![3 numbers of components](/assets/vary-c-gmm.png){: width="1200px"}](https://i.imgur.com/9MndDQS.png)
 {: refdef}
 
-With confidence in her gaussian mixture model, Kate now needs to identify if a new shipment corresponds to bottles of type 1 or 2. The posterior probabilities provide a great way to "operationalise" a GMM. After measuring malic acid and phenol contents for a batch of bottles $X_{new}$, she can just feed the data into $P(t=1 \vert X_{new})$. If probabilities are low then the bottles likely come from component 2 and she will take the necessary actions.
+With confidence in her  Gaussian mixture model, Kate now needs to identify if a new shipment corresponds to bottles of type 1 or 2. The posterior probabilities provide a great way to "operationalise" a GMM. After measuring malic acid and phenol contents for a batch of bottles $X_{new}$, she can just feed the data into $P(t=1 \vert X_{new})$. If probabilities are low then the bottles likely come from component 2 and she will take the necessary actions.
 
 The posterior probas are more than just a cog in the EM machine. They allow to organise and summarise data observations into one of the K components, which is why discrete models and GMM in particular are widely used for clustering. 
 
@@ -211,7 +211,7 @@ The diagram below compares the generative process from the latent space to the d
   <a href="https://i.imgur.com/zvDN7JS.png">
     <img width="1000" src="{{site.url}}/assets/vae-vs-gmm.png" alt="alt text"/>
       <figcaption>
-      Prior probability and transformation: the Poisson mixture prior is drawn from a categorical RV with weights $\pi$ vs an isometric gaussian (or other continuous distributions) for VAEs. The VAE then passes the $t$ sample to $f$ to output the parameters of the conditional probability.
+      Prior probability and transformation: the Poisson mixture prior is drawn from a categorical RV with weights $\pi$ vs an isometric  Gaussian (or other continuous distributions) for VAEs. The VAE then passes the $t$ sample to $f$ to output the parameters of the conditional probability.
       Conditional probability: conditional parameters are $\lambda_c$ in the discrete Poisson case vs $f(t \vert \theta)$ in the continuous case, which corresponds to a vector of 784 probabilities of success (one for every pixel/dimension in $x_i$).
       Marginal probability: in the discrete case the blue outline that denotes the complex marginal probability is the combination of single probabilities; the marginal probability of a VAE can’t easily be plotted but random draws from the blue region in the prior distribution return images looking like 0's, 7's and 1's with distribution shown (sourced from the Tensorflow documentation).
       </figcaption>
@@ -220,7 +220,7 @@ The diagram below compares the generative process from the latent space to the d
 
 
 With a discrete latent space the number of parameters to estimate depend on the number of mixture components. With a continuous space there is no finite number of mixture components so instead the parameters to estimate are the coefficiences of the transformation from $t$ to 
-the parameters of the mixture random variable, e.g. probability of success $p$ for a Bernoulli rv. 
+the parameters of the mixture random variable, e.g. probability of success $p$ for a Bernoulli RV. 
 
 The number of parameters thus depends on the transformation function, $f$. This function can be as simple as a logit although most applications would use deep neural networks to address non-linear data structures like images or sound waves. The mixture distribution is said to be **parametrised** by the function $f$, which in the absence of a closed form solution, is typically optimised with stochastic gradient descent (SGD).
 
@@ -257,7 +257,7 @@ $$
 $$
 
 
-where $t_m$ refers refers to the m'th sample from a normalised gaussian. The expression to evaluate is an unbiased estimator of the integral of the log-likelihood, which is good but not necessarily efficient. 
+where $t_m$ refers refers to the m'th sample from a normalised  Gaussian. The expression to evaluate is an unbiased estimator of the integral of the log-likelihood, which is good but not necessarily efficient. 
 
 Using a sentence from the original paper in a different context, "this series of operations can be expressed as a symbolic graph in software like Tensorflow or Chainer, and effortlessly differentiated wrt the parameters $\theta$", and I would add "although painfully computed unless using quantum machines from the future."
 
@@ -286,8 +286,13 @@ $$
 
 We will assume to have a good approximation of the posterior distribution, $q_{magic}(t \vert x_i) \approx p(t_i \vert x_i)$. $q_{magic}$ is a temporary placeholder to focus on the similarities with EM. Solving for $\theta$ then corresponds to
 
+{% comment %} 
+    There's no native argmax operator so this string of characteres is just a word, which latex displayed in italics which is ugly and weird. With argmax declared as a math operator, it's displayed as normal non italics characters, like any other letter-based operator.
+{% endcomment %}
+
 $$
-{argmax}{_\theta} L(\theta) = \sum_i^N\ \int q_{magic}(t) \log P(x_i, t) dt
+\DeclareMathOperator*{\argmax}{argmax}
+\argmax\limits_{\theta} L(\theta) = \sum_i^N\ \int q_{magic}(t) \log P(x_i, t) dt
 $$
 
 
@@ -312,14 +317,14 @@ $$
 
 The previous form in 4.2, sometimes called "free energy", can be seen as maximising the observed component function even as latent components are not observed. As described with the Poisson mixture, the posterior $q$ is the best substitute for the unobserved latent variable.
 
-The new form, sometimes called "penalised model fit", can be seen as a regularised function, e.g. as with the Lasso regression where L1 acts as the regularisation term. The LHS expression measures the model fit through the marginal probability, while the KL divergence acts a regularisation term as it forces the posterior approximation close to an isometric gaussian.
+The new form, sometimes called "penalised model fit", can be seen as a regularised function, e.g. as with the Lasso regression where L1 acts as the regularisation term. The LHS expression measures the model fit through the marginal probability, while the KL divergence acts a regularisation term as it forces the posterior approximation close to an isometric  Gaussian.
 
 
 #### Variational Bayes
 
 EM sets $q$ equal to the posterior $p(t \vert x)$ so the lower bound is equal to the log-likelihood using Bayes' formula, which was possible in the presence of a closed form solution for mixture distributions. With the complex function $f$ it would be hard because the denominator of Bayes' formula is an integral of a function with no closed-form solution. 
 
-The VAE optimiation scheme proposed in the article, called Auto Encoding Variational Bayes (AEVB), differs from EM because it uses an approximation of the posterior instead of plugging the result from E into the M objective function. At a high level, AEVB sets q to be a simple random variable, typically a symmetric gaussian distribution, parametrised by a neural network based transformation $g$ with weights $\phi$. The lower bound $L(\theta, \phi)$ is then a function of two sets of parameters optimised jointly with batch gradient descent methods. 
+The VAE optimiation scheme proposed in the article, called Auto Encoding Variational Bayes (AEVB), differs from EM because it uses an approximation of the posterior instead of plugging the result from E into the M objective function. At a high level, AEVB sets q to be a simple random variable, typically a symmetric  Gaussian distribution, parametrised by a neural network based transformation $g$ with weights $\phi$. The lower bound $L(\theta, \phi)$ is then a function of two sets of parameters optimised jointly with batch gradient descent methods. 
 
 The reason why this scheme converges to a local optimum is beyond the scope of this text and can be found in the stochastic variational inference literature. The implementation details are well covered in the original VAE paper and most neural network packages documentation. The following glosses over some key implementation aspects using a detailed formulation of the objective function $L$, which I find is often missing in articles, blogs and other documentation. 
 
@@ -340,7 +345,7 @@ $$
 \Sigma = g_{\Sigma} (x_i \vert \phi)
 $$
 
-The first line means that $q$, which approximates the complicated posterior, is set to be a gaussian distribution. Its covariance $\Sigma$ is symmetric i.e. latent variables are assumed independent. It is unlikely to be true but it reduces the number of parameters vs a free covariance matrix. The second and third lines mean that $g$ has two outputs corresponding to the two parameters of the distribution that it parameterises, $q$.
+The first line means that $q$, which approximates the complicated posterior, is set to be a  Gaussian distribution. Its covariance $\Sigma$ is symmetric i.e. latent variables are assumed independent. It is unlikely to be true but it reduces the number of parameters vs a free covariance matrix. The second and third lines mean that $g$ has two outputs corresponding to the two parameters of the distribution that it parameterises, $q$.
 
 Plugging this into the lower bound,
 
@@ -395,7 +400,7 @@ In `vae_loss`, `x_ent` corresponds to the recontruction loss and `kl_loss` is th
 
 The optimiser will minimise the loss function, and minimising the inverse of `bce` is equivalent to maximising the Bernoulli probability density. 
 
-In the snippet above, the ground truth $x_i$ is denoted `target` and the predicted output is denoted `x_decoded_mean` - "mean" refers to $f(x_i \vert t)$ being both the parameter and the mean of the Bernoulli rv. Then equation 4.6 can be written as follows to emphasize the equivalence with the Keras BCE function
+In the snippet above, the ground truth $x_i$ is denoted `target` and the predicted output is denoted `x_decoded_mean` - "mean" refers to $f(x_i \vert t)$ being both the parameter and the mean of the Bernoulli RV. Then equation 4.6 can be written as follows to emphasize the equivalence with the Keras BCE function
 
 $$
 \begin{equation}
@@ -411,7 +416,7 @@ $$
 
 
 
-Last, `kl_loss` implements the [closed form solution](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions) for the KL divergence of two gaussians. 
+Last, `kl_loss` implements the [closed form solution](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence#Multivariate_normal_distributions) for the KL divergence of two  Gaussians. 
 
 ### Conclusion
 
@@ -419,7 +424,7 @@ Expectation Maximization finds the parameters of a latent variable model by opti
 
 With EM or related methods, the posterior probability distribution $q(t \vert x)$ is more than a means to an end as its encoding properties can power applications or generate insights. This is probably even more true for recent generative models like VAEs that often support unsupervised learning tasks by training an encoder to organise/cluster unlabelled data.
 
-In the last couple years, major improvements in the way VAEs build informative latent spaces have gotten us closer to models that can teach us something about the world around us using data. For example, the BetaVAE forces latent dimensions to represent independent data features by simply cranking up the importance of the gaussian prior in the lower bound. 
+In the last couple years, major improvements in the way VAEs build informative latent spaces have gotten us closer to models that can teach us something about the world around us using data. For example, the BetaVAE forces latent dimensions to represent independent data features by simply cranking up the importance of the  Gaussian prior in the lower bound. 
 
 This results in more meaningful latent variables tied to human concepts, e.g. the dimensions of $t$ would represent the height/width/location of a MNIST digit. While the focus in the ML industry now seems to be around “productionising” models, i.e. monetising the statistical mimicries developed in the last decade to automate low value tasks, I find these new developments exciting and refreshing.
 
