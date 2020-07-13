@@ -429,7 +429,7 @@ This results in more meaningful latent variables tied to human concepts, e.g. th
 - C. Bishop. [Pattern Recognition and Machine Learning](https://www.amazon.co.uk/Pattern-Recognition-Learning-Information-Statistics/dp/0387310738/ref=redir_mobile_desktop?ie=UTF8&aaxitk=7ttuIh3b5xZ2KXlDWXNKZg&hsa_cr_id=6098124730202&ref_=sbx_be_s_sparkle_asin_1) (PRML).
 - Diederik P Kingma and Max Welling (2014). Auto-encoding variational Bayes. https://arxiv.org/abs/1312.6114
 - Diederik P Kingma and Max Welling (2019). An introduction to Variational Autoencoders. https://arxiv.org/abs/1906.02691
-- Code is from Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb) with a few adjustments to make it more modular.
+- Code is hosted on [Github](https://github.com/mkffl/mixture-models), and is mostly based on Martin Krasser's [notebook](https://nbviewer.jupyter.org/github/krasserm/bayesian-machine-learning/blob/master/latent_variable_models_part_1.ipynb).
 
 #### Additional sources
 - David Blei, Alp Kucukelbir and Jon D. McAuliffe. Variational Inference: A Review for Statisticians. https://arxiv.org/abs/1601.00670
