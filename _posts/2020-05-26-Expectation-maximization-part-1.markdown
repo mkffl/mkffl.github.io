@@ -361,7 +361,7 @@ Let's look at each step in detail.
 
 Start with a random guess of $\theta_0$ to kick off the iteration process. The code implementation uses different heuristics for the parameters. The prior probability $\pi_c$ is set at a fixed value of $\frac{1}{C}$ while $\lambda_c$ is assigned a random draw from a Poisson RV with a rate parameter equal to the sample average.
 
-[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L155)
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L168)
 ```python
 def random_init_params(mixture_init_params):
     '''
@@ -404,7 +404,7 @@ With a Poisson mixture, equation 2.3 is equivalent to equation 1.8. The function
 
 This snippet also demonstrates that EM works flexibly across different probability distributions that can just be plugged into the general E step function. In the next part of this blog article, `poisson_likelihood` will be replaced with a gaussian likelihood function.
 
-[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L21)
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L25)
 ```python
 def e_step(likelihood: Callable) -> Callable:
     """ 
@@ -473,7 +473,7 @@ The actual results depend on the mixture distribution but the presence of the $l
 
 For a Poisson mixture the solution to 2.4 are 1.6 and 1.7 which are implemented below.
 
-[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L77)
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L81)
 ```python
 def m_step(mixture_m_step):
     def general_m_step(X: np.array, q: np.array) -> Callable:
@@ -521,7 +521,7 @@ Using the estimated parameters, evaluate the log-likelihood or $L$ and stop if t
 
 The convergence check happens in the `train` function with iteration stopping if the current change in lower bound is less than the tolerance threshold `rtol`.
 
-[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L235)
+[Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L248)
 ```python
 if prev_lb and np.abs((lb - prev_lb) / prev_lb) < rtol:
     break
