@@ -17,7 +17,9 @@ Expectation-Maximization (EM) is a  framework to estimate the parameters of such
 
 They give superpowers to the single distribution models we are familiar with by accounting for the heterogeneity of the underlying populations, even if no attribute indicates group membership.
 
-Single distributions try to fit many diverse profiles into a one-size-fits-all model. It is like trying to fit one shoe size to different feet. In contrast, mixture models allow us to try and fit different sizes so long as the shoe model remains the same.
+Single distributions try to fit many diverse profiles into a one-size-fits-all model. It is like trying to fit one shoe size to different feet. In contrast, mixture models allow us to try and fit different sizes so long as the shoe model remains the same. 
+
+In my experience applying these models at work, for example in the context of behavioural analysis or privacy-preserving ML, I could get high accuracy with a reasonably simple architecture. That allowed me to get the job done and be able to communicate the results to various audience types.
 
 With latent variables it is possible to train generative models, i.e. estimate the full distribution of a data generating process, with high accuracy. In my personal experience, the range of applications of generative models is broader than that of traditional ML models. 
           
@@ -25,7 +27,7 @@ With latent variables it is possible to train generative models, i.e. estimate t
 
 Typically, ML models are concerned with the relationship between a target and a set of predictors. They essentially perform a correlation on steroids, which is great if you need an accurate forecasting tool. For any other application, generative models may be more suitable, for example in synthetic data generation or data clustering.
 
-In what follows the “model” will refer to a random process represented as a joint probability distribution of two random variables (RV). The generative process for an observation $x$ starts with a sample from the latent RV followed by a sample from the corresponding mixture RV. The goal is to estimate the parameters of the joint probability distribution of $x$ and $z$.
+In what follows the “model” will refer to a random process represented as a joint probability distribution of two random variables (RV). The generative process for an observation starts with a sample from the latent RV, which gives $z$, followed by a sample from the corresponding mixture RV, which gives $x$. The goal is to estimate the parameters of the joint probability distribution of $x$ and $z$.
 
 
 ## A univariate example
