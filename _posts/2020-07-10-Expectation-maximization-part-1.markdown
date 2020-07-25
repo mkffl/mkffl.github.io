@@ -99,7 +99,7 @@ $$
 Where ${n_c}$ is the number of observations assigned to component c and $x_{ic}$ is short for $[t_i=c]*x_i$
 
 
-The solution for the Poisson parameter, $\lambda_c$, is
+Taking the derivative wrt $\lambda_c$ gives a simple solution for the Poisson parameter (the rate of orders)
 
 $$
 \sum_i^N\frac{x_{ic}}{\lambda_c} - {n_c} = 0
