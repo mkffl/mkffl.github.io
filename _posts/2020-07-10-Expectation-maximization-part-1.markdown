@@ -181,7 +181,7 @@ Next, we will show that using EM is a better alternative because it is simple an
 Imagine that Kate's best friend works at the food delivery aggregator app and can provide some information about delivery companies. He's got a model to estimate the probability of the component given the observation $P(t=c \vert {x_i})$.
 
 In plain English, he has a black box that takes a number of orders in a 10-min interval and outputs the probability
-that the orders are managed by Uber Eats or Deliveroo. We can use this posterior distribution to get a formula for the likelihood that's almost like the complete-data formula.
+that the orders are managed by Uber Eats or Deliveroo. We can use this posterior distribution to get a formula for the log-likelihood that's almost like the complete-data formula.
 
 $$
 \begin{equation}
