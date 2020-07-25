@@ -32,7 +32,7 @@ In what follows the “model” will refer to a random process represented as a 
 
 ## A univariate example
     
-Assume the following scenario &mdash; Kate manages a restaurant that offers seating and home delivery. She thinks that the kitchen staff may be under-resourced to address sudden spikes in home deliveries between 7-8 pm. She wishes to compute the probability distribution of 7-8 pm delivery orders to inform her resourcing decisions. 
+Let's consider the following scenario &mdash; Kate manages a restaurant that offers seating and home delivery. She thinks that the kitchen staff may be under-resourced to address sudden spikes in home deliveries between 7-8 pm. She wishes to compute the probability distribution of 7-8 pm delivery orders to inform her resourcing decisions. 
     
 Deliveries are managed by a 3rd party aggregator app that provides the number of orders placed over 10 min intervals. 
 The chart below describes the number of orders for Mon-Thu over 3 weeks i.e. 12 days shown on the x-axis.
@@ -42,7 +42,7 @@ The chart below describes the number of orders for Mon-Thu over 3 weeks i.e. 12 
 {: refdef}
 
     
-We can assume that orders are independent events occurring at a constant rate between 7-8 pm. Fridays are assumed to be different hence removed from the data set. At first glance, she may use a Poisson process to model this data however she suspects that the two delivery companies available, Uber Eats and Deliveroo, may have 
+We can assume that orders are independent events occurring at a constant rate between 7-8 pm. Kate assumes Fridays behave differently so doesn't consider orders on this day for her model. At first glance, she may use a Poisson process to model this data however she suspects that the two delivery companies available, Uber Eats and Deliveroo, may have 
 different order rates.
     
     
@@ -136,7 +136,7 @@ $$
 \tag{1.3}
 $$
 
-That means that the prior probability $P({t_i=c})$ is the proportion of observations from component $c$ over all observations $N$
+That means that the prior probability $P({t_i=c})$ is the proportion of observations from component $c$ over all observations $N$.
     
 
 ### Latent Variables with MLE
