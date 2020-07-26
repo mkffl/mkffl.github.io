@@ -337,7 +337,9 @@ Rearranging gives equation 2.1 above, which breaks down the log-likelihood into 
 
 ### EM with code implementation
 
-The EM framework starts with random initialisation of either membership assignment or the parameters, then alternates between updating the membership assignment given the parameters and updating the parameters given the membership assignments.
+In equation 2.2., the posterior distribution includes the mixture parameters that we seek to estimate - see 1.8. EM resolves this chicken-and-egg problem by addressing the posterior probability and the mixture parameters separately. 
+
+It starts with random initialisation of either membership assignment or the parameters, then alternates between updating the membership assignment given the parameters and updating the parameters given the membership assignments.
 
 After each round the log-likelihood increases, and this goes on until there is no longer any significant increase. 
 
@@ -377,7 +379,7 @@ random_init_params_poisson = random_init_params(mixture_init_params=mixture_init
 
 #### E step
 
-Objective: optimise $L$ wrt $q$ with $\theta$ fixed at the value from the previous step.
+Objective: optimise the lower bound $L$, wrt the posterior probability $q$, using the mixture parameters $\theta$ fixed at the value from the previous step.
 
 
 Solution: 
@@ -437,7 +439,7 @@ e_step_poisson = e_step(likelihood=poisson_likelihood)
 
 #### M step
 
-Objective: optimise $L$ wrt $\theta$ with membership assignments fixed in the previous step i.e. $q = p(t_i=c \vert x_i)$.
+Objective: optimise the lower bound $L$, wrt the mixture parameters $\theta$, using the membership assignments computed in the previous step i.e. setting $q$ as $p(t_i=c \vert x_i)$.
 
 
 Solution:
@@ -447,9 +449,11 @@ $$
 \begin{equation}
 \begin{aligned}
 
-{argmax}{_\theta} L(\theta \vert q) =
+\DeclareMathOperator*{\argmax}{argmax}
 
-{argmax}{_\theta} \sum_{i=1}^N \sum_{c=1}^Kq(t_i=c)\log p(t_i=c, x_i \vert \theta) + C
+\argmax\limits_{\theta} L(\theta \vert q) =
+
+\argmax\limits_{\theta} \sum_{i=1}^N \sum_{c=1}^Kq(t_i=c)\log p(t_i=c, x_i \vert \theta) + C
 
 \end{aligned}
 \end{equation}
