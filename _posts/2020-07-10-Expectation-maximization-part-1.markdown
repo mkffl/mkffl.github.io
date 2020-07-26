@@ -1,5 +1,5 @@
 ---
-title: Introduction to Expectation-Maximization and Latent Variable Models - part 1 (draft)
+title: Introduction to Expectation-Maximization and Latent Variable Models - part 1
 layout: post
 ---
 
