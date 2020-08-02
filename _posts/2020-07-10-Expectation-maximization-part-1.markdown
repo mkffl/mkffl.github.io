@@ -242,7 +242,7 @@ P(t_i=c|x_i)=\frac{P(x_i|t_i=c,\theta)P(t_i=c)}{\sum_j^2P(x_i|t_i=j,\theta)P(t_i
 \tag{1.8}
 $$
 
-All the ingredients on the RHS of this equation are available. The chart below illustrates the relationship between mixture parameters and the posterior distribution. Assume that $(\pi_1, \pi_2, \lambda_1, \lambda_2) = (0.54, 0.46, 1.3, 2.7)$
+All the ingredients on the RHS of this equation are available. The chart below illustrates the relationship between mixture parameters and the posterior distribution. Assume that $(\pi_1, \pi_2, \lambda_1, \lambda_2) = (0.54, 0.46, 0.957, 2.626)$
 
 {:refdef: style="text-align: center;"}
 ![Distribution of orders](/assets/poissono-estep2.png){: width="700px"}
