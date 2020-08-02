@@ -29,7 +29,7 @@ With latent variables it is possible to train generative models, i.e. estimate t
 
 Typically, ML models are concerned with the relationship between a target and a set of predictors. They essentially perform a correlation on steroids, which is great if you need an accurate forecasting tool. For any other application, generative models may be more suitable, for example in synthetic data generation or data clustering.
 
-In what follows the “model” will refer to a random process represented as a joint probability distribution of two random variables (RV). The generative process for an observation starts with a sample from the latent RV, which gives $z$, followed by a sample from the corresponding mixture RV, which gives $x$. The goal is to estimate the parameters of the joint probability distribution of $x$ and $z$.
+In what follows the “model” will refer to a random process represented as a joint probability distribution of two random variables (RV). The generative process for an observation starts with a sample from the latent RV, which gives $t$, followed by a sample from the corresponding mixture RV, which gives $x$. The goal is to estimate the parameters of the joint probability distribution of $x$ and $t$.
 
 
 ## A univariate example
@@ -242,7 +242,7 @@ P(t_i=c|x_i)=\frac{P(x_i|t_i=c,\theta)P(t_i=c)}{\sum_j^2P(x_i|t_i=j,\theta)P(t_i
 \tag{1.8}
 $$
 
-All the ingredients on the RHS of this equation are available. The chart below illustrates the relationship between mixture parameters and the posterior distribution. Assume that $(\pi_1, \pi_2, \lambda_1, \lambda_2) = (0.54, 0.46, 1.3, 2.7)$
+All the ingredients on the RHS of this equation are available. The chart below illustrates the relationship between mixture parameters and the posterior distribution. Assume that $(\pi_1, \pi_2, \lambda_1, \lambda_2) = (0.54, 0.46, 0.957, 2.626)$
 
 {:refdef: style="text-align: center;"}
 ![Distribution of orders](/assets/poissono-estep2.png){: width="700px"}
