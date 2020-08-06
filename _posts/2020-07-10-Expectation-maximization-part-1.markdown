@@ -3,7 +3,7 @@ title: Introduction to Expectation-Maximization and Latent Variable Models - par
 layout: post
 ---
 
-This post introduces a framework to estimate latent variable models using a real-life scenario example with a simple univariate probabily distribution. The [second part]({{ site.baseurl }}{% link _posts/2020-07-13-Expectation-maximization-part-2.markdown %}) builds on the following intuitions and equations to explore other latent models and show what they have in common.
+This post introduces a framework to estimate latent variable models using a real-life scenario example with a simple univariate probability distribution. The [second part]({{ site.baseurl }}{% link _posts/2020-07-13-Expectation-maximization-part-2.markdown %}) builds on the following intuitions and equations to explore other latent models and show what they have in common.
 
 ## Motivations
 
