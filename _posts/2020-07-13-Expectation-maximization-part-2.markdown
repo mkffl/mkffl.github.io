@@ -132,7 +132,7 @@ The side histograms represent value counts weighted by the posterior probabiliti
 ![M step GMM](/assets/m-step-gmm.png){: width="700px"}
 {: refdef}
 
-Again, the code is broadly similar as before, with `mixture_m_step_gaussian` replacing `mixture_m_step_gaussian`.
+The code is broadly similar as before, with `mixture_m_step_gaussian` replacing `mixture_m_step_poisson`.
 
 [Source](https://github.com/mkffl/mixture-models/blob/db80513f40a065f6384fdea1be366f842b206165/model.py#L117)
 ```python
@@ -365,7 +365,7 @@ $$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t^{\ast}, \theta)) dt  - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
 $$
 
-To be accurate the sample $\epsilon$ is drawn from ${\mathcal{N}}(0, I)$ then multiplied by $\Sigma$ and added to $\mu$. This location-scale transformation does not change $t$'s distribution but allows $\phi$ to remain fixed during backpropagation. Without this so-called “reparameterization trick”, we are trying to compute the gradient of a parameter that has randomness, which is not possible. This transformation and can be reflected in the lower bound as
+To be accurate the sample $\epsilon$ is drawn from ${\mathcal{N}}(0, I)$ then multiplied by $\Sigma$ and added to $\mu$. This location-scale transformation does not change $t$'s distribution but allows $\phi$ to remain fixed during backpropagation. Without this so-called “reparameterization trick”, we are trying to compute the gradient of a parameter that has randomness, which is not possible. This transformation can be reflected in the lower bound as
 
 $$
 \approx \sum_i^N\ \log P_{\rm Bernoulli}(x_i \vert f(x_i \vert t = g_{\mu} (x_i \vert \phi) + g_{\Sigma} (x_i \vert \phi) * \epsilon^{\ast}, \theta)) dt - KL(P_{\mathcal{N}}(t \vert \mu, \Sigma) \parallel P_{\mathcal{N}}(t \vert 0, I))
