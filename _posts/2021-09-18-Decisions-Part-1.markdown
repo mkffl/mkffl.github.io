@@ -1,5 +1,5 @@
 ---
-title: Decisions Under Uncertainty - Part 1
+title: My Machine Learnt... Now What? - Part 1
 layout: post
 ---
 
@@ -20,7 +20,6 @@ Given a recognizer that outputs scores, we may ask if the tool can differentiate
 For example, fitting a Support Vector Machine (SVM) with default parameters on the transaction data gives the following separation. The histograms estimate the score probability conditioned on the class so I call it a Class Conditional Distributions (CCD) chart.
 
 {% include demo11-ccd-5.html %}
-
 
 Scores below -2 are almost certainly associated with non-targets while scores between -1  and 1 are more uncertain. We can measure the recognizer's discrimination power in one metric that estimates the probability that $\omega_0$ have lower scores than $\omega_1$ instance i.e. $p(s_{\omega_0} < s_{\omega_0})$.
 
@@ -81,63 +80,107 @@ Demo 12 (AUC)
 #### Section 2 - Bayes decisions rules
 - Correspond to optimal decisions in terms of risk-minimisation; For recognizers, that corresponds to cut-off points that minimize risk given an application context
 
-Imagine a classifiation task using a univariate feature set. A randomly drawn dataset would have two columns, one for the feature, $x$, and one for the variable to predict, $y$, which is either $\omega_0$  or $\omega_0$. We need to decide on a rule, i.e. a way to partition $x$ to assign a label to new instances.
+##### Univariate use case
+Suppose that we need to label instances using only one predictor. A randomly drawn dataset has one feature column $x$ and one target field $y$ with values in $\{\omega_0$, $\omega_1\}$. We want to decide on a classification rule that assigns new instance labels based on their $x$ values. 
 
-Assume equal prior probabilities i.e. $p(\omega_0) = p(\omega_1) = 0.5$ and that the rule should minimise the number of misclassified instances. The class-conditional histograms of the features, $p(x \vert \omega_i)$, is shown below. What label should we assign to a new instance with $x=0.6$? [answer]
+Further assume equal prior probabilities i.e. $p(\omega_0) = p(\omega_1) = 0.5$ and that the rule should minimise the number of misclassified instances. The class-conditional distributions $p(x \vert \omega_i)$ below suggests a rule.
 
-''' Demo 12b'''
+{% include demo12-ccd-3.html %}
 
-To minimise the error rate, we should follow this rule
+We should choose $\omega_0$ when its likelihood is greater, and $\omega_1$ otherwise. In this sample data, $p(x \vert \omega_1) > p(x \vert \omega_0)$ when $x>-0.25$, so any new instance with $x > -0.25$ should be classified as a target. Doing this consistently with every new instances guarantees that we'll minimise the error rate.
 
-$$
-\text{For any new instance x, choose} 
-\begin{cases}
-    \omega_1 \text{if } p(x \vert \omega_0) < p(x \vert \omega_1) \\
-    \omega_0, & \text{otherwise}
-\end{cases}
-$$
+Any other rule corresponds to a higher probability of error. For example, if a new instance has $x=1.0$ then assigning $\omega_0$ would not make sense because the chances of being wrong are more than 4 times higher than being correct.
 
+This line of reasoning is at the core of Bayes decisions criteria, which tells us that picking the option that minimises the risk for every single instance will minimise the overall risk. Common approaches to selecting classifier thresholds implicitly rely on Bayes decision criteria and the link will become obvious soon if it's not already clear.
 
+The following is based on the first chapter of [Pattern Classification](https://www.amazon.fr/Pattern-Classification-2e-RO-Duda/dp/0471056693) by Hart and others. It's an old but surprisingly refreshing textbook that covers Bayes decision theory in depth. I simplify their notation to the minimum necessary for a binary classification problem, though they address more general problems.
 
+Making decisions when the environment is uncertain requires to consider the costs of different actions under uncertain states of nature:
 
 <div class="mermaid"> 
-    graph LR;    
+    graph LR;
+    id0([start]) --> id11[class ω0];
+    id0([start]) --> id12[class ω1];
     id11[class ω0]-->id21[α0]; 
     id11[class ω0]-->id22[α1]; 
     id12[class ω1]-->id31[α0]; 
     id12[class ω1]-->id32[α1];
-    id21[action α0] --> id41[cost C_00 = 0.0];
-    id22[action α1] --> id42[cost C_10 = Cfa];
-    id31[action α0] --> id43[cost C_01 = Cmiss];
-    id32[action α1] --> id44[cost C_11 = 0.0];
+    id21[action α0] --> id41[cost c_00 = 0.0];
+    id22[action α1] --> id42[cost c_10 = Cfa];
+    id31[action α0] --> id43[cost c_01 = Cmiss];
+    id32[action α1] --> id44[cost c_11 = 0.0];
 </div>
 
-That's because with equal priors, the likelihood $p(x \vert \omega_i)$ determines whichever of $p(\omega_0)$ or $p(\omega_1)$ is more likely, and we should choose the option with the lower risk of being wrong. If $x=0.6$ then the least risky choice is $\omega_1$.
+[Units and interpretation of costs]
 
-On the example chart, $\omega_0$'s likelihood is above $\omega_1$ on the left of the vertical bar, so the feature is split into two regions, but in general there could be multiple such regions. What's really important is that any other rule would increase the risk of misclassification.
+The first node is corresponds to choosing action $\alpha_0$ when the true state is $\omega_0$, i.e. choosing non-target when the instance is actually a non-target, which is often assumed to cost 0.0. The next node corresponds to a false alarm, with cost Cfa. The next is when we miss a target, which has a cost of Cmiss, and the last node correspodns to a true positive, which does not cost anything.
 
-The same principle applies to more general contexts. If we expect more target instances than non-targets, i.e. $p(\omega_1) > p\omega_1)$, then the criterion becomes  
-
+For every instance with feature $x$, the Bayes decisions to choose $\alpha_0$ or $\alpha_1$ depends on their respective risk, which in turn depend on the (posterior) probability of each state of nature.
 
 $$
-\text{For any new instance x, choose} 
+risk(\alpha_0 | x) = c_{00}*p(\omega_0|x) + Cmiss*p(\omega_1|x) = Cmiss*p(\omega_1|x) \\
+risk(\alpha_1 | x) = c_{11}*p(\omega_1|x) + Cfa*p(\omega_0|x) = Cfa*p(\omega_1|x)
+$$
+
+So, we should choose $\alpha_1$ if $risk(\alpha_1 \vert x) < risk(\alpha_0 \vert x)$ and $\alpha_1$ otherwise. Reorganising the terms gives the following Bayes decision rule:
+
+$$
+\text{For any new instance x, choose}
 \begin{cases}
-    \omega_1 \text{if } p(x \vert \omega_1)/p(x \vert \omega_0) > p(\omega_0)/p(\omega_1) \\
-    \omega_0, & \text{otherwise}
+    \alpha_1 \text{if } \frac{ p(x \vert \omega_1)}{p(x \vert \omega_0)} < \frac{p(\omega_0)*Cfa}{p(\omega_1)*Cmiss} \\
+    \alpha_0, & \text{otherwise}
 \end{cases}
 $$
 
-If the cost associated with missing targets is higher than that of missing non-targets, also called a false alarm, then the criterion becomes "Choose \omega_1" if $p(\omega_1)P(s \vert \omega_0) * Cfa < p(\omega_1)p(s \vert \omega_1) * Cmiss$ i.e. $lr(\omega_1) > p(\omega_0) * Cfa / p(\omega_1) * Cmiss$
+We can rephrase the rule as "Decide on 'target' if the likelihood ratio for 'target' is greater than the cost-adjusted ratio of prior probabilities". The rule neatly separates the ratio of likelihoods (on the left) from the characteristics of a particular application (on the right). From now, I will call these characteristics application parameters as in the BOSARIS literature.
 
-Changing priors or misclassification costs changes the decision range. With higher target prevealence (higher p_w1) and/or higher Cmiss, the range for w_1 becomes larger, which means moving the decision cut-off to the left on the CCD plot above. If the cost of misclassifying a w_1 instance is bigger, we should lean more towards w_1. 
+The left-hand side of the rule depends on the likelihood ratio that was learnt from a sample of data. This ratio tells us how much more or less likely an observed $x$ value is when it's generated by $\omega_1$ vs the alternative state. This relationship can be learnt from any dataset, no matter the prior probability $p(\omega_0)$. The right-hand side does not depend on the observed feature value, it only depends on the application that we release the decision model on. It represents a threshold above which we should choose $\alpha_1$ and that same threshold is used for every new instance.
 
-The Bayes rule applies to single instances and leads to the smalles total risk possible. If we make the best decision every single time, we'll have made the best decision in aggreagate. 
+The previous example with equal priors and the error rate objective corresponds to application parameters $p(\omega_1)=0.5; Cmiss=Cfa=1$. The error rate is the average risk when the two types of misclassification have the same cost (Cmiss=Cfa=1). The corresponding threshold of 1.0 matches our intuition to choose $\alpha_1$ when $x$ is to the right of the vertical line.
 
-Given priors and misclassification costs, the expected risk is 
-```
-E(r|ω1,Cmiss,Cfa) = Cmiss.p(ω1).∫p(x<c|ω1)dx + Cfa.p(ω0).∫p(x>c|ω0)dx = Cmiss.p(ω1).Pmiss + Cfa.p(ω0).Pfa
-```
-And choosing c with the Bayes rule gives the lowest expected risk. 
+Higher $p(\omega_1)$ and/or higher Cmiss would increase the decision region for $\alpha_1$ by moving the decision cut-off to the left. If the cost of misclassifying targets gets bigger, or if there are more targets than non-targets, then we should lean more towards $\omega_1$.
+
+It's worth noting that absolute parameter values do not impact the decision region, as only the relationship between $p(\omega_0)*Cfa$ and $p(\omega_0)*Cfa$ changes the RHS of the Bayes decision threshold. This property will come up again in the APE framework.
+
+##### More than one feature
+In general, there are more than one features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large feature space to a one-dimensional space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
+
+Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In this article (AUC/WMC paper), the authors call scores "degrees of suspicion", which I thought captures well the idea of ordered values and their relationship to hypothesis testing. I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.
+
+Applying the Bayes decision procedure to scores means finding the cut-off point where the likelihood ratio equals the theshold, $\frac{ p(s \vert \omega_1)}{p(s \vert \omega_0)} = \frac{p(\omega_0)*Cfa}{p(\omega_1)*Cmiss}$. Any score $s$ above the threshold should be assigned $\alpha_1$ i.e. classified as a target.
+
+In practice, the logarithm is applied to the likelihood ratio, and I will use the BOSARIS threshold notation $\theta = \log\frac{p(\omega_1)*Cmiss}{p(\omega_0)*Cfa}$ (notice the inverted numerator vs the Bayes decision rule) so the cutoff point $c$ is where $llr = -\theta$.
+
+[minS on Tradeoff object]
+
+
+##### Average risk
+
+We can estimate the expected risk of a Bayes decision classifer using the evaluation data:
+
+$$
+E(risk) = Cmiss*p(\omega_1)*Pmiss + Cfa*p(\omega_0)*Pfa
+$$
+
+where Pmiss is the proportion of targets with scores below the Bayes decision cutoff, $c$, and Pfa is the proportion of non-targets with scores above $c$.
+
+The Pmiss and Pfa notation comes from the BOSARIS documentation, however, the formula is used in many assessment frameworks and is quite intuitive. That is perhaps why its derivation is often missing, so I include it below.
+
+$$
+\begin{equation}
+\begin{aligned}
+
+E(risk) 
+& = \int_{-inf}^{+inf} risk(\alpha(x) | x)*p(x) dx \\
+& = \int_{x in R_0} risk(\alpha_0 | x)*p(x) dx + \int_{x in R_1} risk(\alpha_1 | x)*p(x) dx \\
+& = \int_{s < c} risk(\alpha_0 | s)*p(s) ds + \int_{s > c} risk(\alpha_1 | s)*p(s) ds \\
+& = Cmiss*\int_{s < c} p(\omega_1 | s)*p(s) ds + Cfa*\int_{s > c} p(\omega_0 | s)*p(s) ds \\
+& = Cmiss*p(\omega_1)\int_{s < c} p(s | \omega_1) ds + Cfa*p(\omega_0)*\int_{s > c} p(s | \omega_0) ds
+\end{aligned}
+\end{equation}
+$$
+
+The first and second integrals are estimated with Pmiss and Pfa, resp. 
 
 Demo 13 (simulation)
 Demo 14 (CCD and E(r))
