@@ -21,7 +21,7 @@ For example, fitting a Support Vector Machine (SVM) with default parameters on t
 
 {% include demo11-ccd-5.html %}
 
-Scores below -2 are almost certainly associated with non-targets while scores between -1  and 1 are more uncertain. We can measure the recognizer's discrimination power in one metric that estimates the probability that $\omega_0$ have lower scores than $\omega_1$ instance i.e. $p(s_{\omega_0} < s_{\omega_0})$.
+Scores below -2 are almost certainly associated with non-targets while scores between -1  and 1 are more uncertain. We can measure the recognizer's discrimination power in one metric that estimates the probability that $\omega_0$ have lower scores than $\omega_1$ instance i.e. $p(s_{\omega_0} < s_{\omega_1})$.
 
 An naive implementation estimates the probability with a simple ratio of ordered pairs (i.e. $s_{\omega_0} < s_{\omega_0}$) over all pairs in the sample. If we call the probability A, that's what `naiveA` does in the code below.
 
@@ -364,105 +364,3 @@ val simRisk: Row = simData.sample(nsimulations).toVector
 The evaluation sample risk is the vertical dotted bar near the peak of the distribution, which is good news. The grey shaded area comprises 95% of the simulated data, and I want the sample estimate to fall in that interval, which it does.
 
 In the next part of this blog article, we will explore the connection between Bayes decision rules and the Receiving Operator Characteristics (ROC) curve.
-# Part 2: Receiving Operator Characteristics
-
-### Section 3 - The ROC Assessment framework
-- [Overview] Emphasizes the tradeoff between the two error types by plotting Pfa against (1-Pmiss)
-
-- s is the classifier output
-
-- While the CCD chart shows cut-off points and likelihood points, ROC curves show 
-```
-∫p(x>c|ω1)dx = 1-Pmiss called True Positive Rate (tpr)
-and ∫p(x>c|ω0)dx = Pfa called False Positive Rate (fpr)
-```
-
-The CCD plot information is implicitly shown in ROC space because the gradient of each point is the likelihood ratio of a threshold. With the CCD plot, we swiped through every threshold from right to left and reported the corresponding LLR to find the minTheta match. With the ROC plot, we also swipe through from right to left but we report the corresponding right-hand side area under the curve, i.e. fpr and tpr, whose derivative is the LR (??)
-
-Thus, given application parameter minTheta, the risk-minimising (fpr,tpr) point has a gradient of exp(minTheta). Visually, we can imagine sliding a segment of gradient exp(minTheta) in the plane and retaining all the (fpr,tpr) pairs tangeant to the segment. In this example, there seems to be one such point because the curve seems concav-sih (more on this later), but in general there could be multiple solutions. The curve closest to the left-hand top corner corresponds to the lowest expect risk as it has lower (Pmiss,Pfa) all else constant.
-
-Demo 15 (CCD and ROC with isocosts)
-
-## Part 2
-
-### Section 1 - The PAV algorithm 
-- [Overview] It is a better binning strategy than the current equal-sized bin histogram approach
-- The CCD plot implicitly provides the likelihood ratio but we can plot them directly in a graph of scores vs LLR. Adding a horizontal line for min Theta gives both sides of the Bayes rule equation, so we can find the cut-off point for a Bayes optimal classifer. However, it appears that the LLR curve goes up and down i.e. it's not monotonous. From a Bayes rule perspective, this does not seem compatible with the binary criterion. If LLR(s) intersect minTheta at s=c but LLR(s) < minTheta for some scores above c, then we should choose w_0 for these scores, though our classifer will predict w_1.
-- This issue is also evident with the ROC curve as it is not convex. That means that the curve can be flat or vertical, in which was one of the two operating points is not optimal because it has the same pmiss but a higher pfa (horizontal) or the same pfa but a higher pmiss (vertical). 
-- To enforce monotonicity between scores and likelihood ratios, we can fit monotonic functions like a logit (llr = sigmoid(a+b*s)) or other parameteric models. Non-parametric solutions are also possible and, in fact, one of them called the Pair Adjacent Violators (PAV) has become popular because the resulting ROC curve is convex, which means it includes only optimal (fpr,tpr) points. 
-- To summarise, the PAV algorithm creates varying-size score bins that provide two guarantees, a) score-likelihood monotonicity (higher scores have equal or higher likelihood) and b) ROC convex hull (optimal decisions)
-- The chart below compares the histogram approach with PAV on the score-LLR and ROC curves. The histogram ROC curve is below or on the PAV curve. I think that most of the PAV points are "lost" inside the histogram bins [Try histogram with thinner bins to check if there's more overlap.]
-
-Demo 16
-
-- In practice, histograms are not used...
-
-### Section 2 - Risk VS AUC use case
-- [Overview] Risk-based model selection is better than AUC criteria (use case)
-- The first Part of this series introduced ther rank-sum for efficient AUC computation, however, we did not conclude on its applications. When should we use AUC? Is it a good criterion for model selection? How does it compare with risk-based assessments? The following sections shows the limit of AUC as a criterion for model selection through a simulated data example. The conclusion is that a low-AUC recognizer may be preferrable to a high-AUC model because it results in a better expected risk. 
-- What follows based on example I found in another blog post, [ML Meets Economics](http://nicolas.kruchten.com/content/2016/01/ml-meets-economics/), which is a great practical introduction to AUC and ROC curves. Footnote: they use opposite labels, where defect products are target/positive classes, hence their ROC isocosts are different than here, but the conclusions are the same.
-- To get started, we need some data and two recognizers, a low and high-AUC. In what follows, objects related to the high and low AUC recognizers are prefixed with "hi" and "low" (not "lo" to avoid any confusions with log-odds), respectively. The data generation process directly defines the recogniser scores, instead of generating features and fitting a recognizer. We can check that the AUC of `hiAUCdata` is indeed higher: 
-
-```scala
-    def hiAUCdata: Distribution[List[Score]] = HighAUC.normalLLR.repeat(1000)
-    def lowAUCdata: Distribution[List[Score]] = LowAUC.normalLLR.repeat(1000)
-
-    def score2Auc(data: List[Score]): Double = {
-        val (nonS,tarS) = splitScores(data)
-        smartA(nonS,tarS)            
-    }
-
-    def simAUC: Distribution[Double] = for {
-        h <- hiAUCdata
-        l <- lowAUCdata
-        hAuc = score2Auc(h)
-        lAuc = score2Auc(l)
-        diff = (hAuc - lAuc)
-    } yield diff
-
-    /* Check that
-        P(hiAuc > lowAuc) 
-    */
-    val p = simAUC.pr(_ > 0)
-    val α = 0.05
-    println(p) // 0.98
-    assert(p > (1-α)) // true
-```
-
-- The `hiAUCdata`recogniser is better from an AUC viewpoint, however, it has a worse expected risk for applications that strongly penalise false alarms: 
-```scala
-
-    // Define w1HiCnts etc. - see source
-
-    val hiTo = Tradeoff(w1HiCnts,w0HiCnts,hiThresh)
-    val lowTo = Tradeoff(w1LowCnts,w0LowCnts,lowThresh)
-
-    // Define an application with Cfa 16x bigger than Cmiss
-    val aucPa = AppParameters(0.5,5,80)
-
-    println(hiTo.minRisk(aucPa)) // 2.44
-    println(lowTo.minRisk(aucPa)) // 1.44
-```
-
-- The LLR and ROC plots help to make sense of these seemingly strange results. The application parameters correponds to a high value of llr threholds, which means that the optimal score cut-off is very high. Thus, it makes sense that the ROC isocost is steep and located towards the left of the curve, as ROC scores are in decreasing order. 
-- This is true for both recognisers, though low AUC can achieve high llr on more target instances than high-AUC, and therefore is less penalised with false negatives. In other words, the high-AUC recogniser is very close to an all-w_0 classifer to avoid the high costs of false alarm, which it trades off for false negative costs. 
-- The LLR curve tells the same story - the high-AUC reconiser achieves better separation across all instances as can be seen on its steeper LLR curve. The lower-AUC model is not as good in terms of separation, as its LLR curve is flatter around 0. However, this recogniser achieves better separation on high score instances, which improves risk on high Cfa applications.
-
-
-### Section 3 - Majority-isocost lines
-
-- The recognisers' risks are not miles away from an all-w_0 rule, which is the benchmark we should assess any model against. In many cases, categorising all or no instances as w_1 is the status quo. Would the status quo have a lower risk - and therefore be peferrable to any recognition solution - if the cost of false alarms was higher? This is a legitimate question if we are not certain about outcome costs but still want to assess the benefits of an automated solution.
-- We can do a sensitivity analysis by comparing the best recogniser's risk against different application parameter scenarios, but the ROC framework provides a neat way to visualise the scenarios. 
-- If we know the expected risk of the relevant majority rule (all-w_0 for a high Cfa application) then we can plot a straight line in the ROC space that achieves the same risk, which I will call a "majority-isocost line" (for lack of better name). Each point on the line is a (fpr,tpr) pair with the same expected risk, and deploying a recogniser only makes economic sense if it lies above the majority-isocost. Any such point will have an isocost closer to (fpr=0,tpr=1) i.e. a lower E(r).
-
-Demo 18
-
-## Conclusion and opening to Part 3 
-
-## Part 3
-
-- Why do we sometimes need a calibrated recognizer?
-- How should we assess a calibrated recognizer?
-    -> LLR is a calibration plot; relation with reliability diagram
-    -> Can we comapre differnt systems against different application parameters?
-
