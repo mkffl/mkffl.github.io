@@ -94,15 +94,20 @@ Demo 16
 ### Section 2 - Risk VS AUC use case
 - [Overview] Risk-based model selection is better than AUC criteria (use case)
 
-ROC curves are also popular for providing a visual representation of the concordance/discrimination probability. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see this SO question for a proof. TODO. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC for a recogniser to be useful? 
+ROC curves are also known for their visual representation of the concordance/discrimination probability. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see [this](https://stats.stackexchange.com/questions/190216/why-is-roc-auc-equivalent-to-the-probability-that-two-randomly-selected-samples) SO question for a proof. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC? 
 
-The next example shows that higher concordance is not necessarily better from a risk optimisation viewpoint. Therefore, if one evaluates a system a risk perspective, one need not pay too much attention to AUC, which may at best be a good sense check - e.g. is it close or well above 0.5?
+The next example shows that higher concordance is not necessarily better from a risk optimisation viewpoint, and so, if minimising expected risk is the objectvive, one need not pay too much attention to AUC, which may at best be a good sense check - e.g. is it close or well above 0.5?
 
-This use case is based on an example from another blog post, [ML Meets Economics](http://nicolas.kruchten.com/content/2016/01/ml-meets-economics/), which is a great practical introduction to AUC and ROC curves. I only make small adjustments to their numbers to fit my simulated data and I try to dig further into the disagreement between $E(\text{risk})$ and AUC.
+The example is based on another blog post, [ML Meets Economics](http://nicolas.kruchten.com/content/2016/01/ml-meets-economics/), which is a great practical introduction to AUC and ROC curves. I only make small adjustments to their numbers to fit my simulated data and I emphasize the reasons for the disagreement between $E(\text{risk})$ and AUC.
 
-Imagine a factory making widgets that may overheat 5% of the time due to faulty gearboxes. Bad gearboxes costs the company £157 owing to wasted labour and inputs. The gearbox supplier, which sells them at £50 apiece, won't improve quality controls, so the factory decides to use a ML system to detect gearboxes that will overheat. Any gearbox flagged as faulty must be tested, which destroys it, resulting in a loss equivalent to the item's cost (£50). Last, every working widget is sold for a net profit of £40.
+Imagine a factory making widgets with the following data
+- Widgets overheat 5% of the time due to faulty gearboxes
+- Bad gearboxes costs the company £157 owing to wasted labour and inputs
+- The gearbox supplier, which sells them at £50 apiece, won't improve quality controls, so the factory decides to use an ML system to predict which gearboxes will overheat
+- Any gearbox flagged as faulty must be tested, which destroys it, resulting in a loss equivalent to the item's cost (£50)
+- Every working widget is sold for a net profit of £40
 
-If $\omega_1$ ($\omega_0$) represents the defect (working) gearbox and $\alpha_1$ ($\alpha_0$) the decision to test (not test) a gearbox, then the cost/profit structure can be represented as
+If $\omega_1$ ($\omega_0$) represents the defect (working) gearbox and $\alpha_1$ ($\alpha_0$) the decision to test (not test) a gearbox, then the cost & profit structure is
 
 
 <div class="mermaid"> 
@@ -135,7 +140,7 @@ The Bayes decision criterion is to choose $\alpha_1$ if $\text{lr}(\omega_1)$ is
 
 In what follows, we evaluate the high- and low-AUC recognizers, which are prefixed with "hi" and "low", resp. The data generation process defines the recogniser scores directly instead of generating the data and fitting recognisers to get the scores, which would be a lot of work for no added benefit. I use the `probability_monad` framework to craft and sample from the score distributions (TODO: link to definition). 
 
-We start by checking that the AUC of the `hiAUCdata` recognizer (highAUC) is truly higher using the `smartA` function described in Part 1. In `probability_monad`, the `pr` method samples from the rv to evaluate the predicate that the difference in AUC is positive, i.e. that `hiAUCdata`'s AUC is bigger than `lowAUCdata`.
+We start by checking that the AUC of the `hiAUCdata` recognizer (highAUC) is truly higher using the `smartA` function described in Part 1. In `probability_monad`, the `pr` method samples from the rv to evaluate a predicate. Here, we check that the difference in AUC is positive, i.e. that `hiAUCdata`'s AUC is bigger than `lowAUCdata`.
 
 ```scala
     def hiAUCdata: Distribution[List[Score]] = HighAUC.normalLLR.repeat(1000)
