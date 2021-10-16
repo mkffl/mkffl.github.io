@@ -94,11 +94,13 @@ Demo 16
 ### Section 2 - Risk VS AUC use case
 - [Overview] Risk-based model selection is better than AUC criteria (use case)
 
-ROC curves are also popular for providing a visual representation of the concordance/discrimination metric. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see this SO question for a proof. TODO. While high discrimination power is good, I wonder what to do with the reported AUC metrics. In particular, should we aim for a minimum AUC before deploying a system? The next example shows that higher concordance is not necessarily better from a risk optimisation viewpoint. Therefore, if one assesses a system through its expected risk, concordance metrics may provide no more than a good sense check - e.g. is it close or well above 0.5?
+ROC curves are also popular for providing a visual representation of the concordance/discrimination probability. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see this SO question for a proof. TODO. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC for a recogniser to be useful? 
+
+The next example shows that higher concordance is not necessarily better from a risk optimisation viewpoint. Therefore, if one evaluates a system a risk perspective, one need not pay too much attention to AUC, which may at best be a good sense check - e.g. is it close or well above 0.5?
 
 This use case is based on an example from another blog post, [ML Meets Economics](http://nicolas.kruchten.com/content/2016/01/ml-meets-economics/), which is a great practical introduction to AUC and ROC curves. I only make small adjustments to their numbers to fit my simulated data and I try to dig further into the disagreement between $E(\text{risk})$ and AUC.
 
-The backstory is that a factory makes widgets that may overheat 5% of the time due to faulty gearboxes. Bad gearboxes costs the company £157 owing to wasted labour and inputs. The gearbox supplier, which sells them at £50 a piece, wouldn't improve QC, so the factory decides to use a ML system to detect gearboxes that will overheat. Any item flagged as faulty must be tested, which destroys it. Last, every working widget is sold for a net profit of £40.
+Imagine a factory making widgets that may overheat 5% of the time due to faulty gearboxes. Bad gearboxes costs the company £157 owing to wasted labour and inputs. The gearbox supplier, which sells them at £50 apiece, won't improve quality controls, so the factory decides to use a ML system to detect gearboxes that will overheat. Any gearbox flagged as faulty must be tested, which destroys it, resulting in a loss equivalent to the item's cost (£50). Last, every working widget is sold for a net profit of £40.
 
 If $\omega_1$ ($\omega_0$) represents the defect (working) gearbox and $\alpha_1$ ($\alpha_0$) the decision to test (not test) a gearbox, then the cost/profit structure can be represented as
 
@@ -112,14 +114,14 @@ If $\omega_1$ ($\omega_0$) represents the defect (working) gearbox and $\alpha_1
     id12[class ω1]-->id31[α0]; 
     id12[class ω1]-->id32[α1];
     id21[action α0] --> id41[cost c_00 = -40.0];
-    id22[action α1] --> id42[cost c_10 = 50.0];
-    id31[action α0] --> id43[cost c_01 = 157.0];
+    id22[action α1] --> id42[cost c_10 = Cfa = 50.0];
+    id31[action α0] --> id43[cost c_01 = Cmiss = 157.0];
     id32[action α1] --> id44[cost c_11 = 50.0];
 </div>
 
-Note the negative cost of not testing the item when it's not faulty, which represents the profit of a sale. In the original blog article, the author maximises utility, while we minimise the expected risk, but the two approaches are equivalent (as long as we use signs consistently).
+Note the negative cost of not testing the item when it's not faulty, which corresponds to a net profit. In the original blog article, the author maximises utility, while we minimise the expected risk, but the two approaches are equivalent (as long as we use signs consistently).
 
-We can use the simplified cost structure implemented in `AppParameters` by identifying the extra terms and offsetting them. This is actually a useful exercise to realise that the Bayes decision threshold $-\theta$ is determined by the ratio between 
+We can use the simplified cost structure implemented in `AppParameters` by identifying the extra terms and offsetting them. This is actually a useful exercise to realise that the Bayes decision threshold $-\theta$ is only determined by the ratio between 
 $$
 p(\omega_0)*u
 $$ 
@@ -129,9 +131,11 @@ p(\omega_1)*v
 $$
 . We decided that $u$ and $v$ should be Cmiss and Cfa, resp., but we could break them down differently.
 
-The Bayes decision criterion is to choose $\alpha_1$ if $\text{lr}(\omega_1)$ is greater than $\frac{(\text{C10-C00})p(\omega_0)}{(\text{C01-C11})p(\omega_1)}$. Using the values above is equivalent to defining `AppParameters(0.05,107,90)`.
+The Bayes decision criterion is to choose $\alpha_1$ if $\text{lr}(\omega_1)$ is greater than $\frac{(\text{C10-C00})p(\omega_0)}{(\text{C01-C11})p(\omega_1)} = \frac{90 \times p(\omega_0)}{107 \times p(\omega_1)}$, and so the cost/structure is equivalent to `AppParameters(p_w1=0.05,Cmiss=107,Cfa=90)`.
 
-There are two recognizers and, in what follows, objects related to the high and low AUC recognizers are prefixed with "hi" and "low" (not "lo" to avoid any confusions with log-odds), respectively. The data generation process directly defines the recogniser scores, instead of generating features and fitting a recognizer, because it's less work for the same result. We can check that the AUC of `hiAUCdata` is indeed higher: 
+In what follows, we evaluate the high- and low-AUC recognizers, which are prefixed with "hi" and "low", resp. The data generation process defines the recogniser scores directly instead of generating the data and fitting recognisers to get the scores, which would be a lot of work for no added benefit. I use the `probability_monad` framework to craft and sample from the score distributions (TODO: link to definition). 
+
+We start by checking that the AUC of the `hiAUCdata` recognizer (highAUC) is truly higher using the `smartA` function described in Part 1. In `probability_monad`, the `pr` method samples from the rv to evaluate the predicate that the difference in AUC is positive, i.e. that `hiAUCdata`'s AUC is bigger than `lowAUCdata`.
 
 ```scala
     def hiAUCdata: Distribution[List[Score]] = HighAUC.normalLLR.repeat(1000)
@@ -159,12 +163,13 @@ There are two recognizers and, in what follows, objects related to the high and 
 
 ```bash
 @ println(p)
-res3: Double = 0.98
+res3: Double = 0.9775823313628146
 @ assert(p > (1-α))
 res4: Boolean = true
 ```
 
-- The `hiAUCdata`recogniser is better from an AUC viewpoint, however, it has a worse expected risk: 
+The `hiAUCdata`recogniser is better from an AUC viewpoint, however, it has a worse expected risk on the sample dataset (TODO: I also checked it with `pr`):
+
 ```scala
     val aucPa = AppParameters(0.05,107,90)
 
@@ -175,26 +180,75 @@ res4: Boolean = true
 
 ```bash
 @ println(hiTo.minRisk(aucPa))
-res3: Double = 2.44
+res3: Double = 5.16
 @ println(lowTo.minRisk(aucPa))
-res4: Double = 1.44
+res4: Double = 2.81
 ```
 
-- The LLR and ROC plots help to make sense of these seemingly strange results. The application parameters correponds to a high value of llr threholds, which means that the optimal score cut-off is very high. Thus, it makes sense that the ROC isocost is steep and located towards the left of the curve, as ROC scores are in decreasing order. 
-- This is true for both recognisers, though low AUC can achieve high llr on more target instances than high-AUC, and therefore is less penalised with false negatives. In other words, the high-AUC recogniser is very close to an all-w_0 classifer to avoid the high costs of false alarm, which it trades off for false negative costs. 
-- The LLR curve tells the same story - the high-AUC reconiser achieves better separation across all instances as can be seen on its steeper LLR curve. The lower-AUC model is not as good in terms of separation, as its LLR curve is flatter around 0. However, this recogniser achieves better separation on high score instances, which improves risk on high Cfa applications.
+The LLR and ROC plots help to make sense of the disagremment between AUC and $E(\text{risk})$. 
+
+The high $-\theta$ value penalises false positives more than false negatives, which makes sense because there are many more non-targets for only slightly lower Cfa. This corresponds to a high optimal score cut-off and a steep ROC isocost located in the lower left-hand corner.
+
+The LLR plot confirms the previous AUC results, as can be seen from hiAUC's steeper LLR curve vs lowAUC's line that is flatter around 0.
+
+lowAUC can identify more positives than hiAUC while keeping fpr low, as can be seen by the steep increase of its ROC curve. In other words, hiAUC needs to be closer to an all-$\omega_0$ classifer to keep a low enough fpr, and that means it has a higher expected risk. 
+
 
 {% include Demo17-llrRoc4panes-1.html %}
 
 ### Section 3 - Majority-isocost lines
 
-- The recognisers' risks are not miles away from an all-w_0 rule, which is the benchmark we should assess any model against. In many cases, categorising all or no instances as w_1 is the status quo. Would the status quo have a lower risk - and therefore be peferrable to any recognition solution - if the cost of false alarms was higher? This is a legitimate question if we are not certain about outcome costs but still want to assess the benefits of an automated solution.
-- We can do a sensitivity analysis by comparing the best recogniser's risk against different application parameter scenarios, but the ROC framework provides a neat way to visualise the scenarios. 
-- If we know the expected risk of the relevant majority rule (all-w_0 for a high Cfa application) then we can plot a straight line in the ROC space that achieves the same risk, which I will call a "majority-isocost line" (for lack of better name). Each point on the line is a (fpr,tpr) pair with the same expected risk, and deploying a recogniser only makes economic sense if it lies above the majority-isocost. Any such point will have an isocost closer to (fpr=0,tpr=1) i.e. a lower E(r).
+The all-$\omega_0$ "classifier" is a simple rule that assigns all instances to non-target. Another name may be majority classifier because it assigns the most prevalent class in the dataset. Its expected risk is a benchmark that any recognizer should beat because it is inexpensive, simple and thus it is often the status quo before any automated solution is considered. 
 
-Demo 18
+The all-$\omega_0$ expected risk is $p(\omega_1) \times \text{Pmiss} \times \text{Cmiss} = 0.05 \times 1 \times £107 = £5.35$, i.e. close to hiAUC's risk of £5.16, which thus does not add a lot of value. If hiAUC was the available recognizer to deploy, it would be a good idea to double check its costs to ensure that it's better than the simple rule.
+
+The status quo labels instance as targets or non-target depending on which option has the lower expected risk. The isocost line of the status quo - the majority-isocost line (naming is mine) - determines if a recogniser can bring any value on top of the status quo. If the recognizer's ROC curve is below the the line, then its optimal risk is higher than the status quo and it does not make economic sense to use it. 
+
+As explained in the aforementioned blog post, the majority-isocost line can inform go/no-go decisions to develop ML solutions. Besides, I think it is useful for sensitivity analyses of different application scenarios. The application parameter inputs are subjective so using a range of inputs is preferrable if it's possible.
+
+For example, an increase in supplier costs, a change in regulation impacting labour wage or an improvement in the supplier's defect rates would impact the operating context, and therefore the expected risk of a recogniser. Visualising these scenarios via the majority-isocost lines can provide reassurance that a recognizer adds value even in the worst case.
+
+The graph below shows the previous parameters and another scenario that penalises false positives  more, which corresponds to the steeper line. It's interesting that lowAUC still has points above the steeper isocost. 
+
+
+{% include Demo18-ROC-equal-utility-3.html %}
+
+The majority-isocost line is defined as $\text{(tpr-d)} = \text{(fpr-d)} \times \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$, with $d$ being (0,0) for the all-$\omega_0$ rule, or (1,1) for the all-$\omega_1$ rule. See the detailed calculations in the appendix.
+
+To determine which all-$\omega_i$ is the reference, compute their expected-risk ratio
+
+$$
+\text{rr}=\frac{E(risk_{all-\omega_1})}{E(risk_{all-\omega_0})} = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}
+$$
+
+
+And so, the line is defined as $(tpr-d) = (fpr-d) \times \text{rr}$, which has a nice visual interpretation. If the all-non-target rule has the lower risk, the line equation is $\text{tpr} = \text{fpr} \times \text{rr}$ which lies above the $\text{tpr}=\text{fpr}$ line. Otherwise, it is $\text{(tpr-1)} = \text{(fpr-1)} \times \text{rr}$ which also lies above $\text{tpr}=\text{fpr}$.
+
+The majority-isocost equates $\text{tpr}=\text{fpr}$ when $\text{eer} = 1$ i.e. when application parameters don't carry any information for the Bayes decision threshold. In that case, there is no majority classifier, and we may as well flip a coin to decide which label to choose for all instances. A recogniser's ROC is on this line if it can't do better than this randomly assigned majority rule, which means that this recogniser has a concordance probability (AUC) of 0 - that is usually how people refer to this line.
 
 ## Conclusion and opening to Part 3 
+
+### Appendix
+
+Majority-isocot equation
+
+Rearrange the expected risk equation
+
+$$
+\text{tpr}=\text{fpr}*\delta+\frac{p(\omega_1) \times \text{Cmiss} - E(\text{risk})}{p(\omega_1) \times \text{Cmiss}}
+$$
+With $\delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$
+
+At any point (d,d) on $\text{tpr}=\text{fpr}$,
+$$
+E(\text{risk}) = p(\omega_0)\times\text{Cfa}\times\text{d} + p(\omega_1)\times\text{Cmiss}-p(\omega_1)\times\text{Cmiss}\times\text{d}
+$$
+
+Plug the (d,d) risk value into the expected risk equation, rearrange to get
+
+$$
+\text{(tpr-d)} = \text{(fpr-d)} \times \delta
+$$
 
 ## Part 3
 
