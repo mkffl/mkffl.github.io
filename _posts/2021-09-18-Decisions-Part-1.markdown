@@ -168,6 +168,7 @@ $$
 $$ 
 (Notice the inverted numerator vs the Bayes decision rule). Hence, the cutoff point $c$ is at $llr = -\theta$.
 
+TODO: introduce `val pa = AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`
 
 [minS on Tradeoff object]
 
