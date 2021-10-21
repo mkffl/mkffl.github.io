@@ -26,7 +26,7 @@ As seen previously, $\text{Pmiss}$ and $\text{Pfa}$ are the two inputs into $E(r
 
 As it turns out, the four application parameters, $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$, can be visualised via the so-called isocost curve. Combining (tpr,fpr) with isocosts provides a powerful tool for risk assessment given one or more recognizers, which is why ROC graphs are an indispensable part of the analyst's toolbox.
 
-(Note on E(r) plot which is tied to application parameters). Isocost curves are commonly used in some disciplines, e.g. in economics to find combinations of inputs that yield the same output. Here, we will find combinations of (tpr,fpr) that yield the same risk.
+Isocost curves are commonly used in some disciplines, e.g. in economics to find combinations of inputs that yield the same output. Here, we will find combinations of (tpr,fpr) that yield the same risk.
 
 Isocosts are expressed as a linear function between tpr and fpr:
 
@@ -36,19 +36,23 @@ $$
 
 & p(\omega_1)*\text{Pmiss}*\text{Cmiss}+p(\omega_1)*\text{Pfa}*\text{Cfa}=\text{e} \\
 & \text{Pmiss} = -\text{Pfa}*\frac{p(\omega_0*Cfa)}{p(\omega_1)*\text{Cmiss}}+\frac{\text{e}}{p(\omega_1)*\text{Cmiss}} \\
-& 1-\text{Pmiss} = \text{Pfa}*e^{-\theta}+(1-\frac{\text{e}}{p(\omega_1)*\text{Cmiss}}) \\
-& \text{tpr} = \text{fpr}*\delta+\text{a}
+& 1-\text{Pmiss} = \text{Pfa}*e^{-\theta}+(1-\frac{\text{e}}{p(\omega_1)*\text{Cmiss}})
 
 \end{aligned}
 \end{equation}
 $$
 
-With $\delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$ and $\text{a}=\frac{p(\omega_1) \times \text{Cmiss} - E(\text{risk})}{p(\omega_1) \times \text{Cmiss}}$
+And so,
+$$
+\text{tpr} = \text{fpr}*\delta+\text{a}
+\tag{2.1}
+$$
 
+with $\delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$ and $\text{a}=\frac{p(\omega_1) \times \text{Cmiss} - E(\text{risk})}{p(\omega_1) \times \text{Cmiss}}$
 
-$\delta$ and $\text{a}$ are determined by the application parameters and the risk objective, while (tpr,fpr) is achieved by the recognizer and is also called an operating point. For given application parameters, an isocost curve with lower fpr and/or higher tpr corresponds to a lower risk, hence the optimal isocost is the most "north west" in the ROC space. 
+$\delta$ and $\text{a}$ are determined by the application parameters and the risk objective, while (tpr,fpr) is achieved by the recognizer and is also called an operating point. For given application parameters, an isocost curve with lower fpr and/or higher tpr corresponds to a lower risk, hence the optimal isocost is the closest to the "north-west corner" - upper left-hand corner, or (fpr=0,tpr=1) corner - in the ROC space. 
 
-That allows the analyst to visually identify the Bayes decision cutoff point as the (tpr,fpr) pair that is closest to (0,1) i.e. located the most "north west". It also allows them to compare two recognizers, with the best performer's isocost being above the underperformer - see example in the next section. [TODO do comment on combining classifiers].
+That allows the analyst to visually identify the Bayes decision cutoff point as the (tpr,fpr) pair that is closest to (0,1). It also allows them to compare[^f1] two recognizers, with the best performer's isocost being above the underperformer - see example in the next section.
 
 Before looking at an example, we will connect the above to the Bayes optimal criterion introduced in the previous part. The derivative of the ROC curve is equal to the likelihood ratio between the two conditional distributions, $p(s \vert \omega_i)$, so the solution to the Bayes equation (note: add reference) is available on the graph. 
 
@@ -94,7 +98,7 @@ TODO: annotations for minTheta, optimal score and isocost.
 
 The ROC curve emphasizes that the optimal decision point is determined by a tradeoff between missing errors and false alarm errors. As long as the curve is not flat, we get a lower miss rate $\text{Pmiss}$ if we accept a higher false alarm rate $\text{Pfa}$.
 
-How much $\text{Pfa}$ we tolerate is determined by application parameters, captured by the derivative of the isocost line. Given flat priors and high Cmiss, our application requires low $\text{Pmiss}$ and thus tolerates high Pfa. Visually, that corresponds to operating points in the upper-hand corner of the ROC space.
+How much $\text{Pfa}$ we tolerate is determined by application parameters, captured by the derivative of the isocost line. Given flat priors and high Cmiss, our application requires low $\text{Pmiss}$ and thus tolerates high Pfa. Visually, that corresponds to operating points in the right upper-hand corner.
 
 The graphs also shows the connections between LLR and ROC. The fraud application penalizes false negatives heavily, which corresponds to a low $\delta$ in the definition above and therefore to a flattish ROC isocost, which maps to the low threshold in the LLR graph. 
 
@@ -106,19 +110,15 @@ A steep isocost would map to a high LLR threshold. If the ratio of priors and co
 ### Section 1 - Implementation considerations The PAV algorithm 
 - [Overview] It is a better binning strategy than the current equal-sized bin histogram approach
 
-So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense because evaluations rest on estimated probability functions (pdf, cdf, 1-cdf), software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points.
+So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense to estimate estimate the probability functions (pdf, cdf, 1-cdf) that underpin evaluations, software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points[^f2].
 
-One issue with histograms is to define the bin width. If the bins are too wide, the optimal cutoff may be lost inside a bin, resulting in a higher expected risk. Would it make sense to select small intervals? If I set very thin intervals, the results are on the plot below. The LLR curve goes up and down and the ROC curve now has a steppy pattern.
+One issue with histograms is to define the bin width. If the bins are too wide, the optimal cutoff may be lost inside a bin, resulting in a higher expected risk. Would it make sense to select smaller intervals? I plot the results of very thin intervals below. The LLR curve goes up and down, i.e. is not a [monotonous function](https://mathworld.wolfram.com/MonotonicFunction.html) of scores, and the ROC curve now has a steppy pattern, i.e. is not [convex](https://en.wikipedia.org/wiki/Convex_set).
 
-The binary criterion does not seem compatible with the LLR not being a monotonous function of scores. If LLR(s) intersect $-\theta$ at $s=c$, however, $\text{LLR}(s) < -\theta$ for some scores above $c$, then the Bayes decision rule says that we should choose $\omega_0$ for these scores, though the binary classifer will predict $\omega_1$.
+The binary criterion does not seem compatible with the LLR not being a monotonous function of scores. If $\text{LLR}(p_s)$ intersect $-\theta$ at $s=c$, however, $\text{LLR}(p_s) < -\theta$ for some scores above $c$, then the Bayes decision rule says that we should choose $\omega_0$ for these scores, though the binary classifer will predict $\omega_1$.
 
-We can enforce monotonicity between scores and likelihood ratios by fitting monotonic functions like a simple linear regression: $\text{LLR}(s) = \beta_0+\beta_1*s$. That would be the same as transforming the scores into $[0,1]$ and fitting a logistic regression on the observed probabilities, a popular method for calibration. There are also non-parametric options to enforce monotonicity and, in fact, one of them called the Pair Adjacent Violators (PAV) is commonly used because it ensures that the resulting ROC curve is [convex](https://en.wikipedia.org/wiki/Convex_set).
+We can enforce monotonicity between scores and likelihood ratios by fitting monotonic functions like a simple linear regression: $\text{LLR}(p_s) = \beta_0+\beta_1*s$. That would be the same as transforming the scores into $[0,1]$ and fitting a logistic regression on the observed probabilities, which is a common method for score calibration. There are also non-parametric options to enforce monotonicity and, in fact, one of them called the Pair Adjacent Violators (PAV) is commonly used because it ensures that the resulting ROC curve is convex.
 
-The PAV creates groups of scores with representative thresholds, which I can use as input into the `Tradeoff` object. The resulting ROC curve is convex, while the thin-sized bin histogram ROC appears non convex. From a decision perspective, that means that the histogram includes many sub-optimal operating points, i.e. with higher expected risks than what could be achieved by using points on the convex hull. For more information and compelling examples, I would refer to Fawcett and Niculescu-Mizil article "PAV and the ROC Convex Hull".
-
-[Talk about packages not using theta].
-
-Demo 16
+The PAV creates groups of scores with representative thresholds, which I can use as input into the `Tradeoff` object. The resulting ROC curve is convex, while the thin-sized bin histogram ROC appears non convex. From a decision perspective, that means that the histogram includes many sub-optimal operating points, i.e. with higher expected risks than what could be achieved by using points on the convex hull. For more information and compelling examples, I would refer to T. Fawcett and A. Niculescu-Mizil (2007).
 
 {% include demo16-histVSpav-10.html %}
 
@@ -285,6 +285,14 @@ Plug the (d,d) risk value into the expected risk equation, rearrange to get
 $$
 \text{(tpr-d)} = \text{(fpr-d)} \times \delta
 $$
+
+[^f1]: The ROC framework makes it easy to not only compare but also combine recognizers, which can be a better option when one recognizer achieves better risk only on some parts of the ROC curve. See following section on the convex hull, and T. Fawcett and F. Provost (2001).
+
+[^f2]: See algorithm 2 T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with width-varying bin sizes, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, after all, standard implementations do use histograms.
+
+### References
+- T. Fawcett and F. Provost (2001). Robust Classification for Imprecise Environments.
+- T. Fawcett and A. Niculescu-Mizil (2007). PAV And the ROC Convex Hull.
 
 ## Part 3
 
