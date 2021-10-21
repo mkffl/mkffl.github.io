@@ -110,7 +110,7 @@ A steep isocost would map to a high LLR threshold. If the ratio of priors and co
 ### Section 1 - Implementation considerations The PAV algorithm 
 - [Overview] It is a better binning strategy than the current equal-sized bin histogram approach
 
-So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense to estimate estimate the probability functions (pdf, cdf, 1-cdf) that underpin evaluations, software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points[^f2].
+So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense to estimate the probability functions (pdf, cdf, 1-cdf) that underpin these evaluation frameworks, software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points[^f2].
 
 One issue with histograms is to define the bin width. If the bins are too wide, the optimal cutoff may be lost inside a bin, resulting in a higher expected risk. Would it make sense to select smaller intervals? I plot the results of very thin intervals below. The LLR curve goes up and down, i.e. is not a [monotonous function](https://mathworld.wolfram.com/MonotonicFunction.html) of scores, and the ROC curve now has a steppy pattern, i.e. is not [convex](https://en.wikipedia.org/wiki/Convex_set).
 
@@ -288,7 +288,7 @@ $$
 
 [^f1]: The ROC framework makes it easy to not only compare but also combine recognizers, which can be a better option when one recognizer achieves better risk only on some parts of the ROC curve. See following section on the convex hull, and T. Fawcett and F. Provost (2001).
 
-[^f2]: See algorithm 2 T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with width-varying bin sizes, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, after all, standard implementations do use histograms.
+[^f2]: See algorithm 2 T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with width-varying bin sizes, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, in a sense, standard implementations do use histograms.
 
 ### References
 - T. Fawcett and F. Provost (2001). Robust Classification for Imprecise Environments.
