@@ -50,7 +50,7 @@ The key is that we can count [$s_{\omega_0} < s_{\omega_1}$] by summing the rank
 
 The expensive part of the rank-sum approach is to rank instances, but that can be done efficiently with built-in sorting algorithms, so I guess the overall complexity is $log(N_{non}+N_{tar})$ and, in any case, it runs fast on my modest 1.6 GHz Intel Core i5. 
 
-I find this approach very cool because it's not only clever but also intuitive. In the combined, sorted dataset of scores, we can count the concordance value for a single target instance by taking its overall rank and subtracting its rank in the subsample of target instances. If we repeat this procedure for all target instances and rearrange the operations, we get the value computed by `U`. You can play around with a tiny example of 2 non-target and 2 target instances to get convinced.
+I find this approach very cool because it's not only clever but also intuitive. In the combined, sorted dataset of scores, we can count the concordance value for a single target instance by taking its overall rank and subtracting its rank in the subsample of target instances. If we repeat this procedure for all target instances and rearrange the operations, we get the value computed by `U`.
 
 ```scala
     def rankAvgTies(input: Row): Row // See source code
@@ -91,9 +91,9 @@ We should choose $\omega_0$ when its likelihood is greater, and $\omega_1$ other
 
 Any other rule corresponds to a higher probability of error. For example, if a new instance has $x=1.0$ then assigning $\omega_0$ would not make sense because the chances of being wrong are more than 4 times higher than being correct.
 
-This line of reasoning is at the core of Bayes decisions criteria, which tells us that picking the option that minimises the risk for every single instance will minimise the overall risk. Common approaches to selecting classifier thresholds implicitly rely on Bayes decision criteria and the link will become obvious soon if it's not already clear.
+This line of reasoning is at the core of Bayes decisions criteria, which tells us that picking the option that minimises the risk for every single instance will minimise the overall risk. The common approach to selecting classifier thresholds implicitly relies on Bayes decision criteria and the link will become obvious soon if it's not already clear.
 
-The following is based on the first chapter of [Pattern Classification](https://www.amazon.fr/Pattern-Classification-2e-RO-Duda/dp/0471056693) by Hart and others. It's an old but surprisingly refreshing textbook that covers Bayes decision theory in depth. I simplify their notation to the minimum necessary for a binary classification problem, though they address more general problems.
+The following is based on the first chapter of [Pattern Classification](https://www.amazon.fr/Pattern-Classification-2e-RO-Duda/dp/0471056693). It's a bit old but also a surprisingly refreshing textbook that covers Bayes decision theory in depth. I simplify their notation to the minimum necessary for a binary classification problem, though they address more general problems.
 
 Making decisions when the environment is uncertain requires to consider the costs of different actions under uncertain states of nature:
 
@@ -113,7 +113,7 @@ Making decisions when the environment is uncertain requires to consider the cost
 
 [Units and interpretation of costs]
 
-The first node is corresponds to choosing action $\alpha_0$ when the true state is $\omega_0$, i.e. choosing non-target when the instance is actually a non-target, which is often assumed to cost 0.0. The next node corresponds to a false alarm, with cost Cfa. The next is when we miss a target, which has a cost of Cmiss, and the last node correspodns to a true positive, which does not cost anything.
+The first node corresponds to choosing action $\alpha_0$ when the true state is $\omega_0$, i.e. choosing non-target when the instance is actually a non-target, which we assume does not cost anything. The next entry corresponds to a false alarm, with cost Cfa. The next is when we miss a target, which has a cost of Cmiss, and the last node correspodns to a true positive, which does not cost anything.
 
 For every instance with feature $x$, the Bayes decisions to choose $\alpha_0$ or $\alpha_1$ depends on their respective risk, which in turn depend on the (posterior) probability of each state of nature.
 
@@ -130,6 +130,7 @@ $$
     \alpha_1 \text{if } \frac{ p(x \vert \omega_1)}{p(x \vert \omega_0)} < \frac{p(\omega_0)*Cfa}{p(\omega_1)*Cmiss} \\
     \alpha_0, & \text{otherwise}
 \end{cases}
+\tag{1.1}
 $$
 
 We can rephrase the rule as "Decide on 'target' if the likelihood ratio for 'target' is greater than the cost-adjusted ratio of prior probabilities". The rule neatly separates the ratio of likelihoods (on the left) from the characteristics of a particular application (on the right). From now, I will call these characteristics application parameters as in the BOSARIS literature.
@@ -153,7 +154,7 @@ changes the RHS of the Bayes decision threshold. This property will come up agai
 #### More than one feature
 In general, there are more than one features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large feature space to a one-dimensional space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
 
-Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In this article (AUC/WMC paper), the authors call scores "degrees of suspicion", which I thought captures well the idea of ordered values and their relationship to hypothesis testing. I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.
+Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In J. Hanley and B. McNeil (1982), a score is also called a degree of suspicion, which I think captures well the idea of ordered values and their relationship to hypothesis testing. I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.
 
 Applying the Bayes decision procedure to scores means finding the cut-off point where the likelihood ratio equals the theshold, 
 $$
@@ -168,20 +169,26 @@ $$
 $$ 
 (Notice the inverted numerator vs the Bayes decision rule). Hence, the cutoff point $c$ is at $llr = -\theta$.
 
-TODO: introduce `val pa = AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`
 
+### Implementating the Bayes decision Rule
 [minS on Tradeoff object]
 
-Going back  to the SVM scores used in the CCD plot at the start, we would like to find the Bayes decision criterion $c$ to convert the recognizer into a classifier. We will need a few bits in place: 
+Going back to the SVM scores used in the CCD plot at the start, we would like to find the Bayes decision criterion $c$ for particular application parameters $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$. The optimal criterion value $\text{c}$ will convert the recognizer into a classifier, which we will apply on simulated data to check that the solution's risk in the right ballpark area.
 
-- The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below. The histogram implementation is not particularly interesting so I don't show it, but it's available in the source code.
+The parameters will be stored in a data object called `AppParameters` with the following values `val pa = AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`. Prior probabilities are assumed to be equal missed targets have a cost 5 times higher than missed non-targets.
+
+We need a few extra bits in place:
+
+- The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below; The histogram implementation is not particularly interesting so I don't show it, but it's available in the source code
+
 ```scala
 val w0Counts: Row = ... // counts of non-target labels
 val w1Counts: Row = ... // counts of target labels
 val thresh: Row = ... // bins
 ```
 
-- Common operations applied to sample data density, most of which will come in handy in later sections.
+- Common operations applied to sample data density, most of which will come in handy in later sections
+
 ```scala
 val proportion: Row => Row = counts => {
     val S = counts.sum.toDouble
@@ -200,7 +207,7 @@ val rhsArea: Row => Row = cdf andThen oneMinus
 val logodds: Tuple2[Row,Row] => Row = odds andThen logarithm
 ```
 
-- An object to encapsulate the sample data and related methods. 
+- An object to encapsulate the sample score predictions and the related evaluation methods, starting with the CCD estimates 
 
 ```scala
 case class Tradeoff(w1Counts: Row, w0Counts: Row, thresholds: Row) {
@@ -215,7 +222,7 @@ case class Tradeoff(w1Counts: Row, w0Counts: Row, thresholds: Row) {
 
 The `asCCD` value provides the class-conditional density estimates previously used in the plots. It really just computes the proportion of counts corresponding to every threshold. This is what the `pdf` function, an alias for `proportion`, does.
 
-Next, we implement `minS`, a method to find the Bayes decision cut-off point, i.e. the score value that minimises the expected risk given some application parameters.
+Next, we implement `minS`, a method to find the Bayes decision cut-off point, i.e. the score value $\text{s}$ that minimises the expected risk given some application parameters.
 
 ```scala
 case class Tradedoff(...){
@@ -240,7 +247,7 @@ def paramToTheta(pa: AppParameters): Double = log(pa.p_w1/(1-pa.p_w1)*(pa.Cmiss/
 def minusθ(pa: AppParameters) = -1*paramToTheta(pa)
 ```
 
-The `asLLR` value returns the log-likelihood ratio of the scores, which is the left-hand side of the equation (TODO: ref.). The `minusθ` methods convert the application parameters into $-\theta$, which is the right-hand side of the equations. Then, `argminRisk` uses these two inputs to find the array index of the closest match, which is used by `minS` to provide the cutoff point $c$.
+`asLLR` returns the log-likelihood ratio of the scores - the left-hand side of eq. 1.1 - using the proportion of targets in the score's corresponding bin. The `minusθ` method convert the application parameters into $-\theta$, which is the right-hand side of eq. 1.1. Then, `argminRisk` uses these two inputs to find the array index of the closest match, which is used by `minS` to provide the cutoff point $c$.
 
 ##### Average risk
 
@@ -248,6 +255,7 @@ We can estimate the expected risk of a Bayes decision classifer using the evalua
 
 $$
 E(risk) = Cmiss*p(\omega_1)*Pmiss + Cfa*p(\omega_0)*Pfa
+\tag{1.2}
 $$
 
 where Pmiss is the proportion of targets with scores below the Bayes decision cutoff, $c$, and Pfa is the proportion of non-targets with scores above $c$.
@@ -279,7 +287,7 @@ E(risk)
 \end{equation}
 $$
 
-The first and second integrals are estimated with Pmiss and Pfa, respectively. If $N_{\omega_1}$ is the number of targets, then
+And we get eq. 1.2 because the first and second integrals are estimated with Pmiss and Pfa, respectively. If $N_{\omega_1}$ is the number of targets, then
 $$
 Pmiss = \sum_{s \in \omega_1}\frac{[s < c]}{N_{\omega_1}}
 $$ 
@@ -288,6 +296,7 @@ $$
 Pfa = \sum_{s \in \omega_0}\frac{[s >= c]}{N_{\omega_0}}
 $$
 
+Note that $\text{Pmiss}(c)$ is the cdf of the target distribution while $\text{Pfa}(c)$ is 1 minus the cdf of the non-targets distribution, hence the code implementation for `asPmissPfa`
 
 ```scala
 case class Tradeoff(...){
@@ -310,9 +319,9 @@ def paramToRisk(pa: AppParameters)(operatingPoint: Tuple2[Double,Double]): Doubl
 
 ```
 
-Let's wrap up by checking that the calculations for $c$ and $E(r)$ make sense with some data. 
+Let's wrap up by checking that the calculations for $c$ and $E(\text{risk})$ make sense using sample data. 
 
-The method `expectedRisks` calculates risks at every threshold. We want the minimum risk to match the risk at $c$.
+The method `expectedRisks` calculates risks at every threshold. We want the minimum risk to match the risk at $c$ on a given sample.
 
 
 ```scala
@@ -330,7 +339,7 @@ case classs Tradeoff(...){
 
 The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum.
 
-To check $E(r)$, let's 
+Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That is, if use the corresponding cutoff "in the wild", do we get the expected risk? Data simulation allows us to answer the question empircally. The four main steps are 
 - Get a clasifier that applies the $c$ cut-off
 - Generate a few hundred datasets
 - Compute the risk
@@ -341,8 +350,12 @@ val cutOff: Double = hisTo.minS(pa) // hisTo is the Tradeoff instance
 val thresholder: (Double => User) = score => if (score > cutOff) {Fraudster} else {Regular}
 def classifier:(Array[Double] => User) = recognizer andThen logit andThen thresholder
 
-// Simulate one transaction's risk
-def cost(p: AppParameters, actual: User, pred: User): Double
+// Simulate the risk of one transaction
+def cost(p: AppParameters, actual: User, pred: User): Double = pred match {
+        case Fraudster if actual == Regular => p.Cfa
+        case Regular if actual == Fraudster => p.Cmiss
+        case _ => 0.0
+}
 
 def simulateTransact: Distribution[Double] = for {
     transaction <- transact(pa.p_w1)
@@ -360,8 +373,15 @@ val simData: Distribution[Double] = simulateTransact.repeat(nrows).map(_.sum.toD
 val simRisk: Row = simData.sample(nsimulations).toVector
 ```
 
+Note that `classifier` applies a `logit` transform to the `recognizer`'s output. That is because SVM scores are originally in $[0,1]$, and I want them in $\mathbb{R}$ to emphasize that scores need not be "probability-like" values - they could also be projected onto $[0,inf]$ for example. The logit is a monotonously increasing function, so it does not affect the score index returned by the `minS` method.
+
 {% include demo13-simulation-14.html %}
 
 The evaluation sample risk is the vertical dotted bar near the peak of the distribution, which is good news. The grey shaded area comprises 95% of the simulated data, and I want the sample estimate to fall in that interval, which it does.
 
 In the next part of this blog article, we will explore the connection between Bayes decision rules and the Receiving Operator Characteristics (ROC) curve.
+
+### References
+- R. Duda et al (2001), Pattern Classification.
+- J. Hanley and B. McNeil (1982), The Meaning and Use of the Area under a Receiver Operating Characteristic (ROC) Curve.
+
