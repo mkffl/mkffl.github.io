@@ -6,15 +6,15 @@ layout: post
 ## A. Introduction
 
 ### Motivations
-There is a widely-accepted approach to building ML solutions that starts with learning parameters of a model and then applying a threshold to the model's scores to get categories/labels. The thresholding part rests on an equation that balances two types of errors, with decision aided by so-called confusion matrices.
+There is a widely-accepted approach to building ML solutions that starts with learning parameters of a model and then applying a threshold to the model's scores to get categories/labels - see [this example](https://machinelearningmastery.com/threshold-moving-for-imbalanced-classification/). The thresholding part rests on an equation that balances two types of errors, with decision aided by so-called confusion matrices.
 
 The whole process is rather intuitive and can be applied almost like a recipe to a number of problems. Over the last couple of years, however, I have stumbled upon applications that required more or less tweaking of the standard approach. For example, how should I determine the score thresholds of an ML sytem that is an input into a downstream system? What if the downstream task aggregates the upstream outputs, e.g. classifying paragraphs to make decisions on documents?
 
-As I brushed up on traditional frameworks, I discovered the Speech Recognition Evaluation (SRE), a ML competition organised by NIST (link and definition of acronym). Over the last two decades, the research community around this institution has developed, documented and implemented a framework to assess speech recognition systems. 
+As I brushed up on traditional frameworks, I discovered the Speech Recognition Evaluation (SRE), a ML competition organised by an U.S. Institute called [NIST](https://www.nist.gov/programs-projects/speaker-and-language-recognition). Over the last two decades, the research community around this institution has developed a framework to assess speech recognition systems.
 
-I think that the scope of its applications is broader than speech recognition, though, and that the concepts and tools that the community developed can help anyone working with classification systems. The set of research that I found, which I list at the end, certainly helped me firm up my understanding of model evaluation. I particuarly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit - links also at the end.
+One recurring application is to determine if a speech segment includes only one or two distinct speakers. Though the NIST often refers to various applications of its evaluation framework in biometric and forensic contexts, I think that the concepts and tools developed are useful for anyone working on classification applications. The set of research that I found, which I list at the end, certainly helped me firm up my understanding of model evaluation. I particuarly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit - links also at the end.
 
-The following two parts review traditional assessment frameworks, in particular the ROC curve, and the third part is an introduction to the Applied Probability of Error (APE), a framework for calibration assessment.
+The following two parts review traditional assessment frameworks, in particular the ROC curve, and the third part is an introduction to the Applied Probability of Error (APE), a framework for model calibration assessment.
 
 ### Fraud detection
 
@@ -41,12 +41,17 @@ As someone who works primarily with scripting languages, and is not a software d
 - Scripting tools to get going quickly
   - , e.g. I used Mill to compile this project and Ammonite to play around with data and models
 
-### Simulations with `probability_monad`
+### Simulation
 
-- Last, probability_monad
+I will rely on the `probability_monad` scala package to test some of the findings using simulated data. By testing, I mean validating a (general) statistical property using an example distribution. The package allows me to define the distribution in a nice and concise way, and it comes with a useful toolkit, e.g. a `p` method to estimate probabilities.
+
+This package does just what it says on the tin. It's not a framework for Bayesian inference, e.g. it does not include any routine like MCMC to infer distribution parameters, but it is useful for learning purposes. [Example.scala](https://github.com/jliszka/probability-monad/blob/master/src/main/scala/probability-monad/Examples.scala) in the github repo includes a number of common statistical fallacies - check the [Monty Hall problem](https://github.com/jliszka/probability-monad/blob/1740054366b43c4e7a7c333bf8637daed11802bf/src/main/scala/probability-monad/Examples.scala#L254) for example - that can be written in just a few lines of code that make a lot of sense.
+
+I will illustrate the evaluation frameworks using a synthetic dataset of banking transactions that consists of numerical features and a binary target field. The target corresponds to a transaction being fraudulent or not. The generative process for this data (DGP) is based on MADELON, an algorithm defined [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjygsHx9_nzAhXdQkEAHYjmBxUQFnoECAQQAQ&url=http%3A%2F%2Fclopinet.com%2Fisabelle%2FProjects%2FNIPS2003%2FSlides%2FNIPS2003-Datasets.pdf&usg=AOvVaw2e2nAV1wMjg-8TfNYk5z_d) that also underpins sklearn's `make_classification` [module](https://github.com/scikit-learn/scikit-learn/blob/0d378913b/sklearn/datasets/_samples_generator.py#L39). I implement a simplified version of the DGP that fits the need of my use case (link to my source code).
+
+As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the sala community. A review of monads is beyond our scope but I actually believe it is not necessary. I am not a monad expert yet writing a distributions with `probability_monad` felt intuitive because I could just plug random variables in a simple manner and get whatever probabilistic graph I wanted.
 
 ## B. Concordance Metrics
-- [Overview] Recognisers ability to separate $\omega_1$ from $\omega_0$ instances can be summarised in one metric, called A, that is $p(s_{\omega_0} < s_{\omega_0})$; efficient computation is possible via the rank-sum algorithm 
 
 Given a recognizer that outputs scores, we may ask if the tool can differentiate between ${\omega_0}$ and ${\omega_1}$ instances. We can first look at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
 
@@ -111,8 +116,6 @@ Demo 12 (AUC)
 
 
 ## C. Bayes optimal decisions
-- Correspond to optimal decisions in terms of risk-minimisation; For recognizers, that corresponds to cut-off points that minimize risk given an application context
-
 ### One feature
 Suppose that we need to label instances using only one predictor. A randomly drawn dataset has one feature column $x$ and one target field $y$ with values in $\{\omega_0$, $\omega_1\}$. We want to decide on a classification rule that assigns new instance labels based on their $x$ values. 
 
@@ -424,3 +427,15 @@ In the next part of this blog article, we will explore the connection between Ba
 - R. Duda et al (2001), Pattern Classification.
 - J. Hanley and B. McNeil (1982), The Meaning and Use of the Area under a Receiver Operating Characteristic (ROC) Curve.
 
+## NIST SRE 
+This is my personal reading list and is not a comprehensive index of the NIST-related research.
+
+- N. Brümmer et al (2021), Out of a Hundred Trials, How Many Errors does your Speaker Verifier Make?
+- A. Nautsch (2019), Speaker Recognition in Unconstrained Environments
+- N. Brümmer et al (2013), Likelihood-ratio Calibration Using Prior-Weighted Proper Scoring Rules
+- N. Brümmer and E. de Villiers (2011), The BOSARIS Toolkit: Theory, Algorithm and Code for Surviving the New DCF
+- N. Brümmer (2010), Measuring, Refining and Calibrating Speaker and Language Information Extracted from Speech
+- D. A. van Leeuwen and N. Brümmer (2007), An Introduction to Application-Independent Evaluation of Speaker Recognition Systems
+- N. Brümmer and J. du Preez (2006), Application-Independent Evaluation of Speaker Detection
+
+D. van Leeuwen and N. Brümmer (2007) is my go-to source as it is a simple and practical introduction. A. Nautsch (2019) provides a clear, recent and extensive review of the the speaker recognition research. N. Brümmer (2010) also covers a lot of ground into lots of details, with information theoretic interpretations that I found useful.

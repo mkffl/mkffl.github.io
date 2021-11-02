@@ -7,8 +7,7 @@ The [previous part]({{ site.baseurl }}{% link _posts/2021-09-18-Decisions-Part-1
 
 The Receiving Operator Characteristics (ROC) packages these concepts up into one unique assessment framework. Thus, it provides the same capabilities as the CCD and LLR frameworks introduced earlier, but with a focus on error trade-offs rather than likelihood ratios, TBD
 
-## A. Computation and connection to the Bayes decision threshold
-- [Overview] Emphasizes the tradeoff between the two error types by plotting Pfa against $(1-\text{Pmiss})$
+## A. The ROC
 
 The ROC curve slides through every possible cutoff point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cutoff. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cutoff point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the propotion of non-targets labeled as false positives, also called false positive rate (fpr).
 
@@ -128,7 +127,7 @@ From a decision perspective, that means that the histogram includes many sub-opt
 With monotonicity now enforced, the solution to the Bayes decision rule is unique. As showed at the end of the previous part, this solution is similar to the one we get when sliding through all (Pmiss,Pfa) pairs, computing expected risk and choosing the lowest value. The latter approach is typically used software packages, with the ROC curve operating points used to get all risk estimates.
 
 ## C. Risk VS AUC use case
-- [Overview] Risk-based model selection is better than AUC criteria (use case)
+
 
 ROC curves are also known for their visual representation of the concordance/discrimination probability. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see [this](https://stats.stackexchange.com/questions/190216/why-is-roc-auc-equivalent-to-the-probability-that-two-randomly-selected-samples) SO question for a proof. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC? 
 
