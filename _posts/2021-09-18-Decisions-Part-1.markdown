@@ -3,16 +3,49 @@ title: My Machine Learnt... Now What? - Part 1
 layout: post
 ---
 
-## Part 1: Bayes Decision Criteria
+## A. Introduction
 
-### Introduction
-- Motivations
-- BOSARIS background and notation (borrow a number of concepts: target/non, recognisers; liked to have clearly defined concepts while ML is too often a hodge podge of ill-defined hyped terms)
-- Scripting with data simulations
-   - Why Scala?
-   - probability_monad
+### Motivations
+There is a widely-accepted approach to building ML solutions that starts with learning parameters of a model and then applying a threshold to the model's scores to get categories/labels. The thresholding part rests on an equation that balances two types of errors, with decision aided by so-called confusion matrices.
 
-### Section 1 - Concordance Metrics
+The whole process is rather intuitive and can be applied almost like a recipe to a number of problems. Over the last couple of years, however, I have stumbled upon applications that required more or less tweaking of the standard approach. For example, how should I determine the score thresholds of an ML sytem that is an input into a downstream system? What if the downstream task aggregates the upstream outputs, e.g. classifying paragraphs to make decisions on documents?
+
+As I brushed up on traditional frameworks, I discovered the Speech Recognition Evaluation (SRE), a ML competition organised by NIST (link and definition of acronym). Over the last two decades, the research community around this institution has developed, documented and implemented a framework to assess speech recognition systems. 
+
+I think that the scope of its applications is broader than speech recognition, though, and that the concepts and tools that the community developed can help anyone working with classification systems. The set of research that I found, which I list at the end, certainly helped me firm up my understanding of model evaluation. I particuarly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit - links also at the end.
+
+The following two parts review traditional assessment frameworks, in particular the ROC curve, and the third part is an introduction to the Applied Probability of Error (APE), a framework for calibration assessment.
+
+### Fraud detection
+
+Following the NIST SRE literature, I refer to a recognizer as a black box that takes an input of data features and outputs a numerical value called score, such that higher values are more likely to be targets than not. A classifier binarizes scores to return classes or labels.
+
+I use an imaginary problem of fraud detection to test and illustrate the evaluation frameworks. It is a binary classification example with two types of transactions: 
+- `Fraudster` also called positive classes, or target labels or $\omega_1$
+- `Regular` also called negative classes, or non-target labels or $\omega_0$
+
+
+In the first 2 parts, the objective is to build an automated system which predicts if a transaction is a target or a non-target given observed features, and the evaluation frameworks will help construct labels that meet our risk objectives. Part 3 adds some nuance to binary classification and will consider the need and means to output probabilities instead.
+
+### Machine learning with scala
+
+The code underlying these posts is written in scala, and one may wonder why. A proper answer is beyond the scope of this article, a very short answer is "Why not?", and a more helpful answer is that scala has a few advantages over scripting languages, which people working with machine learning or statistical analysis typically use, e.g. python, R, julia, matlab or stata.
+
+As someone who works primarily with scripting languages, and is not a software developer by trade, I occasionally need to write code that runs on the java virtual machine (jvm), which often supports enterprise backend systems. So far, I have not found java particularly attractive to learn, while scala offers
+- (More) Concise syntax
+  - Even more so with scala 3
+- A rich native library to transform data
+  - The collections library
+- An ecosytem of ML libraries 
+  - Smile, (other TBD)
+- Scripting tools to get going quickly
+  - , e.g. I used Mill to compile this project and Ammonite to play around with data and models
+
+### Simulations with `probability_monad`
+
+- Last, probability_monad
+
+## B. Concordance Metrics
 - [Overview] Recognisers ability to separate $\omega_1$ from $\omega_0$ instances can be summarised in one metric, called A, that is $p(s_{\omega_0} < s_{\omega_0})$; efficient computation is possible via the rank-sum algorithm 
 
 Given a recognizer that outputs scores, we may ask if the tool can differentiate between ${\omega_0}$ and ${\omega_1}$ instances. We can first look at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
@@ -77,10 +110,10 @@ Demo 12 (AUC)
 
 
 
-### Section 2 - Bayes decisions rules
+## C. Bayes optimal decisions
 - Correspond to optimal decisions in terms of risk-minimisation; For recognizers, that corresponds to cut-off points that minimize risk given an application context
 
-#### Univariate use case
+### One feature
 Suppose that we need to label instances using only one predictor. A randomly drawn dataset has one feature column $x$ and one target field $y$ with values in $\{\omega_0$, $\omega_1\}$. We want to decide on a classification rule that assigns new instance labels based on their $x$ values. 
 
 Further assume equal prior probabilities i.e. $p(\omega_0) = p(\omega_1) = 0.5$ and that the rule should minimise the number of misclassified instances. The class-conditional distributions $p(x \vert \omega_i)$ below suggests a rule.
@@ -151,7 +184,7 @@ p(\omega_0)*Cfa
 $$ 
 changes the RHS of the Bayes decision threshold. This property will come up again in the APE framework.
 
-#### More than one feature
+### More than one feature
 In general, there are more than one features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large feature space to a one-dimensional space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
 
 Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In J. Hanley and B. McNeil (1982), a score is also called a degree of suspicion, which I think captures well the idea of ordered values and their relationship to hypothesis testing. I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.
@@ -170,7 +203,7 @@ $$
 (Notice the inverted numerator vs the Bayes decision rule). Hence, the cutoff point $c$ is at $llr = -\theta$.
 
 
-### Implementating the Bayes decision Rule
+### Implementation
 [minS on Tradeoff object]
 
 Going back to the SVM scores used in the CCD plot at the start, we would like to find the Bayes decision criterion $c$ for particular application parameters $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$. The optimal criterion value $\text{c}$ will convert the recognizer into a classifier, which we will apply on simulated data to check that the solution's risk in the right ballpark area.
@@ -249,12 +282,12 @@ def minusθ(pa: AppParameters) = -1*paramToTheta(pa)
 
 `asLLR` returns the log-likelihood ratio of the scores - the left-hand side of eq. 1.1 - using the proportion of targets in the score's corresponding bin. The `minusθ` method convert the application parameters into $-\theta$, which is the right-hand side of eq. 1.1. Then, `argminRisk` uses these two inputs to find the array index of the closest match, which is used by `minS` to provide the cutoff point $c$.
 
-##### Average risk
+### D. Average risk
 
 We can estimate the expected risk of a Bayes decision classifer using the evaluation data:
 
 $$
-E(risk) = Cmiss*p(\omega_1)*Pmiss + Cfa*p(\omega_0)*Pfa
+E(\text{risk}) = \text{Cmiss}*p(\omega_1)*\text{Pmiss} + \text{Cfa}*p(\omega_0)*\text{Pfa}
 \tag{1.2}
 $$
 
@@ -267,9 +300,9 @@ The expected risk is the risk of every action chosen for all instances in the da
 $$
 \begin{equation}
 \begin{aligned}
-E(risk) 
-& = \int_{-infinity}^{+infinity} risk(\alpha(x) | x)*p(x) dx \\
-& = \int_{x \in R_0} risk(\alpha_0 | x)*p(x) dx + \int_{x \in R_1} risk(\alpha_1 | x)*p(x) dx
+E(\text{risk}) 
+& = \int_{-\infty}^{+\infty} \text{risk}(\alpha(x) | x)*p(x) dx \\
+& = \int_{x \in R_0} \text{risk}(\alpha_0 | x)*p(x) dx + \int_{x \in R_1} \text{risk}(\alpha_1 | x)*p(x) dx
 \end{aligned}
 \end{equation}
 $$
@@ -279,10 +312,10 @@ With binary scores, the region $R_i$ is determined by the Bayes cutoff $c$, and 
 $$
 \begin{equation}
 \begin{aligned}
-E(risk)
-& = \int_{s < c} risk(\alpha_0 | s)*p(s) ds + \int_{s > c} risk(\alpha_1 | s)*p(s) ds \\
-& = Cmiss*\int_{s < c} p(\omega_1 | s)*p(s) ds + Cfa*\int_{s > c} p(\omega_0 | s)*p(s) ds \\
-& = Cmiss*p(\omega_1)\int_{s < c} p(s | \omega_1) ds + Cfa*p(\omega_0)*\int_{s > c} p(s | \omega_0) ds
+E(\text{risk})
+& = \int_{s < c} \text{risk}(\alpha_0 | s)*p(s) ds + \int_{s > c} \text{risk}(\alpha_1 | s)*p(s) ds \\
+& = \text{Cmiss}*\int_{s < c} p(\omega_1 | s)*p(s) ds + \text{Cfa}*\int_{s > c} p(\omega_0 | s)*p(s) ds \\
+& = \text{Cmiss}*p(\omega_1)\int_{s < c} p(s | \omega_1) ds + \text{Cfa}*p(\omega_0)*\int_{s > c} p(s | \omega_0) ds
 \end{aligned}
 \end{equation}
 $$
@@ -319,7 +352,11 @@ def paramToRisk(pa: AppParameters)(operatingPoint: Tuple2[Double,Double]): Doubl
 
 ```
 
-Let's wrap up by checking that the calculations for $c$ and $E(\text{risk})$ make sense using sample data. 
+## E. Tests
+
+Let's check that the calculations for $c$ and $E(\text{risk})$ make sense using sample data. 
+
+### Optimal threshold
 
 The method `expectedRisks` calculates risks at every threshold. We want the minimum risk to match the risk at $c$ on a given sample.
 
@@ -338,6 +375,8 @@ case classs Tradeoff(...){
 {% include demo14-bayesdecisions1-20.html %}
 
 The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum.
+
+### Expected risk
 
 Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That is, if use the corresponding cutoff "in the wild", do we get the expected risk? Data simulation allows us to answer the question empircally. The four main steps are 
 - Get a clasifier that applies the $c$ cut-off
@@ -381,7 +420,7 @@ The evaluation sample risk is the vertical dotted bar near the peak of the distr
 
 In the next part of this blog article, we will explore the connection between Bayes decision rules and the Receiving Operator Characteristics (ROC) curve.
 
-### References
+## References
 - R. Duda et al (2001), Pattern Classification.
 - J. Hanley and B. McNeil (1982), The Meaning and Use of the Area under a Receiver Operating Characteristic (ROC) Curve.
 

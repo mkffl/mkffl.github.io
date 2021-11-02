@@ -3,9 +3,11 @@ title: My Machine Learnt... Now What? - Part 2
 layout: post
 ---
 
-## Part 2: Receiving Operator Characteristics
+The [previous part]({{ site.baseurl }}{% link _posts/2021-09-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a preocedure to find the optimal threshold(s) that transforms a recognizer into a classifier. Optimal refers to the mininmum risk one would expect when deploying the classifier on a set of new observations. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
 
-### Section 3 - The ROC Assessment framework
+The Receiving Operator Characteristics (ROC) packages these concepts up into one unique assessment framework. Thus, it provides the same capabilities as the CCD and LLR frameworks introduced earlier, but with a focus on error trade-offs rather than likelihood ratios, TBD
+
+## A. Computation and connection to the Bayes decision threshold
 - [Overview] Emphasizes the tradeoff between the two error types by plotting Pfa against $(1-\text{Pmiss})$
 
 The ROC curve slides through every possible cutoff point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cutoff. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cutoff point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the propotion of non-targets labeled as false positives, also called false positive rate (fpr).
@@ -54,11 +56,13 @@ $\delta$ and $\text{a}$ are determined by the application parameters and the ris
 
 That allows the analyst to visually identify the Bayes decision cutoff point as the (tpr,fpr) pair that is closest to (0,1). It also allows them to compare[^f1] two recognizers, with the best performer's isocost being above the underperformer - see example in the next section.
 
-Before looking at an example, we will connect the above to the Bayes optimal criterion introduced in the previous part. The derivative of the ROC curve is equal to the likelihood ratio between the two conditional distributions, $p(s \vert \omega_i)$, so the solution to the Bayes equation (note: add reference) is available on the graph. 
+Before looking at an example, let's connect the ROC to the Bayes optimal criterion introduced in the previous part. ROC and likelihood ratio are connected because $(1-\text{Pmiss})$ and $\text{Pfa}$ are linear functions of the cumulative density function (cdf) of $\omega_1$ and $\omega_0$, respectively, so the derivative of the ratio is the ratio of their pdf's, i.e. the likelihood ratio. 
 
-ROC and likelihood ratio are connected because $(1-\text{Pmiss})$ and $\text{Pfa}$ are linear functions of the cumulative density function (cdf) of $\omega_1$ and $\omega_0$, respectively, so the derivative of the ratio is the ratio of their pdf's. If that sounds rather abstract (it does to me), the data also provides a proof. 
+Sliding through every operating point on the ROC curve is the same as going through every possible likelihood ratio (LR), which is the left-hand side in the Bayes equation 1.1 in the previous part. The right-hand side is a function of application parameters, and so the Bayes optimal solution can be identified on the ROC plot.
 
-Using the svm recognizer from Part 1, the snippets below show that for every operating point, the derivative equals the likelihood ratio. The method `lr` gets the likelihood ratio directly from the `Tradeoff` object's counts while `slope` get the lr from the slope of (tpr,fpr). Note that instead of a continuous function we have a line that goes through a set of points, so the slope is the segment that connects a point to the next one. The slope at $(1-\text{Pmiss(t)},\text{Pfa(t)})$ is $\frac{ \text{Pmiss(t)}-\text{Pmiss(t-1)} }{ \text{Pfa(t-1)}-\text{Pfa(t)} }$.
+If that sounds rather abstract (it does to me), the data also provides a proof. Using the svm recognizer from Part 1, the snippets below show that for every operating point, the derivative equals the likelihood ratio. The method `lr` gets the likelihood ratio directly from the `Tradeoff` object's counts while `slope` get the lr from the slope of (tpr,fpr). 
+
+Note that instead of a continuous function we have a line that goes through a set of points, so the slope is the segment that connects a point to the next one. The slope at $(1-\text{Pmiss(t)},\text{Pfa(t)})$ is $\frac{ \text{Pmiss(t)}-\text{Pmiss(t-1)} }{ \text{Pfa(t-1)}-\text{Pfa(t)} }$.
 
 ```scala
 /* lr(w1) = 
@@ -91,23 +95,18 @@ So far, we have made no assumptions about the shape of the ROC curve, so there c
 
 The graphs below show the relationships between CCD, LLR and ROC plots. The isocost corresponds to the fraud application of Part 1, `AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`, which penalizes false negatives 5 times more than false positives.
 
-
-TODO: annotations for minTheta, optimal score and isocost.
-
 {% include demo15-bayesdecisions2-10.html %}
 
 The ROC curve emphasizes that the optimal decision point is determined by a tradeoff between missing errors and false alarm errors. As long as the curve is not flat, we get a lower miss rate $\text{Pmiss}$ if we accept a higher false alarm rate $\text{Pfa}$.
 
 How much $\text{Pfa}$ we tolerate is determined by application parameters, captured by the derivative of the isocost line. Given flat priors and high Cmiss, our application requires low $\text{Pmiss}$ and thus tolerates high Pfa. Visually, that corresponds to operating points in the right upper-hand corner.
 
-The graphs also shows the connections between LLR and ROC. The fraud application penalizes false negatives heavily, which corresponds to a low $\delta$ in the definition above and therefore to a flattish ROC isocost, which maps to the low threshold in the LLR graph. 
+The graph also shows the connections between LLR and ROC. The fraud application penalizes false negatives heavily, which corresponds to a low $\delta$ in the definition above and therefore to a flattish ROC isocost, which maps to the low threshold in the LLR graph. 
 
 A steep isocost would map to a high LLR threshold. If the ratio of priors and costs balance each other and $-\theta$ is close to 0, then the isocost slope is parallel to the $tpr=fpr$ line. An example of such application would be to minimise the error rate (Cmiss = Cfa = 1) when prior probabilities are assumed to be equal.
 
 
-## Part 2
-
-### Section 1 - Implementation considerations The PAV algorithm 
+## B. The PAV algorithm 
 - [Overview] It is a better binning strategy than the current equal-sized bin histogram approach
 
 So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense to estimate the probability functions (pdf, cdf, 1-cdf) that underpin these evaluation frameworks, software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points[^f2].
@@ -116,13 +115,19 @@ One issue with histograms is to define the bin width. If the bins are too wide, 
 
 The binary criterion does not seem compatible with the LLR not being a monotonous function of scores. If $\text{LLR}(p_s)$ intersect $-\theta$ at $s=c$, however, $\text{LLR}(p_s) < -\theta$ for some scores above $c$, then the Bayes decision rule says that we should choose $\omega_0$ for these scores, though the binary classifer will predict $\omega_1$.
 
-We can enforce monotonicity between scores and likelihood ratios by fitting monotonic functions like a simple linear regression: $\text{LLR}(p_s) = \beta_0+\beta_1*s$. That would be the same as transforming the scores into $[0,1]$ and fitting a logistic regression on the observed probabilities, which is a common method for score calibration. There are also non-parametric options to enforce monotonicity and, in fact, one of them called the Pair Adjacent Violators (PAV) is commonly used because it ensures that the resulting ROC curve is convex.
+We can enforce monotonicity between scores and likelihood ratios by fitting monotonic functions like a simple linear regression: $\text{LLR}(p_s) = \beta_0+\beta_1*s$. That would be the same as transforming the scores into $[0,1]$ and fitting a logistic regression on the observed probabilities, which is a common method for score calibration. 
 
-The PAV creates groups of scores with representative thresholds, which I can use as input into the `Tradeoff` object. The resulting ROC curve is convex, while the thin-sized bin histogram ROC appears non convex. From a decision perspective, that means that the histogram includes many sub-optimal operating points, i.e. with higher expected risks than what could be achieved by using points on the convex hull. For more information and compelling examples, I would refer to T. Fawcett and A. Niculescu-Mizil (2007).
+There are also non-parametric options to enforce monotonicity and, in fact, one of them called the Pair Adjacent Violators (PAV) is commonly used because it ensures that the resulting ROC curve is convex.
+
+The PAV creates groups of scores with representative thresholds, which I can use as input into the `Tradeoff` object. The resulting ROC curve is convex, while the thin-sized bin histogram ROC appears non convex. 
+
+From a decision perspective, that means that the histogram includes many sub-optimal operating points, i.e. with higher expected risks than what could be achieved by using points on the convex hull. For more information and compelling examples, I would refer to T. Fawcett and A. Niculescu-Mizil (2007).
 
 {% include demo16-histVSpav-10.html %}
 
-### Section 2 - Risk VS AUC use case
+With monotonicity now enforced, the solution to the Bayes decision rule is unique. As showed at the end of the previous part, this solution is similar to the one we get when sliding through all (Pmiss,Pfa) pairs, computing expected risk and choosing the lowest value. The latter approach is typically used software packages, with the ROC curve operating points used to get all risk estimates.
+
+## C. Risk VS AUC use case
 - [Overview] Risk-based model selection is better than AUC criteria (use case)
 
 ROC curves are also known for their visual representation of the concordance/discrimination probability. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see [this](https://stats.stackexchange.com/questions/190216/why-is-roc-auc-equivalent-to-the-probability-that-two-randomly-selected-samples) SO question for a proof. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC? 
@@ -232,7 +237,7 @@ lowAUC can identify more positives than hiAUC while keeping fpr low, as can be s
 
 {% include Demo17-llrRoc4panes-1.html %}
 
-### Section 3 - Majority-isocost lines
+## D. Majority-isocost lines
 
 The all-$\omega_0$ "classifier" is a simple rule that assigns all instances to non-target. Another name may be majority classifier because it assigns the most prevalent class in the dataset. Its expected risk is a benchmark that any recognizer should beat because it is inexpensive, simple and thus it is often the status quo before any automated solution is considered. 
 
@@ -262,7 +267,10 @@ And so, the line is defined as $(tpr-d) = (fpr-d) \times \text{rr}$, which has a
 
 The majority-isocost equates $\text{tpr}=\text{fpr}$ when $\text{eer} = 1$ i.e. when application parameters don't carry any information for the Bayes decision threshold. In that case, there is no majority classifier, and we may as well flip a coin to decide which label to choose for all instances. A recogniser's ROC is on this line if it can't do better than this randomly assigned majority rule, which means that this recogniser has a concordance probability (AUC) of 0 - that is usually how people refer to this line.
 
-## Conclusion and opening to Part 3 
+## E. Conclusion
+The ROC frameworks shows that finding the optimal threshold is equivalent to trading one type of error for another. This tradeoff is a necessary price one has to pay when binarising recogniser score outputs. 
+
+As mentioned in the introduction to Part 1, a system output need not consist of binary labels, but can also take the form of probabililities or a combination of hard a soft outputs. In the next part of this blog, I will look at the framework used by the NIST SRE to evaluate systems that output probabilities. 
 
 ### Appendix
 
@@ -288,7 +296,7 @@ $$
 
 [^f1]: The ROC framework makes it easy to not only compare but also combine recognizers, which can be a better option when one recognizer achieves better risk only on some parts of the ROC curve. See following section on the convex hull, and T. Fawcett and F. Provost (2001).
 
-[^f2]: See algorithm 2 T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with width-varying bin sizes, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, in a sense, standard implementations do use histograms.
+[^f2]: See "Algorithm 2" in T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with varying-size bin sizes, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, one could argue that these implementations actually use histograms. For an example implementation in R, see [ROCR](https://github.com/ipa-tys/ROCR/blob/master/R/prediction.R) `.compute.unnormalized.roc.curve`. My R is very rough on the edges but I think they use the aforementioned algorithm.
 
 ### References
 - T. Fawcett and F. Provost (2001). Robust Classification for Imprecise Environments.
