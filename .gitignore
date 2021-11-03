@@ -5,3 +5,6 @@ _site
 vendor
 .DS_Store
 old/
+*.db
+*.log
+settings.json
