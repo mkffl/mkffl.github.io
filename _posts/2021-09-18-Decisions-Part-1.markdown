@@ -57,7 +57,7 @@ Given a recognizer that outputs scores, we may ask if the tool can differentiate
 
 For example, fitting a Support Vector Machine (SVM) with default parameters on the transaction data gives the following separation. The histograms estimate the score probability conditioned on the class so I call it a Class Conditional Distributions (CCD) chart.
 
-{% include demo11-ccd-5.html %}
+{% include demo11-ccd.html %}
 
 Scores below -2 are almost certainly associated with non-targets while scores between -1  and 1 are more uncertain. We can measure the recognizer's discrimination power in one metric that estimates the probability that $\omega_0$ have lower scores than $\omega_1$ instance i.e. $p(s_{\omega_0} < s_{\omega_1})$.
 
@@ -121,7 +121,7 @@ Suppose that we need to label instances using only one predictor. A randomly dra
 
 Further assume equal prior probabilities i.e. $p(\omega_0) = p(\omega_1) = 0.5$ and that the rule should minimise the number of misclassified instances. The class-conditional distributions $p(x \vert \omega_i)$ below suggests a rule.
 
-{% include demo12-ccd-3.html %}
+{% include demo12-ccd.html %}
 
 We should choose $\omega_0$ when its likelihood is greater, and $\omega_1$ otherwise. In this sample data, $p(x \vert \omega_1) > p(x \vert \omega_0)$ when $x>-0.25$, so any new instance with $x > -0.25$ should be classified as a target. Doing this consistently with every new instances guarantees that we'll minimise the error rate.
 
@@ -375,7 +375,7 @@ case classs Tradeoff(...){
 }
 ```
 
-{% include demo14-bayesdecisions1-20.html %}
+{% include demo14-bayesdecisions1.html %}
 
 The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum.
 
@@ -417,7 +417,7 @@ val simRisk: Row = simData.sample(nsimulations).toVector
 
 Note that `classifier` applies a `logit` transform to the `recognizer`'s output. That is because SVM scores are originally in $[0,1]$, and I want them in $\mathbb{R}$ to emphasize that scores need not be "probability-like" values - they could also be projected onto $[0,inf]$ for example. The logit is a monotonously increasing function, so it does not affect the score index returned by the `minS` method.
 
-{% include demo13-simulation-14.html %}
+{% include demo13-simulation.html %}
 
 The evaluation sample risk is the vertical dotted bar near the peak of the distribution, which is good news. The grey shaded area comprises 95% of the simulated data, and I want the sample estimate to fall in that interval, which it does.
 
