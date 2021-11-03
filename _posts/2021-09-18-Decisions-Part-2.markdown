@@ -94,7 +94,7 @@ So far, we have made no assumptions about the shape of the ROC curve, so there c
 
 The graphs below show the relationships between CCD, LLR and ROC plots. The isocost corresponds to the fraud application of Part 1, `AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`, which penalizes false negatives 5 times more than false positives.
 
-{% include demo15-bayesdecisions2-10.html %}
+{% include demo15-bayesdecisions2.html %}
 
 The ROC curve emphasizes that the optimal decision point is determined by a tradeoff between missing errors and false alarm errors. As long as the curve is not flat, we get a lower miss rate $\text{Pmiss}$ if we accept a higher false alarm rate $\text{Pfa}$.
 
@@ -234,7 +234,7 @@ The LLR plot confirms the previous AUC results, as can be seen from hiAUC's stee
 lowAUC can identify more positives than hiAUC while keeping fpr low, as can be seen by the steep increase of its ROC curve. In other words, hiAUC needs to be closer to an all-$\omega_0$ classifer to keep a low enough fpr, and that means it has a higher expected risk. 
 
 
-{% include Demo17-llrRoc4panes-1.html %}
+{% include Demo17-llrRoc4panes.html %}
 
 ## D. Majority-isocost lines
 
@@ -251,7 +251,7 @@ For example, an increase in supplier costs, a change in regulation impacting lab
 The graph below shows the previous parameters and another scenario that penalises false positives  more, which corresponds to the steeper line. It's interesting that lowAUC still has points above the steeper isocost. 
 
 
-{% include Demo18-ROC-equal-utility-3.html %}
+{% include Demo18-ROC-equal-utility.html %}
 
 The majority-isocost line is defined as $\text{(tpr-d)} = \text{(fpr-d)} \times \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$, with $d$ being (0,0) for the all-$\omega_0$ rule, or (1,1) for the all-$\omega_1$ rule. See the detailed calculations in the appendix.
 
