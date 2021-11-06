@@ -3,11 +3,11 @@ title: My Machine Learnt... Now What? - Part 2
 layout: post
 ---
 
-The [previous part]({{ site.baseurl }}{% link _posts/2021-09-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a preocedure to find the optimal threshold(s) that transforms a recognizer into a classifier. Optimal refers to the mininmum risk one would expect when deploying the classifier on a set of new observations. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
+The [previous part]({{ site.baseurl }}{% link _posts/2021-09-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a preocedure to find the optimal threshold that transforms a recognizer into a classifier. Optimal refers to the mininmum expected risk when deploying the classifier on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
 
-The Receiving Operator Characteristics (ROC) packages these concepts up into one unique assessment framework. Thus, it provides the same capabilities as the CCD and LLR frameworks introduced earlier, but with a focus on error trade-offs rather than likelihood ratios, TBD
+The Receiving Operator Characteristics (ROC) combines these concepts and provides the same capabilities for threhsold selection as the CCD and LLR frameworks introduced earlier. However, it has a focus on error trade-offs rather than likelihood ratios, which becomes useful when comparing recognisers, as the next examples will show.
 
-## A. The ROC
+## A. The ROC curve
 
 The ROC curve slides through every possible cutoff point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cutoff. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cutoff point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the propotion of non-targets labeled as false positives, also called false positive rate (fpr).
 
@@ -23,7 +23,7 @@ case class Tradedoff(...){
 }
 ```
 
-As seen previously, $\text{Pmiss}$ and $\text{Pfa}$ are the two inputs into $E(r)$ that vary with thresholds, and we would need to add the other four non-varying inputs to provide information about expected risks, which would add another perspective on top of what the CCD and LLR plots already provide. 
+As seen previously, $\text{Pmiss}$ and $\text{Pfa}$ are the two inputs into $E(\text{r})$ that vary with thresholds, and we would need to add the other four non-varying inputs to provide information about expected risks, which would add another perspective on top of what the CCD and LLR plots already provide. 
 
 As it turns out, the four application parameters, $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$, can be visualised via the so-called isocost curve. Combining (tpr,fpr) with isocosts provides a powerful tool for risk assessment given one or more recognizers, which is why ROC graphs are an indispensable part of the analyst's toolbox.
 
@@ -49,9 +49,9 @@ $$
 \tag{2.1}
 $$
 
-with $\delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$ and $\text{a}=\frac{p(\omega_1) \times \text{Cmiss} - E(\text{risk})}{p(\omega_1) \times \text{Cmiss}}$
+with $\delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$ and $\text{a}=\frac{p(\omega_1) \times \text{Cmiss} - E(\text{risk})}{p(\omega_1) \times \text{Cmiss}}$.
 
-$\delta$ and $\text{a}$ are determined by the application parameters and the risk objective, while (tpr,fpr) is achieved by the recognizer and is also called an operating point. For given application parameters, an isocost curve with lower fpr and/or higher tpr corresponds to a lower risk, hence the optimal isocost is the closest to the "north-west corner" - upper left-hand corner, or (fpr=0,tpr=1) corner - in the ROC space. 
+$\delta$ and $\text{a}$ are determined by the application parameters and the risk objective, while (tpr,fpr) is achieved by the recognizer and is also called an operating point. For given application parameters, an isocost curve with lower fpr and/or higher tpr corresponds to a lower risk, hence the optimal isocost is the closest to the "north-west corner", i.e. upper left-hand corner or (fpr=0,tpr=1) corner, in the ROC space.
 
 That allows the analyst to visually identify the Bayes decision cutoff point as the (tpr,fpr) pair that is closest to (0,1). It also allows them to compare[^f1] two recognizers, with the best performer's isocost being above the underperformer - see example in the next section.
 
@@ -79,7 +79,7 @@ def slope(to: Tradeoff) = {
 }
 ```
 
-`lr` and `slope`return the same results as expected.
+And `lr` and `slope`return the same results as expected.
 
 ```bash
 @ lr(hisTo)
@@ -88,7 +88,7 @@ res1: Vector[Double] = Vector(0.0, 0.0, 0.0, 0.0, 0.007871325628334975, 0.0, 0.0
 res2: Vector[Double] = Vector(0.0, 0.0, 0.0, 0.0, 0.007871325628334973, 0.0, 0.0, 0.012501517174414365, 0.07484429961857492, 0.19986233803966608, 0.6509123275478419, 1.912732127685398, 5.629137095074125, 20.780299658804417, 55.4692317028767, 82.21206052514438, 360.01869158876053, Infinity, Infinity, Infinity, Infinity, Infinity, NaN, Infinity, NaN)
 ```
 
-With likelihood ratios available, the connection to the Bayes decision threshold becomes apparent by going back to the isocost equation. The derivative of the "north west-most" line is $e^{-\theta}$ and is also a tangeant to the ROC curve - if not, we could shift the isocost and get a lower risk. That means that the optimal thresholds are at $\text{LR}=e^{-\theta}$ i.e. $\text{LLR}=-\theta$. 
+With likelihood ratios available, the connection to the Bayes decision threshold becomes apparent by going back to the isocost equation. The derivative of the "north west-most" line is $e^{-\theta}$ and is also a tangeant to the ROC curve - if not, we could shift the isocost and get a lower risk. That means that the optimal thresholds are at $\text{LR}=e^{-\theta}$ i.e. $\text{LLR}=-\theta$, which is equation 1.1.
 
 So far, we have made no assumptions about the shape of the ROC curve, so there can be many solutions, but the next section will cover monotonicity, which guarantees that there is only one optomal cutoff solution.
 
@@ -106,9 +106,8 @@ A steep isocost would map to a high LLR threshold. If the ratio of priors and co
 
 
 ## B. The PAV algorithm 
-- [Overview] It is a better binning strategy than the current equal-sized bin histogram approach
 
-So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense to estimate the probability functions (pdf, cdf, 1-cdf) that underpin these evaluation frameworks, software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points[^f2].
+So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense to estimate the probability functions - pdf, cdf, 1-cdf - that underpin these evaluation frameworks, software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points[^f2].
 
 One issue with histograms is to define the bin width. If the bins are too wide, the optimal cutoff may be lost inside a bin, resulting in a higher expected risk. Would it make sense to select smaller intervals? I plot the results of very thin intervals below. The LLR curve goes up and down, i.e. is not a [monotonous function](https://mathworld.wolfram.com/MonotonicFunction.html) of scores, and the ROC curve now has a steppy pattern, i.e. is not [convex](https://en.wikipedia.org/wiki/Convex_set).
 
@@ -124,14 +123,14 @@ From a decision perspective, that means that the histogram includes many sub-opt
 
 {% include demo16-histVSpav-10.html %}
 
-With monotonicity now enforced, the solution to the Bayes decision rule is unique. As showed at the end of the previous part, this solution is similar to the one we get when sliding through all (Pmiss,Pfa) pairs, computing expected risk and choosing the lowest value. The latter approach is typically used software packages, with the ROC curve operating points used to get all risk estimates.
+With monotonicity now enforced, the solution to the Bayes decision rule is unique. As showed at the end of the previous part, this solution is similar to the one we get when sliding through all (Pmiss,Pfa) pairs, computing expected risk and choosing the lowest value. The latter approach is typically used by software packages, with the ROC operating points used to compute risk estimates.
 
 ## C. Risk VS AUC use case
 
 
-ROC curves are also known for their visual representation of the concordance/discrimination probability. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see [this](https://stats.stackexchange.com/questions/190216/why-is-roc-auc-equivalent-to-the-probability-that-two-randomly-selected-samples) SO question for a proof. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC? 
+ROC curves are also known for their visual representation of the concordance probability covered in Part 1. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see [this](https://stats.stackexchange.com/questions/190216/why-is-roc-auc-equivalent-to-the-probability-that-two-randomly-selected-samples) SO question for a proof. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC? 
 
-The next example shows that higher concordance is not necessarily better from a risk optimisation viewpoint, and so, if minimising expected risk is the objectvive, one need not pay too much attention to AUC, which may at best be a good sense check - e.g. is it close or well above 0.5?
+The next example shows that higher concordance is not necessarily better from a risk optimisation viewpoint, and so, if our objective is to minimise risk, we need not pay too much attention to AUC, which may at best be a good sense check - e.g. is it close or well above 0.5?
 
 The example is based on another blog post, [ML Meets Economics](http://nicolas.kruchten.com/content/2016/01/ml-meets-economics/), which is a great practical introduction to AUC and ROC curves. I only make small adjustments to their numbers to fit my simulated data and I emphasize the reasons for the disagreement between $E(\text{risk})$ and AUC.
 
@@ -253,7 +252,7 @@ The graph below shows the previous parameters and another scenario that penalise
 
 {% include Demo18-ROC-equal-utility.html %}
 
-The majority-isocost line is defined as $\text{(tpr-d)} = \text{(fpr-d)} \times \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$, with $d$ being (0,0) for the all-$\omega_0$ rule, or (1,1) for the all-$\omega_1$ rule. See the detailed calculations in the appendix.
+A note on the calculation - the majority-isocost line is defined as $\text{(tpr-d)} = \text{(fpr-d)} \times \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$, with $d$ being (0,0) for the all-$\omega_0$ rule, or (1,1) for the all-$\omega_1$ rule. See the details in the appendix.
 
 To determine which all-$\omega_i$ is the reference, compute their expected-risk ratio
 
@@ -262,9 +261,11 @@ $$
 $$
 
 
-And so, the line is defined as $(tpr-d) = (fpr-d) \times \text{rr}$, which has a nice visual interpretation. If the all-non-target rule has the lower risk, the line equation is $\text{tpr} = \text{fpr} \times \text{rr}$ which lies above the $\text{tpr}=\text{fpr}$ line. Otherwise, it is $\text{(tpr-1)} = \text{(fpr-1)} \times \text{rr}$ which also lies above $\text{tpr}=\text{fpr}$.
+And so, the line equation can also be defined as $(\text{tpr}-d) = (\text{fpr}-d) \times \text{rr}$, which has a nice visual interpretation. If the all-non-target rule has the lower risk, the line equation is $\text{tpr} = \text{fpr} \times \text{rr}$ which lies above the $\text{tpr}=\text{fpr}$ line. Otherwise, it is $\text{(tpr-1)} = \text{(fpr-1)} \times \text{rr}$ which also lies above $\text{tpr}=\text{fpr}$.
 
-The majority-isocost equates $\text{tpr}=\text{fpr}$ when $\text{eer} = 1$ i.e. when application parameters don't carry any information for the Bayes decision threshold. In that case, there is no majority classifier, and we may as well flip a coin to decide which label to choose for all instances. A recogniser's ROC is on this line if it can't do better than this randomly assigned majority rule, which means that this recogniser has a concordance probability (AUC) of 0 - that is usually how people refer to this line.
+Furthermore, the majority-isocost is $(\text{tpr}=\text{fpr})$ when $\text{eer} = 1$ i.e. when application parameters don't carry any information for the Bayes decision threshold. In that case, there is no majority classifier, and we may as well flip a coin to decide which label to choose for all instances. 
+
+A recogniser's ROC is on this line if it can't do better than this randomly assigned majority rule, which means that this recogniser has a concordance probability (AUC) of 0 - that is often how people refer to $(\text{tpr}=\text{fpr})$.
 
 ## E. Conclusion
 The ROC frameworks shows that finding the optimal threshold is equivalent to trading one type of error for another. This tradeoff is a necessary price one has to pay when binarising recogniser score outputs. 
@@ -273,9 +274,9 @@ As mentioned in the introduction to Part 1, a system output need not consist of 
 
 ### Appendix
 
-Majority-isocot equation
+#### Details of the majority-isocot equation
 
-Rearrange the expected risk equation
+Rearrange the expected risk equation (2.1)
 
 $$
 \text{tpr}=\text{fpr}*\delta+\frac{p(\omega_1) \times \text{Cmiss} - E(\text{risk})}{p(\omega_1) \times \text{Cmiss}}
@@ -287,7 +288,7 @@ $$
 E(\text{risk}) = p(\omega_0)\times\text{Cfa}\times\text{d} + p(\omega_1)\times\text{Cmiss}-p(\omega_1)\times\text{Cmiss}\times\text{d}
 $$
 
-Plug the (d,d) risk value into the expected risk equation, rearrange to get
+Plug the $(d,d)$ risk value into the expected risk equation, rearrange to get
 
 $$
 \text{(tpr-d)} = \text{(fpr-d)} \times \delta
@@ -295,16 +296,9 @@ $$
 
 [^f1]: The ROC framework makes it easy to not only compare but also combine recognizers, which can be a better option when one recognizer achieves better risk only on some parts of the ROC curve. See following section on the convex hull, and T. Fawcett and F. Provost (2001).
 
-[^f2]: See "Algorithm 2" in T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with varying-size bin sizes, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, one could argue that these implementations actually use histograms. For an example implementation in R, see [ROCR](https://github.com/ipa-tys/ROCR/blob/master/R/prediction.R) `.compute.unnormalized.roc.curve`. My R is very rough on the edges but I think they use the aforementioned algorithm.
+[^f2]: See "Algorithm 2" in T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with varying-size bins, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, one could argue semantics and say that implementations actually use histograms. For an example implementation in R, see [ROCR](https://github.com/ipa-tys/ROCR/blob/master/R/prediction.R) `.compute.unnormalized.roc.curve`. My R is rough on the edges but I think they use the aforementioned algorithm.
 
 ### References
 - T. Fawcett and F. Provost (2001). Robust Classification for Imprecise Environments.
 - T. Fawcett and A. Niculescu-Mizil (2007). PAV And the ROC Convex Hull.
-
-## Part 3
-
-- Why do we sometimes need a calibrated recognizer?
-- How should we assess a calibrated recognizer?
-    -> LLR is a calibration plot; relation with reliability diagram
-    -> Can we comapre differnt systems against different application parameters?
 
