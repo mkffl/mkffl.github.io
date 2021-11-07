@@ -11,6 +11,7 @@ The Receiving Operator Characteristics (ROC) combines these concepts and provide
 
 The ROC curve slides through every possible cutoff point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cutoff. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cutoff point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the propotion of non-targets labeled as false positives, also called false positive rate (fpr).
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L130)
 ```scala
 case class Tradedoff(...){
         // ...
@@ -63,6 +64,7 @@ If that sounds rather abstract (it does to me), the data also provides a proof. 
 
 Note that instead of a continuous function we have a line that goes through a set of points, so the slope is the segment that connects a point to the next one. The slope at $(1-\text{Pmiss(t)},\text{Pfa(t)})$ is $\frac{ \text{Pmiss(t)}-\text{Pmiss(t-1)} }{ \text{Pfa(t-1)}-\text{Pfa(t)} }$.
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L606)
 ```scala
 /* lr(w1) = 
         p(s|w1)/p(s|w0)
@@ -172,10 +174,11 @@ $$
 
 The Bayes decision criterion is to choose $\alpha_1$ if $\text{lr}(\omega_1)$ is greater than $\frac{(\text{C10-C00})p(\omega_0)}{(\text{C01-C11})p(\omega_1)} = \frac{90 \times p(\omega_0)}{107 \times p(\omega_1)}$, and so the cost/structure is equivalent to `AppParameters(p_w1=0.05,Cmiss=107,Cfa=90)`.
 
-In what follows, we evaluate the high- and low-AUC recognizers, which are prefixed with "hi" and "low", resp. The data generation process defines the recogniser scores directly instead of generating the data and fitting recognisers to get the scores, which would be a lot of work for no added benefit. I use the `probability_monad` framework to craft and sample from the score distributions (TODO: link to definition). 
+In what follows, we evaluate the high- and low-AUC recognizers, which are prefixed with "hi" and "low", resp. The data generation process defines the recogniser scores directly instead of generating the data and fitting recognisers to get the scores, which would be a lot of work for no added benefit. I use the `probability_monad` framework to craft and sample from the score distributions - defined [here](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Data.scala#L9). 
 
 We start by checking that the AUC of the `hiAUCdata` recognizer (highAUC) is truly higher using the `smartA` function described in Part 1. In `probability_monad`, the `pr` method samples from the rv to evaluate a predicate. Here, we check that the difference in AUC is positive, i.e. that `hiAUCdata`'s AUC is bigger than `lowAUCdata`.
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L788)
 ```scala
     def hiAUCdata: Distribution[List[Score]] = HighAUC.normalLLR.repeat(1000)
     def lowAUCdata: Distribution[List[Score]] = LowAUC.normalLLR.repeat(1000)
@@ -207,7 +210,7 @@ res3: Double = 0.9775823313628146
 res4: Boolean = true
 ```
 
-The `hiAUCdata`recogniser is better from an AUC viewpoint, however, it has a worse expected risk on the sample dataset (TODO: I also checked it with `pr`):
+The `hiAUCdata`recogniser is better from an AUC viewpoint, however, it has a worse expected risk on the sample dataset:
 
 ```scala
     val aucPa = AppParameters(0.05,107,90)
@@ -296,7 +299,7 @@ $$
 
 [^f1]: The ROC framework makes it easy to not only compare but also combine recognizers, which can be a better option when one recognizer achieves better risk only on some parts of the ROC curve. See following section on the convex hull, and T. Fawcett and F. Provost (2001).
 
-[^f2]: See "Algorithm 2" in T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with varying-size bins, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, one could argue semantics and say that implementations actually use histograms. For an example implementation in R, see [ROCR](https://github.com/ipa-tys/ROCR/blob/master/R/prediction.R) `.compute.unnormalized.roc.curve`. My R is rough on the edges but I think they use the aforementioned algorithm.
+[^f2]: See "Algorithm 2" in T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with varying-size bins, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, one could argue semantics and say that implementations actually use histograms. For an example implementation in R, see [ROCR](https://github.com/ipa-tys/ROCR/blob/master/R/prediction.R) `.compute.unnormalized.roc.curve`. My R is rough around the edges but I think it is the aforementioned algorithm.
 
 ### References
 - T. Fawcett and F. Provost (2001). Robust Classification for Imprecise Environments.

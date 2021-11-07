@@ -12,7 +12,7 @@ The whole process is intuitive and can be applied to a number of problems. Over 
 
 Earlier this year, I came across the Speech Recognition Evaluation (SRE), a ML competition organised by [NIST](https://www.nist.gov/programs-projects/speaker-and-language-recognition), a U.S. research institute. Over the last two decades, its research community has developed a framework to assess speech recognition systems. One recurring application is to determine if a speech segment includes only one or two distinct speakers. 
 
-Though NIST papers mentions various applications of this evaluation framework in biometrics and forensics, I think that it is useful for anyone working on classification applications. The string of research that I found, which I list at the end, certainly helped me firm up my understanding of model evaluation. I particuarly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit (todo: links to implementations).
+Though NIST papers mentions various applications of this evaluation framework in biometrics and forensics, I think that it is useful for anyone working on classification applications. The string of research that I found, which I list at the end, certainly helped me firm up my understanding of model evaluation. I particuarly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit - see this [matlab implementation](https://projets-lium.univ-lemans.fr/sidekit/api/bosaris/index.html), or more recent ones in [julia](https://github.com/davidavdav/ROCAnalysis.jl) or [python](https://gitlab.eurecom.fr/nautsch/pybosaris).
 
 The following two parts review traditional assessment frameworks, in particular the ROC curve, and the third part is an introduction to the Applied Probability of Error (APE), a framework for model calibration assessment.
 
@@ -32,13 +32,15 @@ It is worth noting that a system may combine hard and soft decisions, for exampl
 
 ### Machine learning with scala
 
-The code underlying these posts is written in scala because on this occation I wanted to experiment with a language that runs on the java virtual machine (jvm), as it often supports the enterprise systems that my applications run on. I have not found java attractive enough to learn it, while scala offers
+The code underlying these posts is written in scala and is available on [github](https://github.com/mkffl/decisions). The charts in this article and the next are defined in [Recipe.scala](https://github.com/mkffl/decisions/blob/main-pub/Decisions/src/Recipes.scala). 
+
+Why scala? On this occation I wanted to experiment with a language that runs on the java virtual machine (jvm), as it's what often supports the enterprise systems that my applications run on. I have not found java attractive enough to learn it, while scala offers
 
 - (More) Concise syntax - even more so in [scala 3](https://docs.scala-lang.org/scala3/book/why-scala-3.html)
 - A rich standard library to explore and transform data - see some [examples](https://twitter.github.io/scala_school/collections.html)
 - An ecosytem of ML and analytics libraries - e.g. this project uses [Smile](https://haifengl.github.io/) for ML models and a [Kotlin package](https://github.com/sanity/pairAdjacentViolators) for the Paired Adjacent Violators algorithm
 - Scripting tools to get going quickly - e.g. the code for this project is compiled with [Mill](https://github.com/com-lihaoyi/mill) and I have used the [Ammonite repl](https://ammonite.io/) to play around with the data
-- The choice between functional programming - when I am feeling adventurous - and OOP - when it's getting late and I want to get things done
+- A choice between functional programming - when I am feeling adventurous - and OOP - when I want to get things done because it's getting late
 
 ### Simulation
 
@@ -62,6 +64,7 @@ Scores below -2 are almost certainly associated with non-targets while scores be
 
 An naive implementation estimates the probability with a simple ratio of ordered pairs (i.e. $s_{\omega_0} < s_{\omega_0}$) over all pairs in the sample. If we call the probability A, that's what `naiveA` does in the code below.
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L207)
 ```scala
     def getPermutations(A: Row, B: Row): Vector[Tuple2[Double,Double]] = for {
             a <- A
@@ -212,6 +215,7 @@ We need a few extra bits in place:
 
 - The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below; The histogram implementation is not particularly interesting so I don't show it, but it's available in the source code
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L112)
 ```scala
 val w0Counts: Row = ... // counts of non-target labels
 val w1Counts: Row = ... // counts of target labels
@@ -219,7 +223,7 @@ val thresh: Row = ... // bins
 ```
 
 - Common operations applied to sample data density, most of which will come in handy in later sections
-
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/package.scala#L189)
 ```scala
 val proportion: Row => Row = counts => {
     val S = counts.sum.toDouble
@@ -240,6 +244,7 @@ val logodds: Tuple2[Row,Row] => Row = odds andThen logarithm
 
 - An object to encapsulate the sample score predictions and the related evaluation methods, starting with the CCD estimates 
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L130)
 ```scala
 case class Tradeoff(w1Counts: Row, w0Counts: Row, thresholds: Row) {
 
@@ -382,6 +387,7 @@ Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That i
 - Compute the risk
 - Check that the sample estimate is similar to the simulated values
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L763)
 ```scala
 val cutOff: Double = hisTo.minS(pa) // hisTo is the Tradeoff instance
 val thresholder: (Double => User) = score => if (score > cutOff) {Fraudster} else {Regular}
@@ -432,5 +438,3 @@ This is my personal reading list and is not a comprehensive index of the NIST-re
 - N. Brümmer (2010), Measuring, Refining and Calibrating Speaker and Language Information Extracted from Speech
 - D. A. van Leeuwen and N. Brümmer (2007), An Introduction to Application-Independent Evaluation of Speaker Recognition Systems
 - N. Brümmer and J. du Preez (2006), Application-Independent Evaluation of Speaker Detection
-
-D. van Leeuwen and N. Brümmer (2007) is my go-to source as it is a simple and practical introduction. A. Nautsch (2019) provides a clear, recent and extensive review of the the speaker recognition research. N. Brümmer (2010) also covers a lot of ground into lots of details, with cool information theoretic interpretations.
