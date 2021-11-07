@@ -6,54 +6,55 @@ layout: post
 ## A. Introduction
 
 ### Motivations
-There is a widely-accepted approach to building ML solutions that starts with learning parameters of a model and then applying a threshold to the model's scores to get categories/labels - see [this example](https://machinelearningmastery.com/threshold-moving-for-imbalanced-classification/). The thresholding part rests on an equation that balances two types of errors, with decision aided by so-called confusion matrices.
+There is a widely-accepted approach to building ML solutions that starts with learning parameters of a model and then applying a threshold to the model's scores to get labels. The thresholding part rests on an equation that balances two types of errors, with decision aided by so-called confusion matrices. For example, see this [tutorial](https://machinelearningmastery.com/threshold-moving-for-imbalanced-classification/).
 
-The whole process is rather intuitive and can be applied almost like a recipe to a number of problems. Over the last couple of years, however, I have stumbled upon applications that required more or less tweaking of the standard approach. For example, how should I determine the score thresholds of an ML sytem that is an input into a downstream system? What if the downstream task aggregates the upstream outputs, e.g. classifying paragraphs to make decisions on documents?
+The whole process is intuitive and can be applied to a number of problems. Over the last couple of years, however, I have stumbled upon applications that required more or less tweaking of this standard approach. For example, how should I determine the score thresholds of an ML sytem that is an input into a downstream system? What if the downstream task aggregates the upstream outputs, e.g. classifying paragraphs to make decisions on documents?
 
-As I brushed up on traditional frameworks, I discovered the Speech Recognition Evaluation (SRE), a ML competition organised by an U.S. Institute called [NIST](https://www.nist.gov/programs-projects/speaker-and-language-recognition). Over the last two decades, the research community around this institution has developed a framework to assess speech recognition systems.
+Earlier this year, I came across the Speech Recognition Evaluation (SRE), a ML competition organised by [NIST](https://www.nist.gov/programs-projects/speaker-and-language-recognition), a U.S. research institute. Over the last two decades, its research community has developed a framework to assess speech recognition systems. One recurring application is to determine if a speech segment includes only one or two distinct speakers. 
 
-One recurring application is to determine if a speech segment includes only one or two distinct speakers. Though the NIST often refers to various applications of its evaluation framework in biometric and forensic contexts, I think that the concepts and tools developed are useful for anyone working on classification applications. The set of research that I found, which I list at the end, certainly helped me firm up my understanding of model evaluation. I particuarly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit - links also at the end.
+Though NIST papers mentions various applications of this evaluation framework in biometrics and forensics, I think that it is useful for anyone working on classification applications. The string of research that I found, which I list at the end, certainly helped me firm up my understanding of model evaluation. I particuarly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit - see this [matlab implementation](https://projets-lium.univ-lemans.fr/sidekit/api/bosaris/index.html), or more recent ones in [julia](https://github.com/davidavdav/ROCAnalysis.jl) or [python](https://gitlab.eurecom.fr/nautsch/pybosaris).
 
 The following two parts review traditional assessment frameworks, in particular the ROC curve, and the third part is an introduction to the Applied Probability of Error (APE), a framework for model calibration assessment.
 
 ### Fraud detection
 
-Following the NIST SRE literature, I refer to a recognizer as a black box that takes an input of data features and outputs a numerical value called score, such that higher values are more likely to be targets than not. A classifier binarizes scores to return classes or labels.
+I will refer to a recognizer as a black box that takes an input of data features and outputs a numerical value called score, such that higher values are more likely to be targets than not. A classifier binarizes the scores to return classes, also called labels or hard decisions.
 
-I use an imaginary problem of fraud detection to test and illustrate the evaluation frameworks. It is a binary classification example with two types of transactions: 
+To test and illustrate the evaluation frameworks, I use an imaginary problem of fraud detection with two types of transactions: 
 - `Fraudster` also called positive classes, or target labels or $\omega_1$
 - `Regular` also called negative classes, or non-target labels or $\omega_0$
 
+This blog article is split into 3 parts - the first two parts are concerned with building an automated system that predicts a transaction label, i.e. target or not, using the available features, and the evaluation frameworks will help to construct labels given some risk objectives. Part 3 is concerned with systems that output probabilities.
 
-In the first 2 parts, the objective is to build an automated system which predicts if a transaction is a target or a non-target given observed features, and the evaluation frameworks will help construct labels that meet our risk objectives. Part 3 adds some nuance to binary classification and will consider the need and means to output probabilities instead.
+There is a tendency among ML practitioners to default to hard decision systems without really asking if it is the best approach. I can only speculate what the reasons may be, but what is certain is that doing so removes information that can be valuable for the business/organisation. That's because with labels, we lose information about how likely an instance is to belong to that label. 
+
+It is worth noting that a system may combine hard and soft decisions, for example, a fraud detection application that predicts if a transation is non-fraudulent, fraudulent or to be investigated. The 3rd case may correspond to instances with a probability of, say, 0.4 to 0.7, which an analyst manually reviews. For more information I would refer to Frank Harrell's blog, e.g. [here](https://www.fharrell.com/post/classification/). 
 
 ### Machine learning with scala
 
-The code underlying these posts is written in scala, and one may wonder why. A proper answer is beyond the scope of this article, a very short answer is "Why not?", and a more helpful answer is that scala has a few advantages over scripting languages, which people working with machine learning or statistical analysis typically use, e.g. python, R, julia, matlab or stata.
+The code underlying these posts is written in scala and is available on [github](https://github.com/mkffl/decisions). The charts in this article and the next are defined in [Recipe.scala](https://github.com/mkffl/decisions/blob/main-pub/Decisions/src/Recipes.scala). 
 
-As someone who works primarily with scripting languages, and is not a software developer by trade, I occasionally need to write code that runs on the java virtual machine (jvm), which often supports enterprise backend systems. So far, I have not found java particularly attractive to learn, while scala offers
-- (More) Concise syntax
-  - Even more so with scala 3
-- A rich native library to transform data
-  - The collections library
-- An ecosytem of ML libraries 
-  - Smile, (other TBD)
-- Scripting tools to get going quickly
-  - , e.g. I used Mill to compile this project and Ammonite to play around with data and models
+Why scala? On this occation I wanted to experiment with a language that runs on the java virtual machine (jvm), as it's what often supports the enterprise systems that my applications run on. I have not found java attractive enough to learn it, while scala offers
+
+- (More) Concise syntax - even more so in [scala 3](https://docs.scala-lang.org/scala3/book/why-scala-3.html)
+- A rich standard library to explore and transform data - see some [examples](https://twitter.github.io/scala_school/collections.html)
+- An ecosytem of ML and analytics libraries - e.g. this project uses [Smile](https://haifengl.github.io/) for ML models and a [Kotlin package](https://github.com/sanity/pairAdjacentViolators) for the Paired Adjacent Violators algorithm
+- Scripting tools to get going quickly - e.g. the code for this project is compiled with [Mill](https://github.com/com-lihaoyi/mill) and I have used the [Ammonite repl](https://ammonite.io/) to play around with the data
+- A choice between functional programming - when I am feeling adventurous - and OOP - when I want to get things done because it's getting late
 
 ### Simulation
 
-I will rely on the `probability_monad` scala package to test some of the findings using simulated data. By testing, I mean validating a (general) statistical property using an example distribution. The package allows me to define the distribution in a nice and concise way, and it comes with a useful toolkit, e.g. a `p` method to estimate probabilities.
+I will rely on the `probability_monad` [scala package](https://github.com/jliszka/probability-monad) to test some of the findings using simulated data. By testing, I mean validating a general statistical property using a specific random variable. The package allows me to define the distribution in a nice and concise way, and it comes with a useful toolkit, e.g. a `p` method to estimate probabilities.
 
-This package does just what it says on the tin. It's not a framework for Bayesian inference, e.g. it does not include any routine like MCMC to infer distribution parameters, but it is useful for learning purposes. [Example.scala](https://github.com/jliszka/probability-monad/blob/master/src/main/scala/probability-monad/Examples.scala) in the github repo includes a number of common statistical fallacies - check the [Monty Hall problem](https://github.com/jliszka/probability-monad/blob/1740054366b43c4e7a7c333bf8637daed11802bf/src/main/scala/probability-monad/Examples.scala#L254) for example - that can be written in just a few lines of code that make a lot of sense.
+This package does just what it says on the tin. It's not a framework for Bayesian inference, e.g. it does not include any routine like MCMC to infer distribution parameters, but it is useful for learning purposes. [Example.scala](https://github.com/jliszka/probability-monad/blob/master/src/main/scala/probability-monad/Examples.scala) in the github repo includes a number of common statistical fallacies - check out the [Monty Hall problem](https://github.com/jliszka/probability-monad/blob/1740054366b43c4e7a7c333bf8637daed11802bf/src/main/scala/probability-monad/Examples.scala#L254) for example - that can be written in just a few lines of code that make a lot of sense.
 
-I will illustrate the evaluation frameworks using a synthetic dataset of banking transactions that consists of numerical features and a binary target field. The target corresponds to a transaction being fraudulent or not. The generative process for this data (DGP) is based on MADELON, an algorithm defined [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjygsHx9_nzAhXdQkEAHYjmBxUQFnoECAQQAQ&url=http%3A%2F%2Fclopinet.com%2Fisabelle%2FProjects%2FNIPS2003%2FSlides%2FNIPS2003-Datasets.pdf&usg=AOvVaw2e2nAV1wMjg-8TfNYk5z_d) that also underpins sklearn's `make_classification` [module](https://github.com/scikit-learn/scikit-learn/blob/0d378913b/sklearn/datasets/_samples_generator.py#L39). I implement a simplified version of the DGP that fits the need of my use case (link to my source code).
+The bank transaction synthetic dataset consists of numerical features and a binary target field - Fraudset or Regular. The generative process for this data (DGP) is based on MADELON, an algorithm defined [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjygsHx9_nzAhXdQkEAHYjmBxUQFnoECAQQAQ&url=http%3A%2F%2Fclopinet.com%2Fisabelle%2FProjects%2FNIPS2003%2FSlides%2FNIPS2003-Datasets.pdf&usg=AOvVaw2e2nAV1wMjg-8TfNYk5z_d) that also underpins sklearn's `make_classification` [module](https://github.com/scikit-learn/scikit-learn/blob/0d378913b/sklearn/datasets/_samples_generator.py#L39). I implement a simplified version of MADELON that is enough to support my use case (link to my source code).
 
-As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the sala community. A review of monads is beyond our scope but I actually believe it is not necessary. I am not a monad expert yet writing a distributions with `probability_monad` felt intuitive because I could just plug random variables in a simple manner and get whatever probabilistic graph I wanted.
+As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the sala community. A review of monads is beyond our scope but I actually believe it is not necessary. I am by no means a monad expert yet I got started writing code in no time because I could just chain random variables in a simple manner to get whatever probabilistic graph I wanted. I hope that my code gives justice to the library's simple yet powerful expressiveness.
 
 ## B. Concordance Metrics
 
-Given a recognizer that outputs scores, we may ask if the tool can differentiate between ${\omega_0}$ and ${\omega_1}$ instances. We can first look at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
+Given a recognizer that outputs scores, we may ask if we can use it to differentiate between ${\omega_0}$ and ${\omega_1}$ instances. We can first look at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
 
 For example, fitting a Support Vector Machine (SVM) with default parameters on the transaction data gives the following separation. The histograms estimate the score probability conditioned on the class so I call it a Class Conditional Distributions (CCD) chart.
 
@@ -63,6 +64,7 @@ Scores below -2 are almost certainly associated with non-targets while scores be
 
 An naive implementation estimates the probability with a simple ratio of ordered pairs (i.e. $s_{\omega_0} < s_{\omega_0}$) over all pairs in the sample. If we call the probability A, that's what `naiveA` does in the code below.
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L207)
 ```scala
     def getPermutations(A: Row, B: Row): Vector[Tuple2[Double,Double]] = for {
             a <- A
@@ -82,7 +84,7 @@ An naive implementation estimates the probability with a simple ratio of ordered
 
 Unfortunately, this method stumbles upon memory issues when the number of observations becomes moderately large. The computationally expensive part is to generate all pairs, an operation that I isolate in `getPermutations`. Its complexity is a function of $N_{non}*N_{tar}$ if there are $N_{non}$ non-target instances and $N_{tar}$ target instances.
 
-The good news is that some people came up with a clever method to make the computation less expensive. It is implemented in the `smartA` method below. Feel free to skip the following details if they are not of interest. 
+The good news is that some people came up with a clever method to reduce the complexity. It is implemented in the `smartA` method below. Feel free to skip the following details if they are not of interest. 
 
 The key is that we can count [$s_{\omega_0} < s_{\omega_1}$] by summing the ranks of the target instances in the combined, sorted samples of instance scores, then subtracting the sum of ranks in the target sub-sample. The resulting number figure is called U and happens to also be a test statistics, for a test called Wilcoxon. Its null hypothesis is relevant to our topic but I will not indulge another digression. 
 
@@ -111,13 +113,10 @@ I find this approach very cool because it's not only clever but also intuitive. 
     }
 ```
 
-Demo 12 (AUC)
-
-
 
 ## C. Bayes optimal decisions
 ### One feature
-Suppose that we need to label instances using only one predictor. A randomly drawn dataset has one feature column $x$ and one target field $y$ with values in $\{\omega_0$, $\omega_1\}$. We want to decide on a classification rule that assigns new instance labels based on their $x$ values. 
+Suppose that we need to label instances using only one predictor. A randomly drawn dataset has one feature column $x$ and one target field $y$ with values in {$\omega_0, \omega_1$}. We want to decide on a classification rule that assigns new instance labels based on their $x$ values. 
 
 Further assume equal prior probabilities i.e. $p(\omega_0) = p(\omega_1) = 0.5$ and that the rule should minimise the number of misclassified instances. The class-conditional distributions $p(x \vert \omega_i)$ below suggests a rule.
 
@@ -207,7 +206,6 @@ $$
 
 
 ### Implementation
-[minS on Tradeoff object]
 
 Going back to the SVM scores used in the CCD plot at the start, we would like to find the Bayes decision criterion $c$ for particular application parameters $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$. The optimal criterion value $\text{c}$ will convert the recognizer into a classifier, which we will apply on simulated data to check that the solution's risk in the right ballpark area.
 
@@ -217,6 +215,7 @@ We need a few extra bits in place:
 
 - The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below; The histogram implementation is not particularly interesting so I don't show it, but it's available in the source code
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L112)
 ```scala
 val w0Counts: Row = ... // counts of non-target labels
 val w1Counts: Row = ... // counts of target labels
@@ -224,7 +223,7 @@ val thresh: Row = ... // bins
 ```
 
 - Common operations applied to sample data density, most of which will come in handy in later sections
-
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/package.scala#L189)
 ```scala
 val proportion: Row => Row = counts => {
     val S = counts.sum.toDouble
@@ -245,6 +244,7 @@ val logodds: Tuple2[Row,Row] => Row = odds andThen logarithm
 
 - An object to encapsulate the sample score predictions and the related evaluation methods, starting with the CCD estimates 
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L130)
 ```scala
 case class Tradeoff(w1Counts: Row, w0Counts: Row, thresholds: Row) {
 
@@ -387,6 +387,7 @@ Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That i
 - Compute the risk
 - Check that the sample estimate is similar to the simulated values
 
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L763)
 ```scala
 val cutOff: Double = hisTo.minS(pa) // hisTo is the Tradeoff instance
 val thresholder: (Double => User) = score => if (score > cutOff) {Fraudster} else {Regular}
@@ -421,7 +422,7 @@ Note that `classifier` applies a `logit` transform to the `recognizer`'s output.
 
 The evaluation sample risk is the vertical dotted bar near the peak of the distribution, which is good news. The grey shaded area comprises 95% of the simulated data, and I want the sample estimate to fall in that interval, which it does.
 
-In the next part of this blog article, we will explore the connection between Bayes decision rules and the Receiving Operator Characteristics (ROC) curve.
+In the [next part]({{ site.baseurl }}{% link _posts/2021-09-18-Decisions-Part-2.markdown %}), we will explore the connection between the Bayes decision rule and the Receiving Operator Characteristics (ROC) curve.
 
 ## References
 - R. Duda et al (2001), Pattern Classification.
@@ -437,5 +438,3 @@ This is my personal reading list and is not a comprehensive index of the NIST-re
 - N. Brümmer (2010), Measuring, Refining and Calibrating Speaker and Language Information Extracted from Speech
 - D. A. van Leeuwen and N. Brümmer (2007), An Introduction to Application-Independent Evaluation of Speaker Recognition Systems
 - N. Brümmer and J. du Preez (2006), Application-Independent Evaluation of Speaker Detection
-
-D. van Leeuwen and N. Brümmer (2007) is my go-to source as it is a simple and practical introduction. A. Nautsch (2019) provides a clear, recent and extensive review of the the speaker recognition research. N. Brümmer (2010) also covers a lot of ground into lots of details, with information theoretic interpretations that I found useful.

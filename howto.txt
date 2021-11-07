@@ -1,0 +1,5 @@
+# Use plugins:
+- Use CDNs in _layouts/post.html
+- Do not include html's with CDNs in _includes because it overrides the post.htlm CDNs
+For example for Mermaid, I used this [helper](https://jackgruber.github.io/2021-05-09-Embed-Mermaid-in-Jekyll-without-plugin/) and chucked all the <script> instructions in post.html but nothing in _layout as suggested in the helper.
+Same approach with the plotly CDN
