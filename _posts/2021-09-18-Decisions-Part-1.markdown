@@ -6,7 +6,7 @@ layout: post
 ## A. Introduction
 
 ### Motivations
-There is a widely-accepted approach to building ML solutions that starts with learning parameters of a model and then applying a threshold to the model's scores to get labels. The thresholding part rests on an equation that balances two types of errors, with decision aided by so-called confusion matrices. For example, see this [tutorial](https://machinelearningmastery.com/threshold-moving-for-imbalanced-classification/).
+There is a widely-accepted approach to building ML solutions that starts with learning parameters of a model and then applying a threshold to the model's scores to get labels. The thresholding part rests on an equation that balances two types of errors, with decision aided by so-called confusion matrices. For example, see this [tutorial](https://machinelearningmastery.com/threshold-moving-for-imbalanced-classification/) - scroll down until "We can summarize this procedure below.".
 
 The whole process is intuitive and can be applied to a number of problems. Over the last couple of years, however, I have stumbled upon applications that required more or less tweaking of this standard approach. For example, how should I determine the score thresholds of an ML sytem that is an input into a downstream system? What if the downstream task aggregates the upstream outputs, e.g. classifying paragraphs to make decisions on documents?
 
@@ -48,7 +48,7 @@ I will rely on the `probability_monad` [scala package](https://github.com/jliszk
 
 This package does just what it says on the tin. It's not a framework for Bayesian inference, e.g. it does not include any routine like MCMC to infer distribution parameters, but it is useful for learning purposes. [Example.scala](https://github.com/jliszka/probability-monad/blob/master/src/main/scala/probability-monad/Examples.scala) in the github repo includes a number of common statistical fallacies - check out the [Monty Hall problem](https://github.com/jliszka/probability-monad/blob/1740054366b43c4e7a7c333bf8637daed11802bf/src/main/scala/probability-monad/Examples.scala#L254) for example - that can be written in just a few lines of code that make a lot of sense.
 
-The bank transaction synthetic dataset consists of numerical features and a binary target field - Fraudset or Regular. The generative process for this data (DGP) is based on MADELON, an algorithm defined [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjygsHx9_nzAhXdQkEAHYjmBxUQFnoECAQQAQ&url=http%3A%2F%2Fclopinet.com%2Fisabelle%2FProjects%2FNIPS2003%2FSlides%2FNIPS2003-Datasets.pdf&usg=AOvVaw2e2nAV1wMjg-8TfNYk5z_d) that also underpins sklearn's `make_classification` [module](https://github.com/scikit-learn/scikit-learn/blob/0d378913b/sklearn/datasets/_samples_generator.py#L39). I implement a simplified version of MADELON that is enough to support my use case (link to my source code).
+The bank transaction synthetic dataset consists of numerical features and a binary target field - Fraudset or Regular. The generative process for this data (DGP) is based on MADELON, an algorithm defined [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjygsHx9_nzAhXdQkEAHYjmBxUQFnoECAQQAQ&url=http%3A%2F%2Fclopinet.com%2Fisabelle%2FProjects%2FNIPS2003%2FSlides%2FNIPS2003-Datasets.pdf&usg=AOvVaw2e2nAV1wMjg-8TfNYk5z_d) that also underpins sklearn's `make_classification` [module](https://github.com/scikit-learn/scikit-learn/blob/0d378913b/sklearn/datasets/_samples_generator.py#L39). I implement a [simplified version](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Data.scala#L9) of MADELON that is enough to support my use case.
 
 As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the sala community. A review of monads is beyond our scope but I actually believe it is not necessary. I am by no means a monad expert yet I got started writing code in no time because I could just chain random variables in a simple manner to get whatever probabilistic graph I wanted. I hope that my code gives justice to the library's simple yet powerful expressiveness.
 
@@ -86,7 +86,7 @@ Unfortunately, this method stumbles upon memory issues when the number of observ
 
 The good news is that some people came up with a clever method to reduce the complexity. It is implemented in the `smartA` method below. Feel free to skip the following details if they are not of interest. 
 
-The key is that we can count [$s_{\omega_0} < s_{\omega_1}$] by summing the ranks of the target instances in the combined, sorted samples of instance scores, then subtracting the sum of ranks in the target sub-sample. The resulting number figure is called U and happens to also be a test statistics, for a test called Wilcoxon. Its null hypothesis is relevant to our topic but I will not indulge another digression. 
+The key is that we can count [$s_{\omega_0} < s_{\omega_1}$] by summing the ranks of the target instances in the combined, sorted samples of instance scores, then subtracting the sum of ranks in the target sub-sample. The resulting number figure is called U and happens to also be a test statistics, for a test called Wilcoxon. Its null hypothesis is not necessary to our discussion.
 
 The expensive part of the rank-sum approach is to rank instances, but that can be done efficiently with built-in sorting algorithms, so I guess the overall complexity is $log(N_{non}+N_{tar})$ and, in any case, it runs fast on my modest 1.6 GHz Intel Core i5. 
 
@@ -146,8 +146,6 @@ Making decisions when the environment is uncertain requires to consider the cost
     id32[action α1] --> id44[cost c_11 = 0.0];
 </div>
 
-[Units and interpretation of costs]
-
 The first node corresponds to choosing action $\alpha_0$ when the true state is $\omega_0$, i.e. choosing non-target when the instance is actually a non-target, which we assume does not cost anything. The next entry corresponds to a false alarm, with cost Cfa. The next is when we miss a target, which has a cost of Cmiss, and the last node correspodns to a true positive, which does not cost anything.
 
 For every instance with feature $x$, the Bayes decisions to choose $\alpha_0$ or $\alpha_1$ depends on their respective risk, which in turn depend on the (posterior) probability of each state of nature.
@@ -168,9 +166,9 @@ $$
 \tag{1.1}
 $$
 
-We can rephrase the rule as "Decide on 'target' if the likelihood ratio for 'target' is greater than the cost-adjusted ratio of prior probabilities". The rule neatly separates the ratio of likelihoods (on the left) from the characteristics of a particular application (on the right). From now, I will call these characteristics application parameters as in the BOSARIS literature.
+We can rephrase the rule as "Decide on 'target' if the likelihood ratio for 'target' is greater than the cost-adjusted ratio of prior probabilities". The rule neatly separates the ratio of likelihoods (on the left) from the characteristics of a particular application (on the right). From now, I will call these characteristics application parameters as in the NIST SRE literature.
 
-The left-hand side of the rule depends on the likelihood ratio that was learnt from a sample of data. This ratio tells us how much more or less likely an observed $x$ value is when it's generated by $\omega_1$ vs the alternative state. This relationship can be learnt from any dataset, no matter the prior probability $p(\omega_0)$. The right-hand side does not depend on the observed feature value, it only depends on the application that we release the decision model on. It represents a threshold above which we should choose $\alpha_1$ and that same threshold is used for every new instance.
+The left-hand side of the rule depends on the likelihood ratio that was learnt from a sample of data. This ratio tells us how much more or less likely an observed $x$ value is when it's generated by $\omega_1$ vs the alternative state. This relationship can be learnt from any dataset, no matter the prior probability $p(\omega_0)$. The right-hand side does not depend on instance data, it depends on the application-wide characteristics - target prevalence and error costs. It is a threshold above which we should choose $\alpha_1$ and that same threshold is used for every new instance.
 
 The previous example with equal priors and the error rate objective corresponds to application parameters $p(\omega_1)=0.5; Cmiss=Cfa=1$. The error rate is the average risk when the two types of misclassification have the same cost (Cmiss=Cfa=1). The corresponding threshold of 1.0 matches our intuition to choose $\alpha_1$ when $x$ is to the right of the vertical line.
 
@@ -184,10 +182,10 @@ and
 $$
 p(\omega_0)*Cfa
 $$ 
-changes the RHS of the Bayes decision threshold. This property will come up again in the APE framework.
+changes the RHS of the Bayes decision threshold.
 
 ### More than one feature
-In general, there are more than one features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large feature space to a one-dimensional space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
+In general, there are multiple features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large feature space to a one-dimensional space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
 
 Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In J. Hanley and B. McNeil (1982), a score is also called a degree of suspicion, which I think captures well the idea of ordered values and their relationship to hypothesis testing. I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.
 
@@ -223,6 +221,7 @@ val thresh: Row = ... // bins
 ```
 
 - Common operations applied to sample data density, most of which will come in handy in later sections
+
 [source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/package.scala#L189)
 ```scala
 val proportion: Row => Row = counts => {
@@ -278,9 +277,9 @@ case class Tradedoff(...){
 
 }
 
-def paramToTheta(pa: AppParameters): Double = log(pa.p_w1/(1-pa.p_w1)*(pa.Cmiss/pa.Cfa))
+def paramToθ(pa: AppParameters): Double = log(pa.p_w1/(1-pa.p_w1)*(pa.Cmiss/pa.Cfa))
 
-def minusθ(pa: AppParameters) = -1*paramToTheta(pa)
+def minusθ(pa: AppParameters) = -1*paramToθ(pa)
 ```
 
 `asLLR` returns the log-likelihood ratio of the scores - the left-hand side of eq. 1.1 - using the proportion of targets in the score's corresponding bin. The `minusθ` method convert the application parameters into $-\theta$, which is the right-hand side of eq. 1.1. Then, `argminRisk` uses these two inputs to find the array index of the closest match, which is used by `minS` to provide the cutoff point $c$.
@@ -310,7 +309,7 @@ E(\text{risk})
 \end{equation}
 $$
 
-With binary scores, the region $R_i$ is determined by the Bayes cutoff $c$, and every instance $x$ is mapped to a score $s$, so instead of sliding through $x$ we slide through all $s$'s:
+With binary scores, the region $R_i$ is determined by the Bayes cutoff $c$, and every instance $x$ is mapped to a score $s$, so instead of sliding through the $x$'s we slide through the $s$'s:
 
 $$
 \begin{equation}
@@ -363,7 +362,7 @@ Let's check that the calculations for $c$ and $E(\text{risk})$ make sense using 
 
 The method `expectedRisks` calculates risks at every threshold. We want the minimum risk to match the risk at $c$ on a given sample.
 
-
+[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L175)
 ```scala
 case classs Tradeoff(...){
     //...
@@ -381,7 +380,7 @@ The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum.
 
 ### Expected risk
 
-Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That is, if use the corresponding cutoff "in the wild", do we get the expected risk? Data simulation allows us to answer the question empircally. The four main steps are 
+Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That is, if we use the corresponding cutoff on new instances, do we get close to the sample expected risk? Data simulation allows us to answer the question empircally. The four main steps are 
 - Get a clasifier that applies the $c$ cut-off
 - Generate a few hundred datasets
 - Compute the risk
