@@ -421,7 +421,7 @@ Note that `classifier` applies a `logit` transform to the `recognizer`'s output.
 
 The evaluation sample risk is the vertical dotted bar near the peak of the distribution, which is good news. The grey shaded area comprises 95% of the simulated data, and I want the sample estimate to fall in that interval, which it does.
 
-In the [next part]({{ site.baseurl }}{% link _posts/2021-09-18-Decisions-Part-2.markdown %}), we will explore the connection between the Bayes decision rule and the Receiving Operator Characteristics (ROC) curve.
+In the [next part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}), we will explore the connection between the Bayes decision rule and the Receiving Operator Characteristics (ROC) curve.
 
 ## References
 - R. Duda et al (2001), Pattern Classification.

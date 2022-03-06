@@ -3,7 +3,7 @@ title: My Machine Learnt... Now What? - Part 2
 layout: post
 ---
 
-The [previous part]({{ site.baseurl }}{% link _posts/2021-09-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a preocedure to find the optimal threshold that transforms a recognizer into a classifier. Optimal refers to the mininmum expected risk when deploying the classifier on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
+The [previous part]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a preocedure to find the optimal threshold that transforms a recognizer into a classifier. Optimal refers to the mininmum expected risk when deploying the classifier on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
 
 The Receiving Operator Characteristics (ROC) combines these concepts and provides the same capabilities for threhsold selection as the CCD and LLR frameworks introduced earlier. However, it has a focus on error trade-offs rather than likelihood ratios, which becomes useful when comparing recognisers, as the next examples will show.
 
@@ -275,9 +275,9 @@ Furthermore, the majority-isocost is $(\text{tpr}=\text{fpr})$ when $\text{eer} 
 A recogniser's ROC is on this line if it can't do better than this randomly assigned majority rule, which means that this recogniser has a concordance probability (AUC) of 0 - that is often how people refer to $(\text{tpr}=\text{fpr})$.
 
 ## E. Conclusion
-The ROC frameworks shows that finding the optimal threshold is equivalent to trading one type of error for another. This tradeoff is a necessary price one has to pay when binarising recogniser score outputs. 
+ROC analysis teaches us that finding an optimal threshold is about trading off one error for another. We start with a very high Pmiss and we give it away in exchange for more Pfa ; the application type determines when we get the best deal, in which case we stop the trade and find the corresponding threshold.
 
-As mentioned in the introduction to Part 1, a system output need not consist of binary labels, but can also take the form of probabililities or a combination of hard and soft outputs. In the next part of this blog and building on the concepts developed so far, I will look at the NIST SRE framework to evaluate systems that output probabilities. 
+Up until now, scores had no meaning other than higher values corresponding to higher target probability. Calibrated scores are an alternative type of scores, which ensures that values correspond to event probabilities or likelihood ratios – see the [next part]({{ site.baseurl }}{% link _posts/2022-03-31-Decisions-Part-3.markdown %}).
 
 ### Appendix
 
