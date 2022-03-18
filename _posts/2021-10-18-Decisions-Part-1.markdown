@@ -425,39 +425,6 @@ val simData: Distribution[Double] = simulateTransact.repeat(nrows).map(_.sum.toD
 val simRisk: Row = simData.sample(nsimulations).toVector
 ```
 
-```scala
-val cutOff: Double = hisTo.minS(pa) // hisTo is the Tradeoff instance
-val nrows = 1000
-val nsimulations = 500
-
-val thresholder: (Double => User) = score =>
-    if (score > cutOff) { Fraudster }
-    else { Regular }
-
-def classifier: (Array[Double] => User) =
-    recognizer andThen logit andThen thresholder
-
-def cost(p: AppParameters, actual: User, pred: User): Double = pred match {
-  case Fraudster if actual == Regular => p.Cfa
-  case Regular if actual == Fraudster => p.Cmiss
-  case _                              => 0.0
-}
-
-def simulateTransact: Distribution[Double] = for {
-    transaction <- transact(pa.p_w1)
-    prediction = classifier(transaction.features.toArray)
-    risk = cost(pa, transaction.UserType, prediction)
-} yield risk
-
-// Simulate average risk for a dataset of `nrows`
-val simData: Distribution[Double] =
-    simulateTransact.repeat(nrows).map(_.sum.toDouble / nrows)
-
-// Repeat `nsimulations` times      
-val simRisk: Row = simData.sample(nsimulations).toVector
-```
-
-
 Note that `classifier` applies a `logit` transform to the `recognizer`'s output. That is because SVM scores are originally in $[0,1]$, and I want them in $\mathbb{R}$ to emphasize that scores need not be "probability-like" values - they could also be projected onto $[0,inf]$ for example. The logit is a monotonously increasing function, so it does not affect the score index returned by the `minS` method.
 
 {% include demo13-simulation.html %}
