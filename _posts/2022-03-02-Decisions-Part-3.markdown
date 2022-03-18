@@ -289,3 +289,13 @@ $$
 E(\text{risk} | \tilde{p(\omega_1)}, 1, 1)=\frac{E(\text{risk} | p(\omega_1), \text{Cmiss}, \text{Cfa})}{\text{cst}}
 $$
 
+## NIST SRE 
+This is my personal reading list and is not a comprehensive index of the NIST-related research.
+
+- N. Brümmer et al (2021), Out of a Hundred Trials, How Many Errors does your Speaker Verifier Make?
+- A. Nautsch (2019), Speaker Recognition in Unconstrained Environments
+- N. Brümmer et al (2013), Likelihood-ratio Calibration Using Prior-Weighted Proper Scoring Rules
+- N. Brümmer and E. de Villiers (2011), The BOSARIS Toolkit: Theory, Algorithm and Code for Surviving the New DCF
+- N. Brümmer (2010), Measuring, Refining and Calibrating Speaker and Language Information Extracted from Speech
+- D. A. van Leeuwen and N. Brümmer (2007), An Introduction to Application-Independent Evaluation of Speaker Recognition Systems
+- N. Brümmer and J. du Preez (2006), Application-Independent Evaluation of Speaker Detection

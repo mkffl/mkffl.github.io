@@ -66,20 +66,22 @@ An naive implementation estimates the probability with a simple ratio of ordered
 
 [source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L207)
 ```scala
-    def getPermutations(A: Row, B: Row): Vector[Tuple2[Double,Double]] = for {
-            a <- A
-            b <- B
-        } yield (a,b)
+  def getPermutations(A: Row, B: Row): Vector[Tuple2[Double, Double]] = for {
+    a <- A
+    b <- B
+  } yield (a, b)
 
-    /* count [score_w1 > score_w0] */
-    def TarSupN(non:Row, tar:Row): Int = getPermutations(non,tar) filter {score => score._2 > score._1} size
-    
-    /* Estimate P(score_w1 > score_w0) */
-    def naiveA(non: Row, tar: Row): Double = {
-        val num = TarSupN(non,tar)
-        val den = non.size*tar.size
-        num/den.toDouble
-    }
+  /* count [score_w1 > score_w0] */
+  def TarSupN(non: Row, tar: Row): Int = getPermutations(non, tar) filter {
+    score => score._2 > score._1
+  } size
+
+  /* Estimate P(score_w1 > score_w0) */
+  def naiveA(non: Row, tar: Row): Double = {
+    val num = TarSupN(non, tar)
+    val den = non.size * tar.size
+    num / den.toDouble
+  }
 ```
 
 Unfortunately, this method stumbles upon memory issues when the number of observations becomes moderately large. The computationally expensive part is to generate all pairs, an operation that I isolate in `getPermutations`. Its complexity is a function of $N_{non}*N_{tar}$ if there are $N_{non}$ non-target instances and $N_{tar}$ target instances.
@@ -93,24 +95,24 @@ The expensive part of the rank-sum approach is to rank instances, but that can b
 I find this approach very cool because it's not only clever but also intuitive. In the combined, sorted dataset of scores, we can count the concordance value for a single target instance by taking its overall rank and subtracting its rank in the subsample of target instances. If we repeat this procedure for all target instances and rearrange the operations, we get the value computed by `U`.
 
 ```scala
-    def rankAvgTies(input: Row): Row // See source code
+  def rankAvgTies(input: Row): Row // See source code
 
-    /* Wilcoxon Statistic, also called U */
-    def wmwStat(s0: Row, s1: Row): Int = {
-        val NTar = s1.size
-        val ranks = rankAvgTies(s0 ++ s1)
-        val RSum = ranks.takeRight(NTar).sum
-        val U = RSum - NTar*(NTar+1)/2
-        U toInt
-    }
-    
-    /* Estimate P(score_w1 > score_w0) */
-    def smartA(non:Row, tar:Row) = {
-        val den = non.size*tar.size
-        val U = wmwStat(non,tar)
-        val A = U.toDouble/den
-        A
-    }
+  /* Wilcoxon Statistic, also named U */
+  def wmwStat(s0: Row, s1: Row): Int = {
+    val NTar = s1.size
+    val ranks = rankAvgTies(s0 ++ s1)
+    val RSum = ranks.takeRight(NTar).sum
+    val U = RSum - NTar * (NTar + 1) / 2
+    U toInt
+  }
+
+  /* Estimate P(score_w1 > score_w0) */
+  def smartA(non: Row, tar: Row) = {
+    val den = non.size * tar.size
+    val U = wmwStat(non, tar)
+    val A = U.toDouble / den
+    A
+  }
 ```
 
 <h2 id="bayes-optimal">C. Bayes optimal decisions</h2>
@@ -228,19 +230,19 @@ val thresh: Row = ... // bins
 ```scala
 val proportion: Row => Row = counts => {
     val S = counts.sum.toDouble
-    counts.map(v => v/S)
+    counts.map(v => v / S)
 }
-
 val cumulative: Row => Row = freq => freq.scanLeft(0.0)(_ + _)
-val oneMinus: Row => Row = cdf => cdf.map(v => 1-v)
+val oneMinus: Row => Row = cdf => cdf.map(v => 1 - v)
 val decreasing: Row => Row = data => data.reverse
-val odds: Tuple2[Row,Row] => Row = w0w1 => w0w1._1.zip(w0w1._2).map{case (non,tar) => tar/non}
-val logarithm: Row => Row = values => values.map(math.log)        
+val odds: Tuple2[Row, Row] => Row = w0w1 =>
+    w0w1._1.zip(w0w1._2).map { case (non, tar) => tar / non }
+val logarithm: Row => Row = values => values.map(math.log)
 
 val pdf: Row => Row = proportion
 val cdf: Row => Row = pdf andThen cumulative
 val rhsArea: Row => Row = cdf andThen oneMinus
-val logodds: Tuple2[Row,Row] => Row = odds andThen logarithm
+val logodds: Tuple2[Row, Row] => Row = odds andThen logarithm
 ```
 
 - An object to encapsulate the sample score predictions and the related evaluation methods, starting with the CCD estimates 
@@ -249,11 +251,10 @@ val logodds: Tuple2[Row,Row] => Row = odds andThen logarithm
 ```scala
 case class Tradeoff(w1Counts: Row, w0Counts: Row, thresholds: Row) {
 
-    val asCCD: Matrix = {
-        val w0pdf = pdf(w0Counts)
-        val w1pdf = pdf(w1Counts)
-        Vector(w0pdf,w1pdf)
-    }
+val asCCD: Matrix = {
+    val w0pdf = pdf(w0Counts)
+    val w1pdf = pdf(w1Counts)
+    Vector(w0pdf, w1pdf)
 }
 ```
 
@@ -265,21 +266,23 @@ Next, we implement `minS`, a method to find the Bayes decision cut-off point, i.
 case class Tradedoff(...){
         // ...
 
-        val asLLR: Row = {
-            val infLLR = logodds((pdf(w0Counts),pdf(w1Counts)))
-            clipToFinite(infLLR)
-        }
+    val asLLR: Row = {
+      val infLLR = logodds((pdf(w0Counts), pdf(w1Counts)))
+      clipToFinite(infLLR)
+    }
 
-        def argminRisk(pa: AppParameters): Int = this.asLLR.getClosestIndex(minusθ(pa))
+    def argminRisk(pa: AppParameters): Int =
+      this.asLLR.getClosestIndex(minusθ(pa))
 
-        def minS(pa: AppParameters): Double = {
-            val ii = argminRisk(pa)
-            thresholds(ii)
-        }
+    def minS(pa: AppParameters): Double = {
+      val ii = argminRisk(pa)
+      thresholds(ii)
+    }
 
 }
 
-def paramToθ(pa: AppParameters): Double = log(pa.p_w1/(1-pa.p_w1)*(pa.Cmiss/pa.Cfa))
+def paramToθ(pa: AppParameters): Double = 
+    log(pa.p_w1/(1-pa.p_w1)*(pa.Cmiss/pa.Cfa))
 
 def minusθ(pa: AppParameters) = -1*paramToθ(pa)
 ```
@@ -339,20 +342,23 @@ Note that $\text{Pmiss}(c)$ is the cdf of the target distribution while $\text{P
 case class Tradeoff(...){
     // ...
     val asPmissPfa: Matrix = {
-        val pMiss = cdf(w1Counts)
-        val pFa = rhsArea(w0Counts)
-        Vector(pMiss,pFa)
+      val pMiss = cdf(w1Counts)
+      val pFa = rhsArea(w0Counts)
+      Vector(pMiss, pFa)
     }
 
     def minRisk(pa: AppParameters): Double = {
-        val ii = argminRisk(pa)
-        val bestPmissPfa = (this.asPmissPfa.apply(0)(ii+1),this.asPmissPfa.apply(1)(ii+1))
-        paramToRisk(pa)(bestPmissPfa)
+      val ii = argminRisk(pa)
+      val bestPmissPfa =
+        (this.asPmissPfa.apply(0)(ii + 1), this.asPmissPfa.apply(1)(ii + 1))
+      paramToRisk(pa)(bestPmissPfa)
     }
 }
 
-def paramToRisk(pa: AppParameters)(operatingPoint: Tuple2[Double,Double]): Double = 
-        pa.p_w1*operatingPoint._1*pa.Cmiss + (1-pa.p_w1)*operatingPoint._2*pa.Cfa
+def paramToRisk(
+    pa: AppParameters
+)(operatingPoint: Tuple2[Double, Double]): Double =
+  pa.p_w1 * operatingPoint._1 * pa.Cmiss + (1 - pa.p_w1) * operatingPoint._2 * pa.Cfa
 
 ```
 
@@ -370,9 +376,11 @@ case classs Tradeoff(...){
     //...
 
     def expectedRisks(pa: AppParameters): Row = {
-        val risk: Tuple2[Double,Double] => Double = paramToRisk(pa)
-        this.asPmissPfa.transpose.map{case Vector(pMiss,pFa) => risk((pMiss,pFa))}
-    }    
+      val risk: Tuple2[Double, Double] => Double = paramToRisk(pa)
+      this.asPmissPfa.transpose.map { case Vector(pMiss, pFa) =>
+        risk((pMiss, pFa))
+      }
+    }  
 }
 ```
 
@@ -417,6 +425,39 @@ val simData: Distribution[Double] = simulateTransact.repeat(nrows).map(_.sum.toD
 val simRisk: Row = simData.sample(nsimulations).toVector
 ```
 
+```scala
+val cutOff: Double = hisTo.minS(pa) // hisTo is the Tradeoff instance
+val nrows = 1000
+val nsimulations = 500
+
+val thresholder: (Double => User) = score =>
+    if (score > cutOff) { Fraudster }
+    else { Regular }
+
+def classifier: (Array[Double] => User) =
+    recognizer andThen logit andThen thresholder
+
+def cost(p: AppParameters, actual: User, pred: User): Double = pred match {
+  case Fraudster if actual == Regular => p.Cfa
+  case Regular if actual == Fraudster => p.Cmiss
+  case _                              => 0.0
+}
+
+def simulateTransact: Distribution[Double] = for {
+    transaction <- transact(pa.p_w1)
+    prediction = classifier(transaction.features.toArray)
+    risk = cost(pa, transaction.UserType, prediction)
+} yield risk
+
+// Simulate average risk for a dataset of `nrows`
+val simData: Distribution[Double] =
+    simulateTransact.repeat(nrows).map(_.sum.toDouble / nrows)
+
+// Repeat `nsimulations` times      
+val simRisk: Row = simData.sample(nsimulations).toVector
+```
+
+
 Note that `classifier` applies a `logit` transform to the `recognizer`'s output. That is because SVM scores are originally in $[0,1]$, and I want them in $\mathbb{R}$ to emphasize that scores need not be "probability-like" values - they could also be projected onto $[0,inf]$ for example. The logit is a monotonously increasing function, so it does not affect the score index returned by the `minS` method.
 
 {% include demo13-simulation.html %}
@@ -428,14 +469,3 @@ In the [next part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.
 ## References
 - R. Duda et al (2001), Pattern Classification.
 - J. Hanley and B. McNeil (1982), The Meaning and Use of the Area under a Receiver Operating Characteristic (ROC) Curve.
-
-## NIST SRE 
-This is my personal reading list and is not a comprehensive index of the NIST-related research.
-
-- N. Brümmer et al (2021), Out of a Hundred Trials, How Many Errors does your Speaker Verifier Make?
-- A. Nautsch (2019), Speaker Recognition in Unconstrained Environments
-- N. Brümmer et al (2013), Likelihood-ratio Calibration Using Prior-Weighted Proper Scoring Rules
-- N. Brümmer and E. de Villiers (2011), The BOSARIS Toolkit: Theory, Algorithm and Code for Surviving the New DCF
-- N. Brümmer (2010), Measuring, Refining and Calibrating Speaker and Language Information Extracted from Speech
-- D. A. van Leeuwen and N. Brümmer (2007), An Introduction to Application-Independent Evaluation of Speaker Recognition Systems
-- N. Brümmer and J. du Preez (2006), Application-Independent Evaluation of Speaker Detection
