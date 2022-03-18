@@ -277,7 +277,7 @@ A recogniser's ROC is on this line if it can't do better than this randomly assi
 ## E. Conclusion
 ROC analysis teaches us that finding an optimal threshold is about trading off one error for another. We start with a very high Pmiss and we give it away in exchange for more Pfa ; the application type determines when we get the best deal, in which case we stop the trade and find the corresponding threshold.
 
-Up until now, scores had no meaning other than higher values corresponding to higher target probability. Calibrated scores are an alternative type of scores, which ensures that values correspond to event probabilities or likelihood ratios – see the [next part]({{ site.baseurl }}{% link _posts/2022-03-31-Decisions-Part-3.markdown %}).
+Up until now, scores had no meaning other than higher values corresponding to higher target probability. Calibrated scores are an alternative type of scores, which ensures that values correspond to event probabilities or likelihood ratios – see the [next part]({{ site.baseurl }}{% link _posts/2022-03-02-Decisions-Part-3.markdown %}).
 
 ### Appendix
 

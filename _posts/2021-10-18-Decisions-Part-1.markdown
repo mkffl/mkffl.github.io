@@ -184,7 +184,7 @@ p(\omega_0)*Cfa
 $$ 
 changes the RHS of the Bayes decision threshold.
 
-### More than one feature
+### More than one features
 In general, there are multiple features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large feature space to a one-dimensional space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
 
 Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In J. Hanley and B. McNeil (1982), a score is also called a degree of suspicion, which I think captures well the idea of ordered values and their relationship to hypothesis testing. I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.
