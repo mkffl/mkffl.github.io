@@ -155,7 +155,9 @@ risk(\alpha_0 | x) = c_{00}*p(\omega_0|x) + Cmiss*p(\omega_1|x) = Cmiss*p(\omega
 risk(\alpha_1 | x) = c_{11}*p(\omega_1|x) + Cfa*p(\omega_0|x) = Cfa*p(\omega_0|x)
 $$
 
-So, we should choose $\alpha_1$ if $risk(\alpha_1 \vert x) < risk(\alpha_0 \vert x)$ and $\alpha_0$ otherwise. Reorganising the terms gives the following Bayes decision rule:
+So, we should choose $\alpha_1$ if $risk(\alpha_1 \vert x) < risk(\alpha_0 \vert x)$ and $\alpha_0$ otherwise. Reorganising the terms gives the following rule:
+
+<p id="rule-1-1">Bayes-optimal decision rule</p>
 
 $$
 \text{For any new instance x, choose}

@@ -49,7 +49,7 @@ Another example may be an autonomous vehicle that makes a decision to stop at a 
 
 ## B. Calibration as probabilities or log-likelihood ratios
 
-Probability-like scores are bounded between 0 and 1 where the reference class is w1. This type of calibrated scores are easy to evaluate using sample frequency and they are intuitive to end users like a fraud expert. If a transaction has a 60% chance of being fraudulent, they may think “it’s slightly more than that of flipping a coin” and given the high cost of a miss they will investigate. The decision process to investigate can be made more rigorously with Bayes procedure. Going back to Equation 1.1, if we assume that $p(\omega_1)$ is known then the rule becomes
+Probability-like scores are bounded between 0 and 1 where the reference class is w1. This type of calibrated scores are easy to evaluate using sample frequency and they are intuitive to end users like a fraud expert. If a transaction has a 60% chance of being fraudulent, they may think “it’s slightly more than that of flipping a coin” and given the high cost of a miss they will investigate. The decision process to investigate can be made more rigorously with Bayes procedure. Going back to [equation 1.1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#rule-1-1), if we assume that $p(\omega_1)$ is known then the rule becomes
 
 
 $$
@@ -80,7 +80,7 @@ Let's imagine an application type such that the optimal cut-off point is where $
 
 Here, c<sup>c</sup> corresponds to a lower posterior probability because of overconfidence miscalibration, so c<sup>c</sup> lies below c<sup>*</sup>. Thus, using scores as probabilities, we will predict targets for any observation such that s<sub>i</sub> > c<sup>c</sup>, including when s<sub>i</sub> < c<sup>*</sup>, in which case this is not a Bayes decision, which would dictate to choose non-target. 
 
-The class conditional graph provides more details about what’s going on. Going back to Equation 1.1, the Bayes procedures says that an instance should be predicted as $\omega_1$ if 
+The class conditional graph provides more details about what’s going on. Using [equation 1.1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#rule-1-1), the Bayes procedures says that an instance should be predicted as $\omega_1$ if 
 
 $$
 \text{Cmiss}*p(\omega_1 \vert s) > \text{Cfa}*p(\omega_0 \vert s)
@@ -159,7 +159,7 @@ val app3 = AppParameters(0.71, 1, 1)
 
 The first application type resembles a fraud transaction scenario where targets are rare events that cost 10 times more units when missed vs false alarms. With `app2`, we assume that targets are just as rare as non-targets but now miss costs are only 2.5 times higher than false alarm costs. `app3` is yet another version expressed as an error rate. 
 
-Going back to equation 1 in part 1, the key is that theta depends on the ratio between the cost-weighted prevalence probabilities. That ratio remains the same if we change prevalence and adjust error-costs accordingly, and vice versa.
+From [equation 1.1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#rule-1-1), the key is that theta depends on the ratio between the cost-weighted prevalence probabilities. That ratio remains the same if we change prevalence and adjust error-costs accordingly, and vice versa.
 
 The range of $\theta$ values shown on the graph depends on the application parameters that fit our case. In practice, a range of (-5 to 5) is wide enough because rare events often have Cmiss larger than Cfa, which prevents $$\frac{p(\omega_0)*Cfa}{p(\omega_1)*Cmiss}$$ from reaching extreme values. [todo: Bring quote from one of the NIST SRE papers].
 
