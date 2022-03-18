@@ -52,7 +52,7 @@ The bank transaction synthetic dataset consists of numerical features and a bina
 
 As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the sala community. A review of monads is beyond our scope but I actually believe it is not necessary. I am by no means a monad expert yet I got started writing code in no time because I could just chain random variables in a simple manner to get whatever probabilistic graph I wanted. I hope that my code gives justice to the library's simple yet powerful expressiveness.
 
-## B. Concordance Metrics
+<h2 id="concordance">B. Concordance Metrics</h2>
 
 Given a recognizer that outputs scores, we may ask if we can use it to differentiate between ${\omega_0}$ and ${\omega_1}$ instances. We can first look at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
 
@@ -113,8 +113,8 @@ I find this approach very cool because it's not only clever but also intuitive. 
     }
 ```
 
+<h2 id="bayes-optimal">C. Bayes optimal decisions</h2>
 
-## C. Bayes optimal decisions
 ### One feature
 Suppose that we need to label instances using only one predictor. A randomly drawn dataset has one feature column $x$ and one target field $y$ with values in {$\omega_0, \omega_1$}. We want to decide on a classification rule that assigns new instance labels based on their $x$ values. 
 
@@ -184,7 +184,7 @@ p(\omega_0)*Cfa
 $$ 
 changes the RHS of the Bayes decision threshold.
 
-### More than one features
+<h3 id="more-than-one-features">More than one features</h3>
 In general, there are multiple features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large feature space to a one-dimensional space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
 
 Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In J. Hanley and B. McNeil (1982), a score is also called a degree of suspicion, which I think captures well the idea of ordered values and their relationship to hypothesis testing. I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.

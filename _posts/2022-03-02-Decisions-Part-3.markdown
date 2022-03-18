@@ -9,7 +9,7 @@ As with raw outputs, calibrated scores need to be evaluated on a separate data s
 
 By "evaluation of a predictive system", what I mean is answering several questions that determine what and how I should deploy it:
 - What is the expected risk of my calibrated system?
-- How does it compare with a majority vote approach (see [previous part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}))
+- How does it compare with a [majority vote approach]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}#majority-classifier)
 - What calibrated system outperforms others on a range of application types? What about all possible application types?
 
 There are multiple evaluation tools but I have found that only the NIST SRE framework answers all of them.
@@ -20,9 +20,9 @@ A note on external source and the code used for this blog - the NIST SRE literat
 
 ## A. Why use calibrated scores
 
-Calibration is concerned with scores that enable [Bayes decisions]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}), whereas row or uncalibrated scores require an extra step before making a risk-minimising decision. For example, ROC threshold optimisation requires to use a separate evaluation dataset to slide through every operating point and a) grab the corresponding (Pmiss, Pfa) b) calculate the expected risk at that point and c) find the threshold associated with the risk-minimised operating point.
+Calibrated scores immediately allow us to make [Bayes decisions]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#bayes-optimal), whereas row or uncalibrated scores require an extra step. For example, ROC threshold optimisation uses a separate evaluation dataset to slide through every operating point and a) grab the corresponding (Pmiss, Pfa) b) calculate the expected risk at that point and c) find the threshold associated with the risk-minimised operating point.
 
-While there's nothing wrong with that extra step, it can be inefficient compared to using calibrated scores in some scenarios, of which I can think of 3 (there may be more).
+While there's nothing wrong with that extra step, it can be inefficient compared to using calibrated scores in some scenarios, of which I can think of 3 (there are probably more).
 
 #### The “Human in the Loop” System
 
@@ -99,7 +99,7 @@ To sum everything up:
 | No error / Perfectly calibrated 	| Bayes optimal           	| risk = A+B+C (irreducible error) ⇔ minDCF 	|
 | Miscalibration                  	| Non-optimal (non-Bayes) 	| risk = A+B+C+D ⇔ DCF                      	|
 
-The alternative to predicting scores calibrated as probabilities is to output llr-like scores. Then, the analysis is not tied to particular $p(\omega_1)$ and the cut-off point is $-\theta$ as derived in part 1 (TODO: link to section "More than one features").
+The alternative to predicting scores calibrated as probabilities is to output llr-like scores. Then, the analysis is not tied to particular $p(\omega_1)$ and the cut-off point is $-\theta$ as derived in [part 1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#more-than-one-features)
 
 How do we generate llr-like scores? The answer depends on the type of predictive system used but logistic regression provides a simple, all-round solution for discriminative models. This tutorial [link] describes the approach in detail, which I also tried for myself in this notebook [link] using different assumptions about score distributions. Basically, logistic regression estimates the log-odds of $\omega_1$ and then we use Bayes’ formula to get the llr. As the examples in the notebook show, this approach works well when scores are approximately normally distributed.
 

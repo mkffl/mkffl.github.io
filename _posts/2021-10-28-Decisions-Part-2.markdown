@@ -239,11 +239,9 @@ The LLR plot confirms the previous AUC results, as can be seen from hiAUC's stee
 
 lowAUC can identify more positives than hiAUC while keeping fpr low, as can be seen by the steep increase of its ROC curve. In other words, hiAUC needs to be closer to an all-$\omega_0$ classifer to keep a low enough fpr, and that means it has a higher expected risk. 
 
-
 {% include Demo17-llrRoc4panes.html %}
 
-## D. Majority-isocost lines
-
+<h2 id="majority-classifier">D. Majority-isocost lines</h2>
 The all-$\omega_0$ "classifier" mentioned above is a simple rule that assigns all instances to non-target. Another name may be majority classifier because it assigns the most prevalent class in the dataset. Its expected risk is a benchmark that any recognizer should beat because it is inexpensive, simple and thus it is often the status quo before any automated solution is considered. 
 
 The all-$\omega_0$ expected risk is $p(\omega_1) \times \text{Pmiss} \times \text{Cmiss} = 0.05 \times 1 \times £107 = £5.35$, i.e. close to hiAUC's risk of £5.16, which thus does not add a lot of value. If hiAUC was our only option, it would be a good idea to double check its costs to ensure that it's better than the simple rule.
@@ -266,7 +264,6 @@ To determine which all-$\omega_i$ is the reference, compute their expected-risk 
 $$
 \text{rr}=\frac{E(risk_{all-\omega_1})}{E(risk_{all-\omega_0})} = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}
 $$
-
 
 And so, the line equation can also be defined as $(\text{tpr}-d) = (\text{fpr}-d) \times \text{rr}$, which has a nice visual interpretation. If the all-non-target rule has the lower risk, the line equation is $\text{tpr} = \text{fpr} \times \text{rr}$ which lies above the $\text{tpr}=\text{fpr}$ line. Otherwise, it is $\text{(tpr-1)} = \text{(fpr-1)} \times \text{rr}$ which also lies above $\text{tpr}=\text{fpr}$.
 
