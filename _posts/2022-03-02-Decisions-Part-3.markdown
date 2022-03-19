@@ -203,37 +203,41 @@ Two hundred simulations confirm the insights from the APE curves, as the teal bl
 
 To generate experiments, we need to glue together 3 blocks: a recognizer, a logit transform and a thresholding function to binarise llr outputs:
 
-
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1390)
 ```scala
-def getThresholder(cutOff: Double)(score: Double): User =
-               if (score > cutOff){Fraudster}
-               else {Regular}
-val pa2 = AppParameters(0.3, 4.94, 1.0)
-val cutOff: Double = minusθ(pa2)
-def bayesThreshold1: Double => User = getThresholder(cutOff)_
-def system1: Array[Double] => User = recognizer andThen logit andThen bayesThreshold1
+      def getThresholder(cutOff: Double)(score: Double): User =
+        if (score > cutOff) { Fraudster }
+        else { Regular }
+
+      val pa2 = AppParameters(0.3, 4.94, 1.0)
+      val cutOff: Double = minusθ(pa2)
+      def bayesThreshold1: Double => User = getThresholder(cutOff) _
+      def system1: Array[Double] => User =
+        recognizer andThen logit andThen bayesThreshold1
 ```
 
 As with the risk simulation from part 1, I use `probability_monad` to generate experiments as one, large random variable that runs the full predictive process i.e. generate samples from the fraud DGP, run the system predictive pipeline and calculates the error-rate.
 
 The random variable is defined in `twoSystemErrorRates`:
 
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L121)
 ```scala
-/** Error rate simulations
-    *
-    * @param nRows the number of rows in the simulated dataset
-    * @param pa the application type
-    * @param randomVariable the transaction's data generation process
-    * @param system1 a predictive pipeline that outputs the user type
-    * @param system2 the alternative predictive pipeline
-    */
-def twoSystemErrorRates(
-    nRows: Integer,
-    pa: AppParameters,
-    randomVariable: Distribution[Transaction],
-    system1: (Array[Double] => User),
-    system2: (Array[Double] => User)
-): Distribution[(Double,Double)]
+
+    /** Error rate simulations
+      *
+      * @param nRows the number of rows in the simulated dataset
+      * @param pa the application type
+      * @param randomVariable the transaction's data generation process
+      * @param system1 a predictive pipeline that outputs the user type
+      * @param system2 the alternative predictive pipeline
+      */
+    def twoSystemErrorRates(
+        nRows: Integer,
+        pa: AppParameters,
+        randomVariable: Distribution[Transaction],
+        system1: (Array[Double] => User),
+        system2: (Array[Double] => User)
+    ): Distribution[(Double, Double)] = // see details in code
 ```
 
 System 1 is clearly the better option because its error rate was almost always (99.1%) below system 2:

@@ -11,17 +11,17 @@ The Receiving Operator Characteristics (ROC) combines these concepts and provide
 
 The ROC curve slides through every possible cutoff point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cutoff. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cutoff point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the propotion of non-targets labeled as false positives, also called false positive rate (fpr).
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L130)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L183)
 ```scala
-case class Tradedoff(...){
+  case class Tradeoff(...) {
         // ...
 
     val asROC: Matrix = {
-        val fpr = (rhsArea andThen decreasing)(w0Counts)
-        val tpr = (rhsArea andThen decreasing)(w1Counts)
-        Vector(fpr,tpr)
+      val fpr = (rhsArea andThen decreasing)(w0Counts)
+      val tpr = (rhsArea andThen decreasing)(w1Counts)
+      Vector(fpr, tpr)
     }
-}
+  }
 ```
 
 As seen previously, $\text{Pmiss}$ and $\text{Pfa}$ are the two inputs into $E(\text{r})$ that vary with thresholds, and we would need to add the other four non-varying inputs to provide information about expected risks, which would add another perspective on top of what the CCD and LLR plots already provide. 
@@ -64,22 +64,33 @@ If that sounds rather abstract (it does to me), the data also provides a proof. 
 
 Note that instead of a continuous function we have a line that goes through a set of points, so the slope is the segment that connects a point to the next one. The slope at $(1-\text{Pmiss(t)},\text{Pfa(t)})$ is $\frac{ \text{Pmiss(t)}-\text{Pmiss(t-1)} }{ \text{Pfa(t-1)}-\text{Pfa(t)} }$.
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L606)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1163)
 ```scala
-/* lr(w1) = 
-        p(s|w1)/p(s|w0)
-*/
-def lr(to: Tradeoff) = pdf(to.w1Counts).zip(pdf(to.w0Counts)).map(tup => tup._1/tup._2)
+      /* lr(w1) =
+                    p(s|w1)/p(s|w0)
+       */
+      def lr(to: Tradeoff) =
+        pdf(to.w1Counts).zip(pdf(to.w0Counts)).map(tup => tup._1 / tup._2)
 
-/* slope = 
-        pmiss(t)-pmiss(t-1) / pfa(t-1)-pfa(t)
-*/
-def slope(to: Tradeoff) = {
-    val pMissD = to.asPmissPfa(0).sliding(2).map { case Seq(x, y, _*) => y - x }.toVector
-    val pFaD = to.asPmissPfa(1).sliding(2).map { case Seq(x, y, _*) => x - y }.toVector
-    pMissD.zip(pFaD).map(tup => tup._1/tup._2)
-}
+      /* slope =
+                    pmiss(t)-pmiss(t-1) / pfa(t-1)-pfa(t)
+       */
+      def slope(to: Tradeoff) = {
+        val pMissD = to
+          .asPmissPfa(0)
+          .sliding(2)
+          .map { case Seq(x, y, _*) => y - x }
+          .toVector
+        val pFaD = to
+          .asPmissPfa(1)
+          .sliding(2)
+          .map { case Seq(x, y, _*) => x - y }
+          .toVector
+        pMissD.zip(pFaD).map(tup => tup._1 / tup._2)
+      }
 ```
+
+
 
 And `lr` and `slope`return the same results as expected.
 
@@ -176,28 +187,28 @@ In what follows, we evaluate the high- and low-AUC recognizers, which are prefix
 
 We start by checking that the AUC of the `hiAUCdata` recognizer (highAUC) is truly higher using the `smartA` function described in Part 1. In `probability_monad`, the `pr` method samples from the rv to evaluate a predicate. Here, we check that the difference in AUC is positive, i.e. that `hiAUCdata`'s AUC is bigger than `lowAUCdata`.
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L788)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1550)
 ```scala
     def hiAUCdata: Distribution[List[Score]] = HighAUC.normalLLR.repeat(1000)
     def lowAUCdata: Distribution[List[Score]] = LowAUC.normalLLR.repeat(1000)
 
-    def splitScores(data: List[Score]): Tuple2[Row,Row] = {
-        val tarS = data.filter(_.label==1).map(_.s).toVector
-        val nonS = data.filter(_.label==0).map(_.s).toVector
-        (nonS,tarS)            
+    def splitScores(data: List[Score]): Tuple2[Row, Row] = {
+      val tarS = data.filter(_.label == 1).map(_.s).toVector
+      val nonS = data.filter(_.label == 0).map(_.s).toVector
+      (nonS, tarS)
     }
 
     def score2Auc(data: List[Score]): Double = {
-        val (nonS,tarS) = splitScores(data)
-        smartA(nonS,tarS)            
+      val (nonS, tarS) = splitScores(data)
+      smartA(nonS, tarS)
     }
 
     def simAUC: Distribution[Double] = for {
-        h <- hiAUCdata
-        l <- lowAUCdata
-        hAuc = score2Auc(h)
-        lAuc = score2Auc(l)
-        diff = (hAuc - lAuc)
+      h <- hiAUCdata
+      l <- lowAUCdata
+      hAuc = score2Auc(h)
+      lAuc = score2Auc(l)
+      diff = (hAuc - lAuc)
     } yield diff
 
     /* Check that

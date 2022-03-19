@@ -64,7 +64,7 @@ Scores below -2 are almost certainly associated with non-targets while scores be
 
 An naive implementation estimates the probability with a simple ratio of ordered pairs (i.e. $s_{\omega_0} < s_{\omega_0}$) over all pairs in the sample. If we call the probability A, that's what `naiveA` does in the code below.
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L207)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L243)
 ```scala
   def getPermutations(A: Row, B: Row): Vector[Tuple2[Double, Double]] = for {
     a <- A
@@ -94,6 +94,7 @@ The expensive part of the rank-sum approach is to rank instances, but that can b
 
 I find this approach very cool because it's not only clever but also intuitive. In the combined, sorted dataset of scores, we can count the concordance value for a single target instance by taking its overall rank and subtracting its rank in the subsample of target instances. If we repeat this procedure for all target instances and rearrange the operations, we get the value computed by `U`.
 
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L267)
 ```scala
   def rankAvgTies(input: Row): Row // See source code
 
@@ -217,7 +218,7 @@ We need a few extra bits in place:
 
 - The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below; The histogram implementation is not particularly interesting so I don't show it, but it's available in the source code
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L112)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L151)
 ```scala
 val w0Counts: Row = ... // counts of non-target labels
 val w1Counts: Row = ... // counts of target labels
@@ -226,7 +227,7 @@ val thresh: Row = ... // bins
 
 - Common operations applied to sample data density, most of which will come in handy in later sections
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/package.scala#L189)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/package.scala#L212)
 ```scala
 val proportion: Row => Row = counts => {
     val S = counts.sum.toDouble
@@ -247,15 +248,15 @@ val logodds: Tuple2[Row, Row] => Row = odds andThen logarithm
 
 - An object to encapsulate the sample score predictions and the related evaluation methods, starting with the CCD estimates 
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L130)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L159)
 ```scala
-case class Tradeoff(w1Counts: Row, w0Counts: Row, thresholds: Row) {
+  case class Tradeoff(w1Counts: Row, w0Counts: Row, thresholds: Row) {
 
-val asCCD: Matrix = {
-    val w0pdf = pdf(w0Counts)
-    val w1pdf = pdf(w1Counts)
-    Vector(w0pdf, w1pdf)
-}
+    val asCCD: Matrix = {
+      val w0pdf = pdf(w0Counts)
+      val w1pdf = pdf(w1Counts)
+      Vector(w0pdf, w1pdf)
+    }
 ```
 
 The `asCCD` value provides the class-conditional density estimates previously used in the plots. It really just computes the proportion of counts corresponding to every threshold. This is what the `pdf` function, an alias for `proportion`, does.
@@ -390,39 +391,44 @@ The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum.
 
 ### Expected risk
 
-Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That is, if we use the corresponding cutoff on new instances, do we get close to the sample expected risk? Data simulation allows us to answer the question empircally. The four main steps are 
+Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That is, if we use the corresponding cutoff on new instances, do we get close to the sample expected risk? With  simulations we can answer the question empirically. The four main steps are 
 - Get a clasifier that applies the $c$ cut-off
 - Generate a few hundred datasets
 - Compute the risk
 - Check that the sample estimate is similar to the simulated values
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L763)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1508)
 ```scala
-val cutOff: Double = hisTo.minS(pa) // hisTo is the Tradeoff instance
-val thresholder: (Double => User) = score => if (score > cutOff) {Fraudster} else {Regular}
-def classifier:(Array[Double] => User) = recognizer andThen logit andThen thresholder
+    val cutOff: Double = hisTo.minS(pa)
+    val thresholder: (Double => User) = score =>
+      if (score > cutOff) { Fraudster }
+      else { Regular }
 
-// Simulate the risk of one transaction
-def cost(p: AppParameters, actual: User, pred: User): Double = pred match {
-        case Fraudster if actual == Regular => p.Cfa
-        case Regular if actual == Fraudster => p.Cmiss
-        case _ => 0.0
-}
+    def classifier: (Array[Double] => User) =
+      recognizer andThen logit andThen thresholder
 
-def simulateTransact: Distribution[Double] = for {
-    transaction <- transact(pa.p_w1)
-    prediction = classifier(transaction.features.toArray)
-    risk = cost(pa, transaction.UserType, prediction)
-} yield risk
+    // Simulate the risk of one transaction
+    def cost(p: AppParameters, actual: User, pred: User): Double = pred match {
+      case Fraudster if actual == Regular => p.Cfa
+      case Regular if actual == Fraudster => p.Cmiss
+      case _                              => 0.0
+    }
 
-val nrows = 1000
-val nsimulations = 500
+    def simulateTransact: Distribution[Double] = for {
+      transaction <- transact(pa.p_w1)
+      prediction = classifier(transaction.features.toArray)
+      risk = cost(pa, transaction.UserType, prediction)
+    } yield risk
 
-// Simulate average risk for a dataset of 1,000 rows 
-val simData: Distribution[Double] = simulateTransact.repeat(nrows).map(_.sum.toDouble / nrows)
+    val nrows = 1000
+    val nsimulations = 500
 
-// Repeat 500 times
-val simRisk: Row = simData.sample(nsimulations).toVector
+    // Simulate average risk for a dataset of 1,000 rows 
+    val simData: Distribution[Double] =
+      simulateTransact.repeat(nrows).map(_.sum.toDouble / nrows)
+
+    // Repeat 500 times
+    val simRisk: Row = simData.sample(nsimulations).toVector
 ```
 
 Note that `classifier` applies a `logit` transform to the `recognizer`'s output. That is because SVM scores are originally in $[0,1]$, and I want them in $\mathbb{R}$ to emphasize that scores need not be "probability-like" values - they could also be projected onto $[0,inf]$ for example. The logit is a monotonously increasing function, so it does not affect the score index returned by the `minS` method.
