@@ -3,7 +3,7 @@ title: My Machine Learnt... Now What? - Part 2
 layout: post
 ---
 
-The [previous part]({{ site.baseurl }}{% link _posts/2021-09-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a preocedure to find the optimal threshold that transforms a recognizer into a classifier. Optimal refers to the mininmum expected risk when deploying the classifier on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
+The [previous part]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a preocedure to find the optimal threshold that transforms a recognizer into a classifier. Optimal refers to the mininmum expected risk when deploying the classifier on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
 
 The Receiving Operator Characteristics (ROC) combines these concepts and provides the same capabilities for threhsold selection as the CCD and LLR frameworks introduced earlier. However, it has a focus on error trade-offs rather than likelihood ratios, which becomes useful when comparing recognisers, as the next examples will show.
 
@@ -11,17 +11,17 @@ The Receiving Operator Characteristics (ROC) combines these concepts and provide
 
 The ROC curve slides through every possible cutoff point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cutoff. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cutoff point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the propotion of non-targets labeled as false positives, also called false positive rate (fpr).
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L130)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L183)
 ```scala
-case class Tradedoff(...){
+  case class Tradeoff(...) {
         // ...
 
     val asROC: Matrix = {
-        val fpr = (rhsArea andThen decreasing)(w0Counts)
-        val tpr = (rhsArea andThen decreasing)(w1Counts)
-        Vector(fpr,tpr)
+      val fpr = (rhsArea andThen decreasing)(w0Counts)
+      val tpr = (rhsArea andThen decreasing)(w1Counts)
+      Vector(fpr, tpr)
     }
-}
+  }
 ```
 
 As seen previously, $\text{Pmiss}$ and $\text{Pfa}$ are the two inputs into $E(\text{r})$ that vary with thresholds, and we would need to add the other four non-varying inputs to provide information about expected risks, which would add another perspective on top of what the CCD and LLR plots already provide. 
@@ -64,22 +64,33 @@ If that sounds rather abstract (it does to me), the data also provides a proof. 
 
 Note that instead of a continuous function we have a line that goes through a set of points, so the slope is the segment that connects a point to the next one. The slope at $(1-\text{Pmiss(t)},\text{Pfa(t)})$ is $\frac{ \text{Pmiss(t)}-\text{Pmiss(t-1)} }{ \text{Pfa(t-1)}-\text{Pfa(t)} }$.
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L606)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1163)
 ```scala
-/* lr(w1) = 
-        p(s|w1)/p(s|w0)
-*/
-def lr(to: Tradeoff) = pdf(to.w1Counts).zip(pdf(to.w0Counts)).map(tup => tup._1/tup._2)
+      /* lr(w1) =
+                    p(s|w1)/p(s|w0)
+       */
+      def lr(to: Tradeoff) =
+        pdf(to.w1Counts).zip(pdf(to.w0Counts)).map(tup => tup._1 / tup._2)
 
-/* slope = 
-        pmiss(t)-pmiss(t-1) / pfa(t-1)-pfa(t)
-*/
-def slope(to: Tradeoff) = {
-    val pMissD = to.asPmissPfa(0).sliding(2).map { case Seq(x, y, _*) => y - x }.toVector
-    val pFaD = to.asPmissPfa(1).sliding(2).map { case Seq(x, y, _*) => x - y }.toVector
-    pMissD.zip(pFaD).map(tup => tup._1/tup._2)
-}
+      /* slope =
+                    pmiss(t)-pmiss(t-1) / pfa(t-1)-pfa(t)
+       */
+      def slope(to: Tradeoff) = {
+        val pMissD = to
+          .asPmissPfa(0)
+          .sliding(2)
+          .map { case Seq(x, y, _*) => y - x }
+          .toVector
+        val pFaD = to
+          .asPmissPfa(1)
+          .sliding(2)
+          .map { case Seq(x, y, _*) => x - y }
+          .toVector
+        pMissD.zip(pFaD).map(tup => tup._1 / tup._2)
+      }
 ```
+
+
 
 And `lr` and `slope`return the same results as expected.
 
@@ -176,28 +187,28 @@ In what follows, we evaluate the high- and low-AUC recognizers, which are prefix
 
 We start by checking that the AUC of the `hiAUCdata` recognizer (highAUC) is truly higher using the `smartA` function described in Part 1. In `probability_monad`, the `pr` method samples from the rv to evaluate a predicate. Here, we check that the difference in AUC is positive, i.e. that `hiAUCdata`'s AUC is bigger than `lowAUCdata`.
 
-[source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Recipes.scala#L788)
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1550)
 ```scala
     def hiAUCdata: Distribution[List[Score]] = HighAUC.normalLLR.repeat(1000)
     def lowAUCdata: Distribution[List[Score]] = LowAUC.normalLLR.repeat(1000)
 
-    def splitScores(data: List[Score]): Tuple2[Row,Row] = {
-        val tarS = data.filter(_.label==1).map(_.s).toVector
-        val nonS = data.filter(_.label==0).map(_.s).toVector
-        (nonS,tarS)            
+    def splitScores(data: List[Score]): Tuple2[Row, Row] = {
+      val tarS = data.filter(_.label == 1).map(_.s).toVector
+      val nonS = data.filter(_.label == 0).map(_.s).toVector
+      (nonS, tarS)
     }
 
     def score2Auc(data: List[Score]): Double = {
-        val (nonS,tarS) = splitScores(data)
-        smartA(nonS,tarS)            
+      val (nonS, tarS) = splitScores(data)
+      smartA(nonS, tarS)
     }
 
     def simAUC: Distribution[Double] = for {
-        h <- hiAUCdata
-        l <- lowAUCdata
-        hAuc = score2Auc(h)
-        lAuc = score2Auc(l)
-        diff = (hAuc - lAuc)
+      h <- hiAUCdata
+      l <- lowAUCdata
+      hAuc = score2Auc(h)
+      lAuc = score2Auc(l)
+      diff = (hAuc - lAuc)
     } yield diff
 
     /* Check that
@@ -239,11 +250,9 @@ The LLR plot confirms the previous AUC results, as can be seen from hiAUC's stee
 
 lowAUC can identify more positives than hiAUC while keeping fpr low, as can be seen by the steep increase of its ROC curve. In other words, hiAUC needs to be closer to an all-$\omega_0$ classifer to keep a low enough fpr, and that means it has a higher expected risk. 
 
-
 {% include Demo17-llrRoc4panes.html %}
 
-## D. Majority-isocost lines
-
+<h2 id="majority-classifier">D. Majority-isocost lines</h2>
 The all-$\omega_0$ "classifier" mentioned above is a simple rule that assigns all instances to non-target. Another name may be majority classifier because it assigns the most prevalent class in the dataset. Its expected risk is a benchmark that any recognizer should beat because it is inexpensive, simple and thus it is often the status quo before any automated solution is considered. 
 
 The all-$\omega_0$ expected risk is $p(\omega_1) \times \text{Pmiss} \times \text{Cmiss} = 0.05 \times 1 \times £107 = £5.35$, i.e. close to hiAUC's risk of £5.16, which thus does not add a lot of value. If hiAUC was our only option, it would be a good idea to double check its costs to ensure that it's better than the simple rule.
@@ -267,7 +276,6 @@ $$
 \text{rr}=\frac{E(risk_{all-\omega_1})}{E(risk_{all-\omega_0})} = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}
 $$
 
-
 And so, the line equation can also be defined as $(\text{tpr}-d) = (\text{fpr}-d) \times \text{rr}$, which has a nice visual interpretation. If the all-non-target rule has the lower risk, the line equation is $\text{tpr} = \text{fpr} \times \text{rr}$ which lies above the $\text{tpr}=\text{fpr}$ line. Otherwise, it is $\text{(tpr-1)} = \text{(fpr-1)} \times \text{rr}$ which also lies above $\text{tpr}=\text{fpr}$.
 
 Furthermore, the majority-isocost is $(\text{tpr}=\text{fpr})$ when $\text{eer} = 1$ i.e. when application parameters don't carry any information for the Bayes decision threshold. In that case, there is no majority classifier, and we may as well flip a coin to decide which label to choose for all instances. 
@@ -275,9 +283,9 @@ Furthermore, the majority-isocost is $(\text{tpr}=\text{fpr})$ when $\text{eer} 
 A recogniser's ROC is on this line if it can't do better than this randomly assigned majority rule, which means that this recogniser has a concordance probability (AUC) of 0 - that is often how people refer to $(\text{tpr}=\text{fpr})$.
 
 ## E. Conclusion
-The ROC frameworks shows that finding the optimal threshold is equivalent to trading one type of error for another. This tradeoff is a necessary price one has to pay when binarising recogniser score outputs. 
+ROC analysis teaches us that finding an optimal threshold is about trading off one error for another. We start with a very high Pmiss and we give it away in exchange for more Pfa ; the application type determines when we get the best deal, in which case we stop the trade and find the corresponding threshold.
 
-As mentioned in the introduction to Part 1, a system output need not consist of binary labels, but can also take the form of probabililities or a combination of hard and soft outputs. In the next part of this blog and building on the concepts developed so far, I will look at the NIST SRE framework to evaluate systems that output probabilities. 
+Up until now, scores had no meaning other than higher values corresponding to higher target probability. The [next part]({{ site.baseurl }}{% link _posts/2022-03-02-Decisions-Part-3.markdown %}) addresses decision-making using calibrated scores, which can be a better alternative to using raw scores.
 
 ### Appendix
 
