@@ -26,43 +26,51 @@ To test and illustrate the evaluation frameworks, I use an imaginary problem of 
 
 This blog article is split into 3 parts - the first two parts are concerned with building an automated system that predicts a transaction label, i.e. target or not, using the available features, and the evaluation frameworks will help to construct labels given some risk objectives. Part 3 is concerned with systems that output probabilities.
 
-There is a tendency among ML practitioners to default to hard decision systems without really asking if it is the best approach. I can only speculate what the reasons may be, but what is certain is that doing so removes information that can be valuable for the business/organisation. That's because with labels, we lose information about how likely an instance is to belong to that label. 
+There is a tendency among ML practitioners to default to hard decision systems without really asking if it is the best approach. I can only speculate what the reasons may be, but that removes any indication about how likely a class is given an instance, which is often a valuable piece of information in the decision making process.
 
 It is worth noting that a system may combine hard and soft decisions, for example, a fraud detection application that predicts if a transation is non-fraudulent, fraudulent or to be investigated. The 3rd case may correspond to instances with a probability of, say, 0.4 to 0.7, which an analyst manually reviews. For more information I would refer to Frank Harrell's blog, e.g. [here](https://www.fharrell.com/post/classification/). 
 
 ### Machine learning with scala
 
-The code underlying these posts is written in scala and is available on [github](https://github.com/mkffl/decisions). The charts in this article and the next are defined in [Recipe.scala](https://github.com/mkffl/decisions/blob/main-pub/Decisions/src/Recipes.scala). 
+The code underlying these posts is available in my [github](https://github.com/mkffl/decisions) repository. The charts' definitions can be found in [Recipe.scala](https://github.com/mkffl/decisions/blob/main-pub/Decisions/src/Recipes.scala). 
 
-Why scala? On this occation I wanted to experiment with a language that runs on the java virtual machine (jvm), as it's what often supports the enterprise systems that my applications run on. I have not found java attractive enough to learn it, while scala offers
+Scala may not be an obvious choice for running stats and ML code, but I wanted to experiment with this language as it has evolved quite a lot in recent years. What I have particularly enjoyed:
 
-- (More) Concise syntax - even more so in [scala 3](https://docs.scala-lang.org/scala3/book/why-scala-3.html)
-- A rich standard library to explore and transform data - see some [examples](https://twitter.github.io/scala_school/collections.html)
-- An ecosytem of ML and analytics libraries - e.g. this project uses [Smile](https://haifengl.github.io/) for ML models and a [Kotlin package](https://github.com/sanity/pairAdjacentViolators) for the Paired Adjacent Violators algorithm
+- (More) Concise syntax - even more so in [scala 3](https://docs.scala-lang.org/scala3/book/why-scala-3.html) though I have used 2.13 for this project
+- Rich standard library to explore and transform data - see some [examples](https://twitter.github.io/scala_school/collections.html)
+- Ecosytem of ML and analytics libraries - e.g. this project uses [Smile](https://haifengl.github.io/) for ML models and a [Kotlin package](https://github.com/sanity/pairAdjacentViolators) for the Paired Adjacent Violators algorithm
 - Scripting tools to get going quickly - e.g. the code for this project is compiled with [Mill](https://github.com/com-lihaoyi/mill) and I have used the [Ammonite repl](https://ammonite.io/) to play around with the data
-- A choice between functional programming - when I am feeling adventurous - and OOP - when I want to get things done because it's getting late
+- Choice between functional programming - when I am feeling adventurous - and OOP - when I want to get things done quickly
 
 ### Simulation
 
-I will rely on the `probability_monad` [scala package](https://github.com/jliszka/probability-monad) to test some of the findings using simulated data. By testing, I mean validating a general statistical property using a specific random variable. The package allows me to define the distribution in a nice and concise way, and it comes with a useful toolkit, e.g. a `p` method to estimate probabilities.
+I will rely on the `probability_monad` [scala package](https://github.com/jliszka/probability-monad) to test some of the findings using simulated data. By testing, I mean empirically validating a general statistical property by sampling from a random variable, which I can do in a nice and concise way with this package. It also comes with a useful toolkit, e.g. a `p` method to estimate probabilities.
 
-This package does just what it says on the tin. It's not a framework for Bayesian inference, e.g. it does not include any routine like MCMC to infer distribution parameters, but it is useful for learning purposes. [Example.scala](https://github.com/jliszka/probability-monad/blob/master/src/main/scala/probability-monad/Examples.scala) in the github repo includes a number of common statistical fallacies - check out the [Monty Hall problem](https://github.com/jliszka/probability-monad/blob/1740054366b43c4e7a7c333bf8637daed11802bf/src/main/scala/probability-monad/Examples.scala#L254) for example - that can be written in just a few lines of code that make a lot of sense.
+Note that `probability_monad` does just what it says on the tin. It is not a framework for Bayesian inference, e.g. it does not include any routine like MCMC to infer distribution parameters, so you wouldn't use it for statistical inference or to train bayesian NN, but that still leaves out a number of interesting uses.
+
+[Example.scala](https://github.com/jliszka/probability-monad/blob/master/src/main/scala/probability-monad/Examples.scala) in the github repo includes a number of common statistical fallacies - check out the [Monty Hall problem](https://github.com/jliszka/probability-monad/blob/1740054366b43c4e7a7c333bf8637daed11802bf/src/main/scala/probability-monad/Examples.scala#L254) for example - that can be written in just a few lines of code that make a lot of sense.
 
 The bank transaction synthetic dataset consists of numerical features and a binary target field - Fraudset or Regular. The generative process for this data (DGP) is based on MADELON, an algorithm defined [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjygsHx9_nzAhXdQkEAHYjmBxUQFnoECAQQAQ&url=http%3A%2F%2Fclopinet.com%2Fisabelle%2FProjects%2FNIPS2003%2FSlides%2FNIPS2003-Datasets.pdf&usg=AOvVaw2e2nAV1wMjg-8TfNYk5z_d) that also underpins sklearn's `make_classification` [module](https://github.com/scikit-learn/scikit-learn/blob/0d378913b/sklearn/datasets/_samples_generator.py#L39). I implement a [simplified version](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Data.scala#L9) of MADELON that is enough to support my use case.
 
-As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the sala community. A review of monads is beyond our scope but I actually believe it is not necessary. I am by no means a monad expert yet I got started writing code in no time because I could just chain random variables in a simple manner to get whatever probabilistic graph I wanted. I hope that my code gives justice to the library's simple yet powerful expressiveness.
+As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the sala community. A review of monads is beyond our scope but I actually believe it is not necessary. I am by no means a monad expert yet I got started writing code in no time. The scala language and this package abstract away most of the monad stuff, so I could just chain random variables in a simple manner to get whatever probabilistic graph I need. I hope that my code gives justice to the library's simple and powerful expressiveness.
+
+### Plan
+
+The next part briefly reviews a metric for discrimination ability, then we will jump into Bayes optimal decisions in C, and implement an evaluation framework from scratch in D and E. Starting from first principles helps me firm up my understanding of key concepts like optimal (risk-minimising) thresholds or, in the next part of this blog series, the ROC curve analysis. 
+
+Implementating the logic in code helps me learn the connections between different evaluation frameworks, using basic concepts like probabiliy density functions. This code is not meant be used in business-critical applications because some great libraries like python's scikit-learn already do this, however, their focus is obviously more on being efficient vs being a learning tool.
 
 <h2 id="concordance">B. Concordance Metrics</h2>
 
-Given a recognizer that outputs scores, we may ask if we can use it to differentiate between ${\omega_0}$ and ${\omega_1}$ instances. We can first look at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
+I have got some data and a trained recognizer that outputs scores - how good is it at differentiating between ${\omega_0}$ and ${\omega_1}$ instances? Start by looking at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
 
-For example, fitting a Support Vector Machine (SVM) with default parameters on the transaction data gives the following separation. The histograms estimate the score probability conditioned on the class so I call it a Class Conditional Distributions (CCD) chart.
+For example, fitting a Support Vector Machine (SVM) with default parameters on the transaction data gives the following separation on a validation dataset. The histograms estimate the score probability conditioned on the class so I call it a Class Conditional Distributions (CCD) chart.
 
 {% include demo11-ccd.html %}
 
-Scores below -2 are almost certainly associated with non-targets while scores between -1  and 1 are more uncertain. We can measure the recognizer's discrimination power in one metric that estimates the probability that $\omega_0$ have lower scores than $\omega_1$ instance i.e. $p(s_{\omega_0} < s_{\omega_1})$.
+Scores below -2 are almost certainly associated with non-targets while scores between -1  and 1 are more uncertain. The concordance metric is the probability that  $\omega_0$ have lower scores than $\omega_1$ instance i.e. $p(s_{\omega_0} < s_{\omega_1})$.
 
-An naive implementation estimates the probability with a simple ratio of ordered pairs (i.e. $s_{\omega_0} < s_{\omega_0}$) over all pairs in the sample. If we call the probability A, that's what `naiveA` does in the code below.
+An naive implementation calculates the ratio of ordered pairs (i.e. $s_{\omega_0} < s_{\omega_0}$) over all pairs in the sample. If we call the probability A, that's what `naiveA` does in the code below.
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L243)
 ```scala
@@ -84,37 +92,7 @@ An naive implementation estimates the probability with a simple ratio of ordered
   }
 ```
 
-Unfortunately, this method stumbles upon memory issues when the number of observations becomes moderately large. The computationally expensive part is to generate all pairs, an operation that I isolate in `getPermutations`. Its complexity is a function of $N_{non}*N_{tar}$ if there are $N_{non}$ non-target instances and $N_{tar}$ target instances.
-
-The good news is that some people came up with a clever method to reduce the complexity. It is implemented in the `smartA` method below. Feel free to skip the following details if they are not of interest. 
-
-The key is that we can count [$s_{\omega_0} < s_{\omega_1}$] by summing the ranks of the target instances in the combined, sorted samples of instance scores, then subtracting the sum of ranks in the target sub-sample. The resulting number figure is called U and happens to also be a test statistics, for a test called Wilcoxon. Its null hypothesis is not necessary to our discussion.
-
-The expensive part of the rank-sum approach is to rank instances, but that can be done efficiently with built-in sorting algorithms, so I guess the overall complexity is $log(N_{non}+N_{tar})$ and, in any case, it runs fast on my modest 1.6 GHz Intel Core i5. 
-
-I find this approach very cool because it's not only clever but also intuitive. In the combined, sorted dataset of scores, we can count the concordance value for a single target instance by taking its overall rank and subtracting its rank in the subsample of target instances. If we repeat this procedure for all target instances and rearrange the operations, we get the value computed by `U`.
-
-[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L267)
-```scala
-  def rankAvgTies(input: Row): Row // See source code
-
-  /* Wilcoxon Statistic, also named U */
-  def wmwStat(s0: Row, s1: Row): Int = {
-    val NTar = s1.size
-    val ranks = rankAvgTies(s0 ++ s1)
-    val RSum = ranks.takeRight(NTar).sum
-    val U = RSum - NTar * (NTar + 1) / 2
-    U toInt
-  }
-
-  /* Estimate P(score_w1 > score_w0) */
-  def smartA(non: Row, tar: Row) = {
-    val den = non.size * tar.size
-    val U = wmwStat(non, tar)
-    val A = U.toDouble / den
-    A
-  }
-```
+That should provide a general idea of the concordance probability, although this implementation runs into memory issues when the number of observations becomes moderately large. The appendix describes a more efficient approach.
 
 <h2 id="bayes-optimal">C. Bayes optimal decisions</h2>
 
@@ -171,11 +149,11 @@ $$
 \tag{1.1}
 $$
 
-We can rephrase the rule as "Decide on 'target' if the likelihood ratio for 'target' is greater than the cost-adjusted ratio of prior probabilities". The rule neatly separates the ratio of likelihoods (on the left) from the characteristics of a particular application (on the right). From now, I will call these characteristics application parameters as in the NIST SRE literature.
+We can rephrase the rule as "Decide on 'target' if the likelihood ratio for 'target' is greater than the cost-adjusted ratio of prior probabilities". The rule neatly separates the ratio of likelihoods (on the left) from the characteristics of a particular application (on the right). From now, I will call these characteristics application types to follow the NIST SRE terminology.
 
 The left-hand side of the rule depends on the likelihood ratio that was learnt from a sample of data. This ratio tells us how much more or less likely an observed $x$ value is when it's generated by $\omega_1$ vs the alternative state. This relationship can be learnt from any dataset, no matter the prior probability $p(\omega_0)$. The right-hand side does not depend on instance data, it depends on the application-wide characteristics - target prevalence and error costs. It is a threshold above which we should choose $\alpha_1$ and that same threshold is used for every new instance.
 
-The previous example with equal priors and the error rate objective corresponds to application parameters $p(\omega_1)=0.5; Cmiss=Cfa=1$. The error rate is the average risk when the two types of misclassification have the same cost (Cmiss=Cfa=1). The corresponding threshold of 1.0 matches our intuition to choose $\alpha_1$ when $x$ is to the right of the vertical line.
+The previous example with equal priors and the error rate objective corresponds to application parameters $p(\omega_1)=0.5; \text{Cmiss}=\text{Cfa}=1$. The error rate is the average risk when the two types of misclassification have the same cost (Cmiss=Cfa=1). The corresponding threshold of 1.0 matches our intuition to choose $\alpha_1$ when $x$ is to the right of the vertical line.
 
 Higher $p(\omega_1)$ and/or higher Cmiss would increase the decision region for $\alpha_1$ by moving the decision cut-off to the left. If the cost of misclassifying targets gets bigger, or if there are more targets than non-targets, then we should lean more towards $\omega_1$.
 
@@ -208,15 +186,19 @@ $$
 (Notice the inverted numerator vs the Bayes decision rule). Hence, the cutoff point $c$ is at $llr = -\theta$.
 
 
-### Implementation
+### Implementations
 
-Going back to the SVM scores used in the CCD plot at the start, we would like to find the Bayes decision criterion $c$ for particular application parameters $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$. The optimal criterion value $\text{c}$ will convert the recognizer into a classifier, which we will apply on simulated data to check that the solution's risk in the right ballpark area.
+Before, we found an optimal threshold at -0.25 by simply looking at the CCD chart. But eyeballing a graph is not reliable and becomes difficult if we move away from the simple case of equal priors and costs set to 1. Let's write a procedure, first using log-likelihood ratios, then using cumulative error propabilities Pmiss and Pfa. The latter approach provides not only an optimal cut-off $\text{c}$ but also the corresponding expected risk at that threshold. The last section simulates hundreds of end-to-end applications to validate the estimated average risk. I find simulation to be helpful to take a step back and see the full deployment process.
 
-The parameters will be stored in a data object called `AppParameters` with the following values `val pa = AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`. Prior probabilities are assumed to be equal missed targets have a cost 5 times higher than missed non-targets.
+We will use the following application type
+```scala
+val pa = AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)
+````
+And so, prior probabilities are assumed to be equal and missing targets costs 5 times more than missing non-targets.
 
-We need a few extra bits in place:
+To find the optimal threshold, we need a few things:
 
-- The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below; The histogram implementation is not particularly interesting so I don't show it, but it's available in the source code
+- The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below; The histogram implementation is hidden as it's not particularly exciting
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L151)
 ```scala
@@ -246,7 +228,7 @@ val rhsArea: Row => Row = cdf andThen oneMinus
 val logodds: Tuple2[Row, Row] => Row = odds andThen logarithm
 ```
 
-- An object to encapsulate the sample score predictions and the related evaluation methods, starting with the CCD estimates 
+- An object that encapsulates the sample score predictions and the related evaluation methods, starting with the CCD estimates 
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L159)
 ```scala
@@ -259,9 +241,13 @@ val logodds: Tuple2[Row, Row] => Row = odds andThen logarithm
     }
 ```
 
-The `asCCD` value provides the class-conditional density estimates previously used in the plots. It really just computes the proportion of counts corresponding to every threshold. This is what the `pdf` function, an alias for `proportion`, does.
+The `asCCD` value provides the class-conditional density estimates previously used in the plots. It really just computes the proportion of counts corresponding to every threshold, and is readily available with histogram counts and the probability density transform `pdf`.
 
-Next, we implement `minS`, a method to find the Bayes decision cut-off point, i.e. the score value $\text{s}$ that minimises the expected risk given some application parameters.
+#### i) Using log-likeihood ratios
+
+Next, we implement `minS`, a method to find the Bayes decision cut-off point - the score value $\text{s}$ that minimises the expected risk given our application type.
+
+`asLLR` gives the log-likelihood ratio of the scores - the left-hand side of [equation 1.1](#rule-1-1) - using the proportion of targets in the score's corresponding bin. The `minusθ` method convert the application parameters into $-\theta$, which is the right-hand side of [equation 1.1](#rule-1-1). Then, `argminRisk` uses these two inputs to find the array index of the closest match, which is used by `minS` to provide the cutoff point $c$.
 
 ```scala
 case class Tradedoff(...){
@@ -288,9 +274,7 @@ def paramToθ(pa: AppParameters): Double =
 def minusθ(pa: AppParameters) = -1*paramToθ(pa)
 ```
 
-`asLLR` returns the log-likelihood ratio of the scores - the left-hand side of eq. 1.1 - using the proportion of targets in the score's corresponding bin. The `minusθ` method convert the application parameters into $-\theta$, which is the right-hand side of eq. 1.1. Then, `argminRisk` uses these two inputs to find the array index of the closest match, which is used by `minS` to provide the cutoff point $c$.
-
-### D. Average risk
+#### ii) Using Pmiss and Pfa
 
 We can estimate the expected risk of a Bayes decision classifer using the evaluation data:
 
@@ -299,9 +283,17 @@ E(\text{risk}) = \text{Cmiss}*p(\omega_1)*\text{Pmiss} + \text{Cfa}*p(\omega_0)*
 \tag{1.2}
 $$
 
-where Pmiss is the proportion of targets with scores below the Bayes decision cutoff, $c$, and Pfa is the proportion of non-targets with scores above $c$.
+where Pmiss is the proportion of targets with scores below the Bayes decision cutoff, $c$, and Pfa is the proportion of non-targets with scores above $c$. 
 
-The Pmiss and Pfa notation comes from the BOSARIS documentation, however, the formula is used in many assessment frameworks and is quite intuitive. That is perhaps why its derivation is often not documented, so I include it below.
+Getting the expected risk at every threshold makes it possible to find the optimal cut-off (with argmin) and the corresponding risk estimate. That approach made more sense to me after I wrote the proportions as a function of the threshold.
+
+$$
+E(\text{risk(c)}) = \text{Cmiss}*p(\omega_1)*\text{Pmiss(c)} + \text{Cfa}*p(\omega_0)*\text{Pfa(c)}
+\tag{1.3}
+$$
+
+
+A note on the derivation of the expected risk. The Pmiss and Pfa notation comes from the BOSARIS documentation, however, the formula is used in many assessment frameworks and is quite intuitive. That is perhaps why its derivation is often not documented, so I include it below.
 
 The expected risk is the risk of every action chosen for all instances in the data. But the action chosen depends on the instance region, $R_0$ and $R_1$:
 
@@ -442,3 +434,39 @@ In the [next part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.
 ## References
 - R. Duda et al (2001), Pattern Classification.
 - J. Hanley and B. McNeil (1982), The Meaning and Use of the Area under a Receiver Operating Characteristic (ROC) Curve.
+
+### Appendix
+
+#### Efficient implementation of the concordance probability
+
+The inefficient bit is to generate all pairs, an operation that I isolate in `getPermutations`. Its complexity is a function of $N_{non}*N_{tar}$ if there are $N_{non}$ non-target instances and $N_{tar}$ target instances.
+
+The good news is that some people came up with a clever method to reduce the complexity. It is implemented in the `smartA` method below. Feel free to skip the following details if they are not of interest. 
+
+The key is that we can count [$s_{\omega_0} < s_{\omega_1}$] by summing the ranks of the target instances in the combined, sorted samples of instance scores, then subtracting the sum of ranks in the target sub-sample. The resulting number figure is called U and happens to also be a test statistics, for a test called Wilcoxon. Its null hypothesis is not necessary to our discussion.
+
+The expensive part of the rank-sum approach is to rank instances, but that can be done efficiently with built-in sorting algorithms, so I guess the overall complexity is $log(N_{non}+N_{tar})$ and, in any case, it runs fast on my modest 1.6 GHz Intel Core i5. 
+
+I find this approach very cool because it's not only clever but also intuitive. In the combined, sorted dataset of scores, we can count the concordance value for a single target instance by taking its overall rank and subtracting its rank in the subsample of target instances. If we repeat this procedure for all target instances and rearrange the operations, we get the value computed by `U`.
+
+[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L267)
+```scala
+  def rankAvgTies(input: Row): Row // See source code
+
+  /* Wilcoxon Statistic, also named U */
+  def wmwStat(s0: Row, s1: Row): Int = {
+    val NTar = s1.size
+    val ranks = rankAvgTies(s0 ++ s1)
+    val RSum = ranks.takeRight(NTar).sum
+    val U = RSum - NTar * (NTar + 1) / 2
+    U toInt
+  }
+
+  /* Estimate P(score_w1 > score_w0) */
+  def smartA(non: Row, tar: Row) = {
+    val den = non.size * tar.size
+    val U = wmwStat(non, tar)
+    val A = U.toDouble / den
+    A
+  }
+```
