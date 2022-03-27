@@ -8,11 +8,11 @@ layout: post
 ### Motivations
 There is a widely-accepted approach to building ML solutions that starts with learning parameters of a model and then applying a threshold to the model's scores to get labels. The thresholding part rests on an equation that balances two types of errors, with decision aided by so-called confusion matrices. For example, see this [tutorial](https://machinelearningmastery.com/threshold-moving-for-imbalanced-classification/) - scroll down until "We can summarize this procedure below.".
 
-The whole process is intuitive and can be applied to a number of problems. Over the last couple of years, however, I have stumbled upon applications that required more or less tweaking of this standard approach. For example, how should I determine the score thresholds of an ML sytem that is an input into a downstream system? What if the downstream task aggregates the upstream outputs, e.g. classifying paragraphs to make decisions on documents?
+The whole process is intuitive and can be applied to a number of problems. Over the last couple of years, however, I have stumbled upon applications that required more or less tweaking of this standard approach. For example, how should I determine the score thresholds of an ML system that is an input into a downstream system? What if the downstream task aggregates the upstream outputs, e.g. classifying paragraphs, to make decisions on documents?
 
-Earlier this year, I came across the Speech Recognition Evaluation (SRE), a ML competition organised by [NIST](https://www.nist.gov/programs-projects/speaker-and-language-recognition), a U.S. research institute. Over the last two decades, its research community has developed a framework to assess speech recognition systems. One recurring application is to determine if a speech segment includes only one or two distinct speakers. 
+Earlier this year, I came across the Speech Recognition Evaluation (SRE), an ML competition organised by [NIST](https://www.nist.gov/programs-projects/speaker-and-language-recognition), a U.S. research institute. Over the last two decades, its research community has developed a framework to assess speech recognition systems. One recurring application is to determine if a speech segment includes only one or two distinct speakers. 
 
-Though NIST papers mentions various applications of this evaluation framework in biometrics and forensics, I think that it is useful for anyone working on classification applications. The string of research that I found, which I list at the end, certainly helped me firm up my understanding of model evaluation. I particuarly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit - see this [matlab implementation](https://projets-lium.univ-lemans.fr/sidekit/api/bosaris/index.html), or more recent ones in [julia](https://github.com/davidavdav/ROCAnalysis.jl) or [python](https://gitlab.eurecom.fr/nautsch/pybosaris).
+Though NIST papers mention various applications of this evaluation framework in biometrics and forensics, I think that it is useful for anyone working on classification applications, and it surely helped me firm up my understanding of model evaluation. I particularly like that it combines solid theoretical foundations with implementations via the BOSARIS toolkit - see this [matlab implementation](https://projets-lium.univ-lemans.fr/sidekit/api/bosaris/index.html), or more recent ones in [julia](https://github.com/davidavdav/ROCAnalysis.jl) or [python](https://gitlab.eurecom.fr/nautsch/pybosaris).
 
 The following two parts review traditional assessment frameworks, in particular the ROC curve, and the third part is an introduction to the Applied Probability of Error (APE), a framework for model calibration assessment.
 
@@ -26,9 +26,9 @@ To test and illustrate the evaluation frameworks, I use an imaginary problem of 
 
 This blog article is split into 3 parts - the first two parts are concerned with building an automated system that predicts a transaction label, i.e. target or not, using the available features, and the evaluation frameworks will help to construct labels given some risk objectives. Part 3 is concerned with systems that output probabilities.
 
-There is a tendency among ML practitioners to default to hard decision systems without really asking if it is the best approach. I can only speculate what the reasons may be, but that removes any indication about how likely a class is given an instance, which is often a valuable piece of information in the decision making process.
+There is a tendency among ML practitioners to default to hard decision systems without really asking if it is the best approach. I can only speculate what the reasons may be, but that removes any indication about how likely a class is given an instance, which is often a valuable piece of information in the decision-making process.
 
-It is worth noting that a system may combine hard and soft decisions, for example, a fraud detection application that predicts if a transation is non-fraudulent, fraudulent or to be investigated. The 3rd case may correspond to instances with a probability of, say, 0.4 to 0.7, which an analyst manually reviews. For more information I would refer to Frank Harrell's blog, e.g. [here](https://www.fharrell.com/post/classification/). 
+It is worth noting that a system may combine hard and soft decisions, for example, a fraud detection application that predicts if a transaction is non-fraudulent, fraudulent or to be investigated. The 3rd case may correspond to instances with a probability of, say, 0.4 to 0.7, which an analyst manually reviews. For more information, jump straight to [part 3]({{ site.baseurl }}{% link _posts/2022-03-02-Decisions-Part-3.markdown %}).
 
 ### Machine learning with scala
 
@@ -38,39 +38,39 @@ Scala may not be an obvious choice for running stats and ML code, but I wanted t
 
 - (More) Concise syntax - even more so in [scala 3](https://docs.scala-lang.org/scala3/book/why-scala-3.html) though I have used 2.13 for this project
 - Rich standard library to explore and transform data - see some [examples](https://twitter.github.io/scala_school/collections.html)
-- Ecosytem of ML and analytics libraries - e.g. this project uses [Smile](https://haifengl.github.io/) for ML models and a [Kotlin package](https://github.com/sanity/pairAdjacentViolators) for the Paired Adjacent Violators algorithm
+- Range of ML and analytics libraries - e.g. this project uses [Smile](https://haifengl.github.io/) for ML models and a [Kotlin package](https://github.com/sanity/pairAdjacentViolators) for the Paired Adjacent Violators algorithm
 - Scripting tools to get going quickly - e.g. the code for this project is compiled with [Mill](https://github.com/com-lihaoyi/mill) and I have used the [Ammonite repl](https://ammonite.io/) to play around with the data
 - Choice between functional programming - when I am feeling adventurous - and OOP - when I want to get things done quickly
 
 ### Simulation
 
-I will rely on the `probability_monad` [scala package](https://github.com/jliszka/probability-monad) to test some of the findings using simulated data. By testing, I mean empirically validating a general statistical property by sampling from a random variable, which I can do in a nice and concise way with this package. It also comes with a useful toolkit, e.g. a `p` method to estimate probabilities.
+I will rely on the `probability_monad` [package](https://github.com/jliszka/probability-monad) to test the findings using simulated data. By testing, I mean empirically validating a general statistical property by sampling from a random variable, which this package allows to do in a nice and concise way. It also comes with a useful toolkit, e.g. a `p` method to estimate probabilities.
 
 Note that `probability_monad` does just what it says on the tin. It is not a framework for Bayesian inference, e.g. it does not include any routine like MCMC to infer distribution parameters, so you wouldn't use it for statistical inference or to train bayesian NN, but that still leaves out a number of interesting uses.
 
 [Example.scala](https://github.com/jliszka/probability-monad/blob/master/src/main/scala/probability-monad/Examples.scala) in the github repo includes a number of common statistical fallacies - check out the [Monty Hall problem](https://github.com/jliszka/probability-monad/blob/1740054366b43c4e7a7c333bf8637daed11802bf/src/main/scala/probability-monad/Examples.scala#L254) for example - that can be written in just a few lines of code that make a lot of sense.
 
-The bank transaction synthetic dataset consists of numerical features and a binary target field - Fraudset or Regular. The generative process for this data (DGP) is based on MADELON, an algorithm defined [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjygsHx9_nzAhXdQkEAHYjmBxUQFnoECAQQAQ&url=http%3A%2F%2Fclopinet.com%2Fisabelle%2FProjects%2FNIPS2003%2FSlides%2FNIPS2003-Datasets.pdf&usg=AOvVaw2e2nAV1wMjg-8TfNYk5z_d) that also underpins sklearn's `make_classification` [module](https://github.com/scikit-learn/scikit-learn/blob/0d378913b/sklearn/datasets/_samples_generator.py#L39). I implement a [simplified version](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Data.scala#L9) of MADELON that is enough to support my use case.
+The bank transaction synthetic dataset consists of numerical features and a binary target field - Fraudster or Regular. The generative process for this data (DGP) is based on MADELON, an algorithm defined [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjygsHx9_nzAhXdQkEAHYjmBxUQFnoECAQQAQ&url=http%3A%2F%2Fclopinet.com%2Fisabelle%2FProjects%2FNIPS2003%2FSlides%2FNIPS2003-Datasets.pdf&usg=AOvVaw2e2nAV1wMjg-8TfNYk5z_d) that also underpins sklearn's `make_classification` [module](https://github.com/scikit-learn/scikit-learn/blob/0d378913b/sklearn/datasets/_samples_generator.py#L39). I implement a [simplified version](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Data.scala#L9) of MADELON that is enough to support my use case.
 
-As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the sala community. A review of monads is beyond our scope but I actually believe it is not necessary. I am by no means a monad expert yet I got started writing code in no time. The scala language and this package abstract away most of the monad stuff, so I could just chain random variables in a simple manner to get whatever probabilistic graph I need. I hope that my code gives justice to the library's simple and powerful expressiveness.
+As its name suggests, the package is written using monads, a pillar of the functional programming paradigm that is dear to the scala community. A review of monads is beyond our scope, but it is also probably not necessary. I am by no means a monad expert, and yet I got started writing code in no time because most of the monad stuff is abstracted away. I can simply chain random variables to get whatever probabilistic graph I need.
 
 ### Plan
 
-The next part briefly reviews a metric for discrimination ability, then we will jump into Bayes optimal decisions in C, and implement an evaluation framework from scratch in D and E. Starting from first principles helps me firm up my understanding of key concepts like optimal (risk-minimising) thresholds or, in the next part of this blog series, the ROC curve analysis. 
+The next part briefly reviews a metric for discrimination ability, then we will jump into Bayes optimal decisions in C, and implement and validate an evaluation framework from scratch in D and E.
 
-Implementating the logic in code helps me learn the connections between different evaluation frameworks, using basic concepts like probabiliy density functions. This code is not meant be used in business-critical applications because some great libraries like python's scikit-learn already do this, however, their focus is obviously more on being efficient vs being a learning tool.
+Starting from first principles helps me firm up my understanding of key concepts like optimal thresholds or, in the next part of this blog series, the ROC curve analysis. Implementing the logic in code emphasizes the connections between different evaluation frameworks, using basic concepts like probability density functions. This code is not meant to be used in production applications but as a learning tool.
 
 <h2 id="concordance">B. Concordance Metrics</h2>
 
 I have got some data and a trained recognizer that outputs scores - how good is it at differentiating between ${\omega_0}$ and ${\omega_1}$ instances? Start by looking at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
 
-For example, fitting a Support Vector Machine (SVM) with default parameters on the transaction data gives the following separation on a validation dataset. The histograms estimate the score probability conditioned on the class so I call it a Class Conditional Distributions (CCD) chart.
+For example, fitting a Support Vector Machine (SVM) with default parameters on the transaction data gives the following separation on a validation dataset. The histograms estimate the score probability conditioned on the class, so I call it a Class Conditional Distributions (CCD) chart.
 
 {% include demo11-ccd.html %}
 
-Scores below -2 are almost certainly associated with non-targets while scores between -1  and 1 are more uncertain. The concordance metric is the probability that  $\omega_0$ have lower scores than $\omega_1$ instance i.e. $p(s_{\omega_0} < s_{\omega_1})$.
+Scores below -2 are almost certainly associated with non-targets, while scores between -1  and 1 are more uncertain. The concordance metric is the probability that  $\omega_0$ have lower scores than $\omega_1$ instance i.e. $p(s_{\omega_0} < s_{\omega_1})$. [TODO: show the value for SVM]
 
-An naive implementation calculates the ratio of ordered pairs (i.e. $s_{\omega_0} < s_{\omega_0}$) over all pairs in the sample. If we call the probability A, that's what `naiveA` does in the code below.
+A naive implementation calculates the ratio of ordered pairs (i.e. $s_{\omega_0} < s_{\omega_0}$) over all pairs in the sample. If we call the probability A, that's what `naiveA` does in the code below.
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L243)
 ```scala
@@ -92,14 +92,14 @@ An naive implementation calculates the ratio of ordered pairs (i.e. $s_{\omega_0
   }
 ```
 
-That should provide a general idea of the concordance probability, although this implementation runs into memory issues when the number of observations becomes moderately large. The appendix describes a more efficient approach.
+This implementation should provide an overview of the concordance probability, although it runs into memory issues when the number of observations becomes moderately large. The appendix describes a more efficient approach.
 
 <h2 id="bayes-optimal">C. Bayes optimal decisions</h2>
 
 ### One feature
 Suppose that we need to label instances using only one predictor. A randomly drawn dataset has one feature column $x$ and one target field $y$ with values in {$\omega_0, \omega_1$}. We want to decide on a classification rule that assigns new instance labels based on their $x$ values. 
 
-Further assume equal prior probabilities i.e. $p(\omega_0) = p(\omega_1) = 0.5$ and that the rule should minimise the number of misclassified instances. The class-conditional distributions $p(x \vert \omega_i)$ below suggests a rule.
+Further, assume equal prior probabilities i.e. $p(\omega_0) = p(\omega_1) = 0.5$ and that the rule should minimise the number of misclassified instances. The class-conditional distributions $p(x \vert \omega_i)$ below suggests a rule.
 
 {% include demo12-ccd.html %}
 
@@ -107,9 +107,9 @@ We should choose $\omega_0$ when its likelihood is greater, and $\omega_1$ other
 
 Any other rule corresponds to a higher probability of error. For example, if a new instance has $x=1.0$ then assigning $\omega_0$ would not make sense because the chances of being wrong are more than 4 times higher than being correct.
 
-This line of reasoning is at the core of Bayes decisions criteria, which tells us that picking the option that minimises the risk for every single instance will minimise the overall risk. The common approach to selecting classifier thresholds implicitly relies on Bayes decision criteria and the link will become obvious soon if it's not already clear.
+This line of reasoning is at the core of Bayes decisions criteria, which tells us that picking the option that minimises the risk for every single instance will minimise the overall risk. The common approach to selecting classifier thresholds implicitly relies on Bayes decision criteria, and the link will become obvious soon.
 
-The following is based on the first chapter of [Pattern Classification](https://www.amazon.fr/Pattern-Classification-2e-RO-Duda/dp/0471056693). It's a bit old but also a surprisingly refreshing textbook that covers Bayes decision theory in depth. I simplify their notation to the minimum necessary for a binary classification problem, though they address more general problems.
+The following is based on the first chapter of [Pattern Classification](https://www.amazon.fr/Pattern-Classification-2e-RO-Duda/dp/0471056693). It's a bit of an old, albeit surprisingly refreshing textbook, which covers Bayes decisions in depth. I simplify their notation to the minimum necessary for a binary classification problem, though they address more general problems.
 
 Making decisions when the environment is uncertain requires to consider the costs of different actions under uncertain states of nature:
 
@@ -127,7 +127,7 @@ Making decisions when the environment is uncertain requires to consider the cost
     id32[action α1] --> id44[cost c_11 = 0.0];
 </div>
 
-The first node corresponds to choosing action $\alpha_0$ when the true state is $\omega_0$, i.e. choosing non-target when the instance is actually a non-target, which we assume does not cost anything. The next entry corresponds to a false alarm, with cost Cfa. The next is when we miss a target, which has a cost of Cmiss, and the last node correspodns to a true positive, which does not cost anything.
+The first node corresponds to choosing action $\alpha_0$ when the true state is $\omega_0$, i.e. choosing non-target when the instance is actually a non-target, which we assume does not cost anything. The next entry corresponds to a false alarm, with cost Cfa. The next is when we miss a target, which has a cost of Cmiss, and the last node corresponds to a true positive, which does not cost anything.
 
 For every instance with feature $x$, the Bayes decisions to choose $\alpha_0$ or $\alpha_1$ depends on their respective risk, which in turn depend on the (posterior) probability of each state of nature.
 
@@ -136,7 +136,7 @@ risk(\alpha_0 | x) = c_{00}*p(\omega_0|x) + Cmiss*p(\omega_1|x) = Cmiss*p(\omega
 risk(\alpha_1 | x) = c_{11}*p(\omega_1|x) + Cfa*p(\omega_0|x) = Cfa*p(\omega_0|x)
 $$
 
-So, we should choose $\alpha_1$ if $risk(\alpha_1 \vert x) < risk(\alpha_0 \vert x)$ and $\alpha_0$ otherwise. Reorganising the terms gives the following rule:
+So, we choose $\alpha_1$ if $risk(\alpha_1 \vert x) < risk(\alpha_0 \vert x)$ and $\alpha_0$ otherwise. Reorganising the terms gives the following rule:
 
 <p id="rule-1-1">Bayes-optimal decision rule</p>
 
@@ -151,9 +151,9 @@ $$
 
 We can rephrase the rule as "Decide on 'target' if the likelihood ratio for 'target' is greater than the cost-adjusted ratio of prior probabilities". The rule neatly separates the ratio of likelihoods (on the left) from the characteristics of a particular application (on the right). From now, I will call these characteristics application types to follow the NIST SRE terminology.
 
-The left-hand side of the rule depends on the likelihood ratio that was learnt from a sample of data. This ratio tells us how much more or less likely an observed $x$ value is when it's generated by $\omega_1$ vs the alternative state. This relationship can be learnt from any dataset, no matter the prior probability $p(\omega_0)$. The right-hand side does not depend on instance data, it depends on the application-wide characteristics - target prevalence and error costs. It is a threshold above which we should choose $\alpha_1$ and that same threshold is used for every new instance.
+The left-hand side of the rule depends on the likelihood ratio that was learnt from a sample of data. This ratio tells us how much more or less likely an observed $x$ value is when it's generated by $\omega_1$ vs the alternative state. This relationship can be learnt from any dataset, no matter the prior probability $p(\omega_0)$. The right-hand side does not depend on instance data, but on the application-wide characteristics - target prevalence and error costs. It is a threshold above which we should choose $\alpha_1$ and that same threshold is used for every new instance.
 
-The previous example with equal priors and the error rate objective corresponds to application parameters $p(\omega_1)=0.5; \text{Cmiss}=\text{Cfa}=1$. The error rate is the average risk when the two types of misclassification have the same cost (Cmiss=Cfa=1). The corresponding threshold of 1.0 matches our intuition to choose $\alpha_1$ when $x$ is to the right of the vertical line.
+The previous example with equal priors and the error rate objective corresponds to application parameters $p(\omega_1)=0.5; \text{Cmiss}=\text{Cfa}=1$. The error rate is the average risk when the two types of misclassification have the same cost (Cmiss=Cfa=1). The corresponding threshold of 1.0 matches our intuition to pick $\alpha_1$ when $x$ is to the right of the vertical line.
 
 Higher $p(\omega_1)$ and/or higher Cmiss would increase the decision region for $\alpha_1$ by moving the decision cut-off to the left. If the cost of misclassifying targets gets bigger, or if there are more targets than non-targets, then we should lean more towards $\omega_1$.
 
@@ -168,9 +168,11 @@ $$
 changes the RHS of the Bayes decision threshold.
 
 <h3 id="more-than-one-features">More than one features</h3>
-In general, there are multiple features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large feature space to a one-dimensional space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
+In general, there are multiple features and class-conditional sample density functions are more complex than above, possibly leading to many decision regions. Fortunately, the Bayes decision procedure applies to a recognizer's scores. In fact, we could think of a recognizer as a map from a large to a one-dimensional feature space, $f: \mathbb{R}^d \mapsto \mathbb{R}$. 
 
-Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In J. Hanley and B. McNeil (1982), a score is also called a degree of suspicion, which I think captures well the idea of ordered values and their relationship to hypothesis testing. I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.
+Furthermore, the map returns scores such that higher values correspond to a more likely $\omega_1$ state. In J. Hanley and B. McNeil (1982), a score is also called a degree of suspicion, which I think captures well the idea of ordered values and their relationship to hypothesis testing. 
+
+I think of a score as the noise that a patient would make when a doctor gently presses parts of a sore spot to locate a sprained tendon. A stronger shriek means that the doctor is getting closer to the torn ligament, however, its intensity doesn't tell us how far the instrument is from the damaged tendon.
 
 Applying the Bayes decision procedure to scores means finding the cut-off point where the likelihood ratio equals the theshold, 
 $$
@@ -188,9 +190,9 @@ $$
 
 ### Implementations
 
-Before, we found an optimal threshold at -0.25 by simply looking at the CCD chart. But eyeballing a graph is not reliable and becomes difficult if we move away from the simple case of equal priors and costs set to 1. Let's write a procedure, first using log-likelihood ratios, then using cumulative error propabilities Pmiss and Pfa. The latter approach provides not only an optimal cut-off $\text{c}$ but also the corresponding expected risk at that threshold. The last section simulates hundreds of end-to-end applications to validate the estimated average risk. I find simulation to be helpful to take a step back and see the full deployment process.
+Before, we found an optimal threshold at -0.25 by simply looking at the CCD chart. But eyeballing a graph is not reliable and becomes difficult if we move away from the simple case of equal priors and costs set to 1. Let's write a procedure, first using log-likelihood ratios, then using cumulative error probabilities, Pmiss and Pfa. The latter approach provides not only an optimal cut-off $\text{c}$ but also the corresponding expected risk at that threshold. The last section simulates hundreds of end-to-end applications to validate the estimated average risk. I find simulation to be helpful to take a step back and see the full deployment process.
 
-We will use the following application type
+We will use the application type as a practical example
 ```scala
 val pa = AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)
 ````
@@ -198,7 +200,7 @@ And so, prior probabilities are assumed to be equal and missing targets costs 5 
 
 To find the optimal threshold, we need a few things:
 
-- The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below; The histogram implementation is hidden as it's not particularly exciting
+a) The histogram counts of scores - the same as the CCD chart - which consists of the 3 vectors below; The histogram implementation is hidden as it's not particularly exciting
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L151)
 ```scala
@@ -207,7 +209,7 @@ val w1Counts: Row = ... // counts of target labels
 val thresh: Row = ... // bins
 ```
 
-- Common operations applied to sample data density, most of which will come in handy in later sections
+b) Common operations applied to sample data density, most of which will come in handy in later sections
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/package.scala#L212)
 ```scala
@@ -228,7 +230,7 @@ val rhsArea: Row => Row = cdf andThen oneMinus
 val logodds: Tuple2[Row, Row] => Row = odds andThen logarithm
 ```
 
-- An object that encapsulates the sample score predictions and the related evaluation methods, starting with the CCD estimates 
+c) A class that encapsulates sample score predictions and the related evaluation methods, starting with the CCD estimates 
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L159)
 ```scala
@@ -241,13 +243,13 @@ val logodds: Tuple2[Row, Row] => Row = odds andThen logarithm
     }
 ```
 
-The `asCCD` value provides the class-conditional density estimates previously used in the plots. It really just computes the proportion of counts corresponding to every threshold, and is readily available with histogram counts and the probability density transform `pdf`.
+The `asCCD` value provides the class-conditional density estimates previously used in the plots. It computes the proportion of counts corresponding to every threshold, and is readily available from histogram counts and the probability density transform `pdf`.
 
 #### i) Using log-likeihood ratios
 
 Next, we implement `minS`, a method to find the Bayes decision cut-off point - the score value $\text{s}$ that minimises the expected risk given our application type.
 
-`asLLR` gives the log-likelihood ratio of the scores - the left-hand side of [equation 1.1](#rule-1-1) - using the proportion of targets in the score's corresponding bin. The `minusθ` method convert the application parameters into $-\theta$, which is the right-hand side of [equation 1.1](#rule-1-1). Then, `argminRisk` uses these two inputs to find the array index of the closest match, which is used by `minS` to provide the cutoff point $c$.
+`asLLR` gives the log-likelihood ratio of the scores, which is the left-hand side of [eq. 1.1](#rule-1-1), and `minusθ` converts the application parameters into $-\theta$, which is the right-hand side of [eq. 1.1](#rule-1-1). `argminRisk` uses these two inputs to find the array index of the closest match, then used by `minS` to provide the cut-off point $c$.
 
 ```scala
 case class Tradedoff(...){
@@ -293,7 +295,7 @@ E(\text{risk(c)}) = \text{Cmiss}*p(\omega_1)*\text{Pmiss(c)} + \text{Cfa}*p(\ome
 $$
 
 
-A note on the derivation of the expected risk. The Pmiss and Pfa notation comes from the BOSARIS documentation, however, the formula is used in many assessment frameworks and is quite intuitive. That is perhaps why its derivation is often not documented, so I include it below.
+A note on the derivation of the expected risk - the Pmiss and Pfa notation comes from the BOSARIS documentation, however, the formula is used in many assessment frameworks and is quite intuitive. That is perhaps why its derivation is often not documented, so I include it below.
 
 The expected risk is the risk of every action chosen for all instances in the data. But the action chosen depends on the instance region, $R_0$ and $R_1$:
 
@@ -357,7 +359,7 @@ def paramToRisk(
 
 ## E. Tests
 
-Let's check that the calculations for $c$ and $E(\text{risk})$ make sense using sample data. 
+Let's check that the calculations for $c$ and $E(\text{risk})$. 
 
 ### Optimal threshold
 
@@ -379,16 +381,19 @@ case classs Tradeoff(...){
 
 {% include demo14-bayesdecisions1.html %}
 
-The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum.
+The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum, and using llr is equivalent to using the Pmiss/Pfa approach.
 
 ### Expected risk
 
-Now check that the estimate for the minimum $E(\text{risk})$ is reliable. That is, if we use the corresponding cutoff on new instances, do we get close to the sample expected risk? With  simulations we can answer the question empirically. The four main steps are 
+Now, let's check that the estimated risk is reliable, i.e. if we use the corresponding cut-off on new instances, do we get close to the sample expected risk? Simulations provide an answer. The four main steps are 
 - Get a clasifier that applies the $c$ cut-off
 - Generate a few hundred datasets
 - Compute the risk
 - Check that the sample estimate is similar to the simulated values
 
+Again, the result matters less than the process to get to the result. By virtue of being the expected value of a random variable, minRisk will be close to the sample average, but explicitly writing this random variable can help step out of the details and see the big picture again.
+
+[TODO: consider packaging into one function]
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1508)
 ```scala
     val cutOff: Double = hisTo.minS(pa)
