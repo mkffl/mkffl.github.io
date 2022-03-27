@@ -34,12 +34,12 @@ It is worth noting that a system may combine hard and soft decisions, for exampl
 
 The code underlying these posts is available in my [github](https://github.com/mkffl/decisions) repository. The charts' definitions can be found in [Recipe.scala](https://github.com/mkffl/decisions/blob/main-pub/Decisions/src/Recipes.scala). 
 
-Scala may not be an obvious choice for running stats and ML code, but I wanted to experiment with this language as it has evolved quite a lot in recent years. What I have particularly enjoyed:
+Scala may not be an obvious choice for running stats and ML scripts, but the language has evolved quite a lot in recent years. What I have particularly enjoyed:
 
-- (More) Concise syntax - even more so in [scala 3](https://docs.scala-lang.org/scala3/book/why-scala-3.html) though I have used 2.13 for this project
+- Concise syntax - even more so in [scala 3](https://docs.scala-lang.org/scala3/book/why-scala-3.html) though this project is based on scala 2.13
 - Rich standard library to explore and transform data - see some [examples](https://twitter.github.io/scala_school/collections.html)
-- Range of ML and analytics libraries - e.g. this project uses [Smile](https://haifengl.github.io/) for ML models and a [Kotlin package](https://github.com/sanity/pairAdjacentViolators) for the Paired Adjacent Violators algorithm
-- Scripting tools to get going quickly - e.g. the code for this project is compiled with [Mill](https://github.com/com-lihaoyi/mill) and I have used the [Ammonite repl](https://ammonite.io/) to play around with the data
+- Range of ML and analytics libraries, e.g. this project uses [Smile](https://haifengl.github.io/) for ML models and a [Kotlin package](https://github.com/sanity/pairAdjacentViolators) for the Paired Adjacent Violators algorithm
+- Scripting tools to get going quickly, this project is compiled with [Mill](https://github.com/com-lihaoyi/mill) and I have used the [Ammonite repl](https://ammonite.io/) to play around with the data
 - Choice between functional programming - when I am feeling adventurous - and OOP - when I want to get things done quickly
 
 ### Simulation
