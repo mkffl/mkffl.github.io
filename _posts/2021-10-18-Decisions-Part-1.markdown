@@ -24,7 +24,7 @@ To test and illustrate the evaluation frameworks, I use an imaginary problem of 
 - `Fraudster` also called positive classes, or target labels or $\omega_1$
 - `Regular` also called negative classes, or non-target labels or $\omega_0$
 
-This blog article is split into 3 parts - the first two parts are concerned with building an automated system that predicts a transaction label, i.e. target or not, using the available features, and the evaluation frameworks will help to construct labels given some risk objectives. Part 3 is concerned with systems that output probabilities.
+This blog article is split into 3 parts - the first two parts are concerned with automated systems that output hard decisions, i.e. target or not, using available features, and the evaluation frameworks will help to construct labels given some risk objectives. Part 3 is concerned with systems that output calibrated results, in the form of probabilities or log-likelihood ratios.
 
 There is a tendency among ML practitioners to default to hard decision systems without really asking if it is the best approach. I can only speculate what the reasons may be, but that removes any indication about how likely a class is given an instance, which is often a valuable piece of information in the decision-making process.
 
@@ -58,7 +58,7 @@ As its name suggests, the package is written using monads, a pillar of the funct
 
 The next part briefly reviews a metric for discrimination ability, then we will jump into Bayes optimal decisions in C, and implement and validate an evaluation framework from scratch in D and E.
 
-Starting from first principles helps me firm up my understanding of key concepts like optimal thresholds or, in the next part of this blog series, the ROC curve analysis. Implementing the logic in code emphasizes the connections between different evaluation frameworks, using basic concepts like probability density functions. This code is not meant to be used in production applications but as a learning tool.
+Starting from first principles helps me firm up my understanding of key concepts like optimal thresholds or, in the next part of this blog series, the ROC curve analysis. Implementing the logic in code emphasizes the connections between different evaluation frameworks, using basic concepts like probability density functions. The code is meant to be a learning tool, not something to be used in production applications.
 
 <h2 id="concordance">B. Concordance Metrics</h2>
 
@@ -192,11 +192,11 @@ $$
 
 Before, we found an optimal threshold at -0.25 by simply looking at the CCD chart. But eyeballing a graph is not reliable and becomes difficult if we move away from the simple case of equal priors and costs set to 1. Let's write a procedure, first using log-likelihood ratios, then using cumulative error probabilities, Pmiss and Pfa. The latter approach provides not only an optimal cut-off $\text{c}$ but also the corresponding expected risk at that threshold. The last section simulates hundreds of end-to-end applications to validate the estimated average risk. I find simulation to be helpful to take a step back and see the full deployment process.
 
-We will use the application type as a practical example
+The next use cases will be based on the following application type with prior probabilities assumed to be equal and missing targets costs 5 times more than missing non-targets.
+
 ```scala
 val pa = AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)
 ````
-And so, prior probabilities are assumed to be equal and missing targets costs 5 times more than missing non-targets.
 
 To find the optimal threshold, we need a few things:
 
@@ -385,16 +385,47 @@ The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum, a
 
 ### Expected risk
 
-Now, let's check that the estimated risk is reliable, i.e. if we use the corresponding cut-off on new instances, do we get close to the sample expected risk? Simulations provide an answer. The four main steps are 
-- Get a clasifier that applies the $c$ cut-off
-- Generate a few hundred datasets
-- Compute the risk
-- Check that the sample estimate is similar to the simulated values
+Now, let's check that the estimated risk is reliable, i.e. if we use the corresponding cut-off on new instances, do we get close to the sample expected risk? Simulations provide an answer. Again, the result matters less than the process to get to the result. By virtue of being the expected value of a random variable, minRisk will be close to the sample average, but explicitly writing this random variable can help step out of the details and see the big picture again.
 
-Again, the result matters less than the process to get to the result. By virtue of being the expected value of a random variable, minRisk will be close to the sample average, but explicitly writing this random variable can help step out of the details and see the big picture again.
+All the steps are grouped up into on random variable that generates a data instance, makes a hard prediction and calculates the corresponding risk.
 
-[TODO: consider packaging into one function]
-[source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1508)
+```scala
+    /** Expected risk simulation
+      *
+      * @param nRows the number of rows in the simulated dataset
+      * @param pa the application type
+      * @param data the transaction's data generation process
+      * @param classifier a predictive pipeline that outputs the user type
+      */
+    def oneClassifierExpectedRisk(
+        nRows: Integer,
+        pa: AppParameters,
+        data: Distribution[Transaction],
+        classifier: (Array[Double] => User)
+    ): Distribution[Double] = data
+      .map { transaction =>
+        {
+          val binaryPrediction = classifier(
+            transaction.features.toArray
+          ) // Generate a transaction's predicted user and
+          val dcf = cost(
+            pa,
+            transaction.UserType,
+            binaryPrediction
+          ) // calculate its dcf
+          dcf
+        }
+      }
+      .repeat(nRows) // Generate a dataset of dcf's
+      .map { values =>
+        values.sum.toDouble / nRows // Get the average dcf
+      }
+```
+
+The evaluation random variable requies to define a classifier and a cost function. 
+
+The classifier is a predictive pipeline that applies the recognizer on a transaction and applies the optimal cut-off $c$ to predict the user type.
+
 ```scala
     val cutOff: Double = hisTo.minS(pa)
     val thresholder: (Double => User) = score =>
@@ -403,32 +434,27 @@ Again, the result matters less than the process to get to the result. By virtue 
 
     def classifier: (Array[Double] => User) =
       recognizer andThen logit andThen thresholder
+```
 
+The cost function for one instance, also called Detection Cost Function (DCF), simply applies the error cost to an actual decision.
+
+```scala
     // Simulate the risk of one transaction
     def cost(p: AppParameters, actual: User, pred: User): Double = pred match {
       case Fraudster if actual == Regular => p.Cfa
       case Regular if actual == Fraudster => p.Cmiss
       case _                              => 0.0
     }
-
-    def simulateTransact: Distribution[Double] = for {
-      transaction <- transact(pa.p_w1)
-      prediction = classifier(transaction.features.toArray)
-      risk = cost(pa, transaction.UserType, prediction)
-    } yield risk
-
-    val nrows = 1000
-    val nsimulations = 500
-
-    // Simulate average risk for a dataset of 1,000 rows 
-    val simData: Distribution[Double] =
-      simulateTransact.repeat(nrows).map(_.sum.toDouble / nrows)
-
-    // Repeat 500 times
-    val simRisk: Row = simData.sample(nsimulations).toVector
 ```
 
 Note that `classifier` applies a `logit` transform to the `recognizer`'s output. That is because SVM scores are originally in $[0,1]$, and I want them in $\mathbb{R}$ to emphasize that scores need not be "probability-like" values - they could also be projected onto $[0,inf]$ for example. The logit is a monotonously increasing function, so it does not affect the score index returned by the `minS` method.
+
+Let's sample 500 evaluations and plot the results.
+
+```bash
+@ oneClassifierExpectedRisk(1000, pa, transact(pa.p_w1), classifier).sample(500)
+```
+
 
 {% include demo13-simulation.html %}
 

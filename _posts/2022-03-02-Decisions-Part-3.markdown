@@ -7,7 +7,7 @@ The [previous part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2
 
 As with raw outputs, calibrated scores need to be evaluated on a separate data sample before launching a system in the wild. Here again, our objective is to minimise the system's expected risk. This final installment builds on common concepts developed by the statistical learning community - see the previous parts for more details.
 
-By "evaluation of a predictive system", what I mean is answering several questions that determine what and how I should deploy it:
+By "evaluation of a predictive system", what I mean is answering questions to determine what and how I should deploy it:
 - What is the expected risk of my calibrated system?
 - How does it compare with a [majority vote approach]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}#majority-classifier)
 - What calibrated system outperforms others on a range of application types? What about all possible application types?
@@ -31,6 +31,8 @@ Sometimes, hard predictions are not good enough, and the agent using the predict
 For example, a fraud detection system may involve human supervision when it is uncertain about an outcome. Uncertainty typically refers to a likelihood of incidence given by the score. The detection system may send transactions to human reviewers if their predicted incidence is between 30% and 50% because at these levels the cost of miss still outweighs the cost of using expert labellers.
 
 Human labellers can have access to more information than what is in the the training dataset, which often leaves out valuable information for technical or legal reasons. For example, a human may review online social media profiles to check if a user has a real identity, or they could request access to a restricted PII database available on a case by case basis.
+
+For more information about human decision-making based on classifier outputs, you can check out Frank Harrell's blog, e.g. [here](https://www.fharrell.com/post/classification/).
 
 
 #### Deployment with varying application types
@@ -101,7 +103,7 @@ To sum everything up:
 
 The alternative to predicting scores calibrated as probabilities is to output llr-like scores. Then, the analysis is not tied to particular $p(\omega_1)$ and the cut-off point is $-\theta$ as derived in [part 1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#more-than-one-features)
 
-How do we generate llr-like scores? The answer depends on the type of predictive system used but logistic regression provides a simple, all-round solution for discriminative models. This tutorial [link] describes the approach in detail, which I also tried for myself in this notebook [link] using different assumptions about score distributions. Basically, logistic regression estimates the log-odds of $\omega_1$ and then we use Bayes’ formula to get the llr. As the examples in the notebook show, this approach works well when scores are approximately normally distributed.
+How do we generate llr-like scores? The answer depends on the type of predictive system used but logistic regression provides a simple, all-round solution for discriminative models. This tutorial [TODO: link] describes the approach in detail, which I also tried for myself in this notebook [TODO: link] using different assumptions about score distributions. Basically, logistic regression estimates the log-odds of $\omega_1$ and then we use Bayes’ formula to get the llr. As the examples in the notebook show, this approach works well when scores are approximately normally distributed.
 
 By definition, logistic regression estimates the probability of target events assuming a linear relationship in the log-odds space:
 
