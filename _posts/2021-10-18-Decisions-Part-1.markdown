@@ -385,7 +385,9 @@ The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum, a
 
 ### Expected risk
 
-Now, let's check that the estimated risk is reliable, i.e. if we use the corresponding cut-off on new instances, do we get close to the sample expected risk? Simulations provide an answer. Again, the result matters less than the process to get to the result. By virtue of being the expected value of a random variable, minRisk will be close to the sample average, but explicitly writing this random variable can help step out of the details and see the big picture again.
+Now, let's check that the estimated risk is reliable, i.e. if we use the corresponding cut-off on new instances, do we get close to the sample expected risk? Simulations provide an answer. 
+
+The result matters less than the process to get to the result. As the expected value of a random variable, minRisk will be close to its sample average, but writing this random variable explicitly can help step out of the details and see the big picture again.
 
 All the steps are grouped up into on random variable that generates a data instance, makes a hard prediction and calculates the corresponding risk.
 
@@ -422,7 +424,7 @@ All the steps are grouped up into on random variable that generates a data insta
       }
 ```
 
-The evaluation random variable requies to define a classifier and a cost function. 
+To run the above, we need a classifier and a cost function. 
 
 The classifier is a predictive pipeline that applies the recognizer on a transaction and applies the optimal cut-off $c$ to predict the user type.
 
