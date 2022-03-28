@@ -58,7 +58,7 @@ As its name suggests, the package is written using monads, a pillar of the funct
 
 The next part briefly reviews a metric for discrimination ability, then we will jump into Bayes optimal decisions in C, and implement and validate an evaluation framework from scratch in D and E.
 
-Starting from first principles helps me firm up my understanding of key concepts like optimal thresholds or, in the next part of this blog series, the ROC curve analysis. Implementing the logic in code emphasizes the connections between different evaluation frameworks, using basic concepts like probability density functions. The code is meant to be a learning tool, not something to be used in production applications.
+Starting from first principles helps me firm up my understanding of key concepts like optimal thresholds or, in the next part of this blog series, the ROC curve analysis. Implementing the logic in code emphasizes the connections between different evaluation frameworks, using basic concepts like probability density functions. The code is meant to be a learning aid and nothing else.
 
 <h2 id="concordance">B. Concordance Metrics</h2>
 
@@ -445,7 +445,6 @@ The cost function for one instance, also called Detection Cost Function (DCF), s
     def cost(p: AppParameters, actual: User, pred: User): Double = pred match {
       case Fraudster if actual == Regular => p.Cfa
       case Regular if actual == Fraudster => p.Cmiss
-      case _                              => 0.0
     }
 ```
 
@@ -462,7 +461,7 @@ Let's sample 500 evaluations and plot the results.
 
 The evaluation sample risk is the vertical dotted bar near the peak of the distribution, which is good news. The grey shaded area comprises 95% of the simulated data, and I want the sample estimate to fall in that interval, which it does.
 
-In the [next part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}), we will explore the connection between the Bayes decision rule and the Receiving Operator Characteristics (ROC) curve.
+The [next part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}), explores the connection between Bayes decision rules and the Receiving Operator Characteristics (ROC) curve.
 
 ## References
 - R. Duda et al (2001), Pattern Classification.
