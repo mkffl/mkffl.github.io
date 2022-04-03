@@ -3,13 +3,13 @@ title: My Machine Learnt... Now What? - Part 2
 layout: post
 ---
 
-The [previous part]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a preocedure to find the optimal threshold that transforms a recognizer into a classifier. Optimal refers to the mininmum expected risk when deploying the classifier on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
+The [previous part]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a procedure to find the optimal threshold that transforms a recognizer into a classifier. Optimal refers to the minimum expected risk when deploying the classifier on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
 
-The Receiving Operator Characteristics (ROC) combines these concepts and provides the same capabilities for threhsold selection as the CCD and LLR frameworks introduced earlier. However, it has a focus on error trade-offs rather than likelihood ratios, which becomes useful when comparing recognisers, as the next examples will show.
+The Receiving Operator Characteristics (ROC) combines these concepts and provides the same capabilities for threshold selection as the CCD and LLR frameworks introduced earlier. However, it has a focus on error trade-offs rather than likelihood ratios, which becomes useful when comparing recognizers, as the next examples will show.
 
 ## A. The ROC curve
 
-The ROC curve slides through every possible cutoff point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cutoff. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cutoff point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the propotion of non-targets labeled as false positives, also called false positive rate (fpr).
+The ROC curve slides through every possible cut-off point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cut-off. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cut-off point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the proportion of non-targets labelled as false positives, also called false positive rate (fpr).
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L183)
 ```scala
@@ -24,11 +24,11 @@ The ROC curve slides through every possible cutoff point in descending order and
   }
 ```
 
-As seen previously, $\text{Pmiss}$ and $\text{Pfa}$ are the two inputs into $E(\text{r})$ that vary with thresholds, and we would need to add the other four non-varying inputs to provide information about expected risks, which would add another perspective on top of what the CCD and LLR plots already provide. 
+$\text{Pmiss}$ and $\text{Pfa}$ are the two inputs into $E(\text{r})$ that vary with thresholds. We would need to add the other four non-varying inputs to get expected risks, which would add another perspective on top of what the CCD and LLR plots already provide. 
 
-As it turns out, the four application parameters, $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$, can be visualised via the so-called isocost curve. Combining (tpr,fpr) with isocosts provides a powerful tool for risk assessment given one or more recognizers, which is why ROC graphs are an indispensable part of the analyst's toolbox.
+As it turns out, the four application parameters, $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$, can be visualised with an isocost curve. Combining (tpr,fpr) with isocosts provides a risk assessment given one or more recognizers, which is why ROC graphs are an indispensable part of the analyst's toolbox.
 
-Isocost curves are commonly used in some disciplines, e.g. in economics to find combinations of inputs that yield the same output. Here, we will find combinations of (tpr,fpr) that yield the same risk.
+Isocosts are often used to find the best pair of values that correspond to a metric we wish to optimise, for example in economics with combinations of inputs that yield the same output. Here, we will look for combinations of (tpr,fpr) that yield the same risk.
 
 Isocosts are expressed as a linear function between tpr and fpr:
 
@@ -52,17 +52,19 @@ $$
 
 with $\delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$ and $\text{a}=\frac{p(\omega_1) \times \text{Cmiss} - E(\text{risk})}{p(\omega_1) \times \text{Cmiss}}$.
 
-$\delta$ and $\text{a}$ are determined by the application parameters and the risk objective, while (tpr,fpr) is achieved by the recognizer and is also called an operating point. For given application parameters, an isocost curve with lower fpr and/or higher tpr corresponds to a lower risk, hence the optimal isocost is the closest to the "north-west corner", i.e. upper left-hand corner or (fpr=0,tpr=1) corner, in the ROC space.
+$\delta$ and $\text{a}$ are determined by the application parameters and the risk objective, while (tpr,fpr) is achieved by the recognizer and is also called an operating point. 
 
-That allows the analyst to visually identify the Bayes decision cutoff point as the (tpr,fpr) pair that is closest to (0,1). It also allows them to compare[^f1] two recognizers, with the best performer's isocost being above the underperformer - see example in the next section.
+Given some application parameters, an isocost curve with lower fpr or higher tpr corresponds to a lower risk, hence the optimal isocost is the closest to the "north-west corner" (fpr=0,tpr=1) in the ROC space.
 
-Before looking at an example, let's connect the ROC to the Bayes optimal criterion introduced in the previous part. ROC and likelihood ratio are connected because $(1-\text{Pmiss})$ and $\text{Pfa}$ are linear functions of the cumulative density function (cdf) of $\omega_1$ and $\omega_0$, respectively, so the derivative of the ratio is the ratio of their pdf's, i.e. the likelihood ratio. 
+That allows the analyst to visually identify the Bayes decision cut-off point as the (tpr,fpr) pair that is closest to (0,1). It also allows them to compare[^f1] two recognizers, with the best performer's isocost being above the underperformer - see example in the next section.
 
-Sliding through every operating point on the ROC curve is the same as going through every possible likelihood ratio (LR), which is the left-hand side in the Bayes equation 1.1 in the previous part. The right-hand side is a function of application parameters, and so the Bayes optimal solution can be identified on the ROC plot.
+Before looking at an example, let's connect the ROC to the Bayes optimal criterion [TODO: link to previous section]. ROC and likelihood ratio are connected because $(1-\text{Pmiss})$ and $\text{Pfa}$ are linear functions of the cumulative density function (cdf) of $\omega_1$ and $\omega_0$, respectively, so the derivative of the ratio is the ratio of their pdf's, i.e. the likelihood ratio. 
 
-If that sounds rather abstract (it does to me), the data also provides a proof. Using the svm recognizer from Part 1, the snippets below show that for every operating point, the derivative equals the likelihood ratio. The method `lr` gets the likelihood ratio directly from the `Tradeoff` object's counts while `slope` get the lr from the slope of (tpr,fpr). 
+Sliding through every operating point on the ROC curve is the same as going through every possible likelihood ratio (LR), which is the left-hand side in the Bayes equation 1.1 [todo: link]. The right-hand side is a function of application parameters, and so the Bayes optimal solution can be identified on the ROC plot.
 
-Note that instead of a continuous function we have a line that goes through a set of points, so the slope is the segment that connects a point to the next one. The slope at $(1-\text{Pmiss(t)},\text{Pfa(t)})$ is $\frac{ \text{Pmiss(t)}-\text{Pmiss(t-1)} }{ \text{Pfa(t-1)}-\text{Pfa(t)} }$.
+Using the svm recognizer from Part 1, the snippets below show that for every operating point, the derivative equals the likelihood ratio. `lr` gets the likelihood ratio directly from the `Tradeoff` object's counts, while `slope` gets the lr from the slope of (tpr,fpr).
+
+Note that instead of a continuous function, a line goes through a set of points, so the slope is the segment that connects a point to the next one. The slope at $(1-\text{Pmiss(t)},\text{Pfa(t)})$ is $\frac{ \text{Pmiss(t)}-\text{Pmiss(t-1)} }{ \text{Pfa(t-1)}-\text{Pfa(t)} }$.
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Recipes.scala#L1163)
 ```scala
@@ -101,17 +103,17 @@ res1: Vector[Double] = Vector(0.0, 0.0, 0.0, 0.0, 0.007871325628334975, 0.0, 0.0
 res2: Vector[Double] = Vector(0.0, 0.0, 0.0, 0.0, 0.007871325628334973, 0.0, 0.0, 0.012501517174414365, 0.07484429961857492, 0.19986233803966608, 0.6509123275478419, 1.912732127685398, 5.629137095074125, 20.780299658804417, 55.4692317028767, 82.21206052514438, 360.01869158876053, Infinity, Infinity, Infinity, Infinity, Infinity, NaN, Infinity, NaN)
 ```
 
-With likelihood ratios available, the connection to the Bayes decision threshold becomes apparent by going back to the isocost equation. The derivative of the "north west-most" line is $e^{-\theta}$ and is also a tangeant to the ROC curve - if not, we could shift the isocost and get a lower risk. That means that the optimal thresholds are at $\text{LR}=e^{-\theta}$ i.e. $\text{LLR}=-\theta$, which is equation 1.1.
+With likelihood ratios available, the connection to the Bayes decision threshold becomes apparent by going back to the isocost equation. The derivative of the "north west-most" line is $e^{-\theta}$ and is also a tangent to the ROC curve - if not, we could shift the isocost and get a lower risk. That means that the optimal thresholds are at $\text{LR}=e^{-\theta}$, i.e. $\text{LLR}=-\theta$, which is equation 1.1.
 
-So far, we have made no assumptions about the shape of the ROC curve, so there can be many solutions, but the next section will cover monotonicity, which guarantees that there is only one optimal cutoff solution.
+So far, we have made no assumptions about the shape of the ROC curve, so there can be many solutions, but the next section will cover monotonicity, which guarantees that there is only one optimal cut-off.
 
 The graphs below show the relationships between CCD, LLR and ROC plots. The isocost corresponds to the fraud application of Part 1, `AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`, which penalizes false negatives 5 times more than false positives.
 
 {% include demo15-bayesdecisions2.html %}
 
-The ROC curve emphasizes that the optimal decision point is determined by a tradeoff between missing errors and false alarm errors. As long as the curve is not flat, we get a lower miss rate $\text{Pmiss}$ if we accept a higher false alarm rate $\text{Pfa}$.
+The ROC curve emphasizes the tradeoff between missing and false alarm errors in determining the optimal decision. As long as the curve is not flat, we get a lower miss rate $\text{Pmiss}$ if we accept a higher false alarm rate $\text{Pfa}$.
 
-How much $\text{Pfa}$ we tolerate is determined by application parameters, captured by the derivative of the isocost line. Given flat priors and high Cmiss, our application requires low $\text{Pmiss}$ and thus tolerates high Pfa. Visually, that corresponds to operating points in the right upper-hand corner.
+How much $\text{Pfa}$ we tolerate is determined by the application type, captured by the derivative of the isocost line. Given flat priors and high Cmiss, our application requires low $\text{Pmiss}$ and thus tolerates high Pfa. Visually, that corresponds to operating points in the right upper-hand corner.
 
 The graph also shows the connections between LLR and ROC. The fraud application penalizes false negatives heavily, which corresponds to a low $\delta$ in the definition above and therefore to a flattish ROC isocost, which maps to the low threshold in the LLR graph. 
 
@@ -122,7 +124,7 @@ A steep isocost would map to a high LLR threshold. If the ratio of priors and co
 
 So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense to estimate the probability functions that underpin these evaluation frameworks - e.g. pdf, cdf, (1-cdf) - software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points[^f2].
 
-One issue with histograms is to define the bin width. If the bins are too wide, the optimal cutoff may be lost inside a bin, resulting in a higher expected risk. Would it make sense to select smaller intervals? I plot the results of very thin intervals below. The LLR curve goes up and down, i.e. it's not a [monotonous function](https://mathworld.wolfram.com/MonotonicFunction.html) of scores, and the ROC curve now has a steppy pattern, i.e. it's not [convex](https://en.wikipedia.org/wiki/Convex_set).
+One issue with histograms is to define the bin width. If the bins are too wide, the optimal cut-off may be lost inside a bin, resulting in a higher expected risk. Would it make sense to select smaller intervals? I plot the results of very thin intervals below. The LLR curve goes up and down, i.e. it's not a [monotonous function](https://mathworld.wolfram.com/MonotonicFunction.html) of scores, and the ROC curve now has a steppy pattern, i.e. it's not [convex](https://en.wikipedia.org/wiki/Convex_set).
 
 The binary criterion does not seem compatible with the LLR not being a monotonous function of scores. If $\text{LLR}(p_s)$ intersect $-\theta$ at $s=c$, however, $\text{LLR}(p_s) < -\theta$ for some scores above $c$, then the Bayes decision rule says that we should choose $\omega_0$ for these scores, though the binary classifer will predict $\omega_1$.
 
