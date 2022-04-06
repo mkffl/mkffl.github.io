@@ -324,11 +324,11 @@ $$
 
 And we get eq. 1.2 because the first and second integrals are estimated with Pmiss and Pfa, respectively. If $N_{\omega_1}$ is the number of targets, then
 $$
-Pmiss = \sum_{s \in \omega_1}\frac{[s < c]}{N_{\omega_1}}
+\text{Pmiss} = \sum_{s \in \omega_1}\frac{[s < c]}{N_{\omega_1}}
 $$ 
 and 
 $$
-Pfa = \sum_{s \in \omega_0}\frac{[s >= c]}{N_{\omega_0}}
+\text{Pfa} = \sum_{s \in \omega_0}\frac{[s >= c]}{N_{\omega_0}}
 $$
 
 Note that $\text{Pmiss}(c)$ is the cdf of the target distribution while $\text{Pfa}(c)$ is 1 minus the cdf of the non-targets distribution, hence the code implementation for `asPmissPfa`
