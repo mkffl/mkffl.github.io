@@ -120,58 +120,18 @@ The ROC curve emphasizes the tradeoff between missing and false alarm errors in 
 [TODO: rephrase] The graph also shows the connections between LLR and ROC. The fraud application penalizes false negatives heavily, which corresponds to a low $\delta$ in the definition above and therefore to a flattish ROC isocost, which maps to the low threshold in the LLR graph. 
 
 A steep isocost would map to a high LLR threshold. If the ratio of priors and costs balance each other and $-\theta$ is close to 0, then the isocost slope is parallel to the $tpr=fpr$ line. An example of such application would be to minimise the error rate (Cmiss = Cfa = 1) when prior probabilities are assumed to be equal.
-### Text bank
 
-The ROC curve slides through every possible cut-off point in descending order and plots the corresponding $(1-\text{Pmiss}, \text{Pfa})$ values at that cut-off. As a reminder, $\text{Pmiss}$ is the proportion of targets below the cut-off point, which is also the rate of false negatives, thus, $1-\text{Pmiss}$ is called true positive rate (tpr). $\text{Pfa}$ is the proportion of non-targets labelled as false positives, also called false positive rate (fpr).
+## The PAV algorithm
 
+ROC-based threshold optimisation loops through every score to compute its tangent, with the result being the closest to $\delta$. As a side note, popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) calculate the expected risk instead of the tangent, then find the minimum. At any rate, looping through all scores requires being careful about how we construct intervals as we face sort of accuracy vs efficiency trade off: large bins risk missing the true optimal threshold, whereas thin bins include many unsuitable candidates that waste resources.
 
+`Tradeoff` starts with a histogram of score counts, but the issue with histograms is to define the bin width. If it’s too wide, the optimal cut-off may be lost inside a bin, resulting in a higher expected risk than we would have with thinner bins. Conversely, if the bins are too thin, some points will not be reliable - a usual problem when estimating continuous distributions from samples. 
 
-$\text{Pmiss}$ and $\text{Pfa}$ are the two inputs into $E(\text{r})$ that vary with thresholds. We would need to add the other four non-varying inputs to get expected risks, which would add another perspective on top of what the CCD and LLR plots already provide. 
+Below, the blue (LLR) and green (ROC) estimates are built on very thin intervals. The blue curve goes up and down, i.e. it’s not a monotonous function of scores, and the green ROC curve has a steppy pattern, i.e. it’s not convex. Not only is the result visually unpleasant, it is also inefficient because it is possible to construct a threshold with lower fpr and/or higher tpr than any point below the ROC convex hull. 
 
-As it turns out, the four application parameters, $\{p(\omega_1), p(\omega_0), \text{Cmiss}, \text{Cfa}\}$, can be visualised with an isocost curve. Combining (tpr,fpr) with isocosts provides a risk assessment given one or more recognizers, which is why ROC graphs are an indispensable part of the analyst's toolbox.
-
-Isocosts are often used to find the best pair of values that correspond to a metric we wish to optimise, for example in economics with combinations of inputs that yield the same output. Here, we will look for combinations of (tpr,fpr) that yield the same risk.
-
-Isocosts are expressed as a linear function between tpr and fpr:
-
-
-
-$\delta$ and $\text{a}$ are determined by the application parameters and the risk objective, while (tpr,fpr) is achieved by the recognizer and is also called an operating point. 
-
-Given some application parameters, an isocost curve with lower fpr or higher tpr corresponds to a lower risk, hence the optimal isocost is the closest to the "north-west corner" (fpr=0,tpr=1) in the ROC space.
-
-That allows the analyst to visually identify the Bayes decision cut-off point as the (tpr,fpr) pair that is closest to (0,1). It also allows them to compare[^f1] two recognizers, with the best performer's isocost being above the underperformer - see example in the next section.
-
-Before looking at an example, let's connect the ROC to the Bayes optimal criterion [TODO: link to previous section]. ROC and likelihood ratio are connected because $(1-\text{Pmiss})$ and $\text{Pfa}$ are linear functions of the cumulative density function (cdf) of $\omega_1$ and $\omega_0$, respectively, so the derivative of the ratio is the ratio of their pdf's, i.e. the likelihood ratio. 
-
-Sliding through every operating point on the ROC curve is the same as going through every possible likelihood ratio (LR), which is the left-hand side in the Bayes equation 1.1 [todo: link]. The right-hand side is a function of application parameters, and so the Bayes optimal solution can be identified on the ROC plot.
-
-
-
-With likelihood ratios available, the connection to the Bayes decision threshold becomes apparent by going back to the isocost equation. The derivative of the "north west-most" line is $e^{-\theta}$ and is also a tangent to the ROC curve - if not, we could shift the isocost and get a lower risk. That means that the optimal thresholds are at $\text{LR}=e^{-\theta}$, i.e. $\text{LLR}=-\theta$, which is equation 1.1.
-
-So far, we have made no assumptions about the shape of the ROC curve, so there can be many solutions, but the next section will cover monotonicity, which guarantees that there is only one optimal cut-off.
-
-
-
-
-## B. The PAV algorithm 
-
-So far the `Tradeoff` class evaluates CCD, LLR and ROC from the histogram counts. Though histograms make sense to estimate the probability functions that underpin these evaluation frameworks - e.g. pdf, cdf, (1-cdf) - software libraries do not use histograms. Popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) construct the ROC curve by counting fpr and tpr for every score threshold. This results in thinner intervals and more evaluation points[^f2].
-
-One issue with histograms is to define the bin width. If the bins are too wide, the optimal cut-off may be lost inside a bin, resulting in a higher expected risk. Would it make sense to select smaller intervals? I plot the results of very thin intervals below. The LLR curve goes up and down, i.e. it's not a [monotonous function](https://mathworld.wolfram.com/MonotonicFunction.html) of scores, and the ROC curve now has a steppy pattern, i.e. it's not [convex](https://en.wikipedia.org/wiki/Convex_set).
-
-The binary criterion does not seem compatible with the LLR not being a monotonous function of scores. If $\text{LLR}(p_s)$ intersect $-\theta$ at $s=c$, however, $\text{LLR}(p_s) < -\theta$ for some scores above $c$, then the Bayes decision rule says that we should choose $\omega_0$ for these scores, though the binary classifer will predict $\omega_1$.
-
-We can enforce monotonicity between scores and likelihood ratios by fitting monotonic functions like a simple linear regression: $\text{LLR}(p_s) = \beta_0+\beta_1*s$. There are also non-parametric options to enforce monotonicity and, in fact, one of them called the Pair Adjacent Violators (PAV) is commonly used because it ensures that the resulting ROC curve is convex.
-
-The PAV creates groups of scores with representative thresholds, which I can use as input into the `Tradeoff` object. The resulting ROC curve is convex, while the thin-sized bin histogram ROC appears non convex. 
-
-From a decision perspective, that means that the histogram includes many sub-optimal operating points, i.e. with higher expected risks than what could be achieved by using points on the convex hull. For more information and compelling examples, I would refer to T. Fawcett and A. Niculescu-Mizil (2007).
+It would be good to exclude non optimal thresholds right from the start to avoid wasting compute resources, which can be achieved with the PAV algorithm. Using PAV bins in `Tradeoff` results in the orange (LLR) and red (ROC) curves, which are guaranteed to be non-decreasing and convex, resp. For more information and some compelling examples, I would refer to T. Fawcett and A. Niculescu-Mizil (2007).
 
 {% include demo16-histVSpav-10.html %}
-
-With monotonicity now enforced, the solution to the Bayes decision rule is unique. As showed at the end of the previous part, this solution is similar to the one we get when sliding through all (Pmiss,Pfa) pairs, computing expected risk and choosing the lowest value. The latter approach is typically used by software packages, with the ROC operating points used to compute risk estimates.
 
 ## C. Risk VS AUC use case
 
