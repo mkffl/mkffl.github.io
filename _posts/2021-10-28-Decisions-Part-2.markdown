@@ -3,17 +3,17 @@ title: My Machine Learnt... Now What? - Part 2
 layout: post
 ---
 
-The [previous part]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a procedure to find the optimal threshold that transforms a recognizer into a classifier, with "optimal" referrefing to the minimum expected risk achieved on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$. 
+The [previous part]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) introduced the Bayes decision rule as a procedure to find the optimal threshold that transforms a recognizer into a classifier, with "optimal" referrefing to the minimum expected risk achieved on unseen data. The risk at every threshold $c$ was described as a function of $\text{Pmiss}$ and $\text{Pfa}$.
 
-The Receiving Operator Characteristics (ROC) combines these concepts and provides the same capabilities for threshold selection as the CCD and LLR frameworks introduced earlier. However, it has a focus on error trade-offs rather than likelihood ratios, which allows to run various investigations one one graph.
+The Receiving Operator Characteristics (ROC) combines these concepts and provides the same capabilities for threshold selection as the CCD and LLR, however, it has a focus on error trade-offs rather than likelihood ratios, which makes other investigations possible, all on one graph.
 
-The first section looks at threshold optimisation using the ROC curve, and shows why doing so is equivalent to using the Bayes decision procedure. The following sections cover  topics on ROC analysis: the monotonicity of a ROC curve and how to enforce it (section 2), the connection between ROC and concordance probability via AUC, and why you may *not* want to optimise for the latter (section 3), and benchmarking a classifier with majority rules using ROC analysis (section 4).
+The first section looks at threshold optimisation using the ROC curve, and shows why doing so is equivalent to using the Bayes decision procedure. The following sections cover  topics on ROC analysis: convexity and how to enforce it with the PAV algorithm (section 2), the connection between ROC and concordance probability via AUC, and why you may *not* want to optimise for the latter (section 3), and benchmarking a classifier with majority rules using ROC analysis (section 4).
 
 ## A. The ROC curve
 
 ### Finding an optimal threshold
 
-The ROC curve slides through every possible cut-off point in descending order and plots the corresponding (Pfa, 1−Pmiss) values at that cut-off. Pmiss and Pfa are error rates [TODO: link to part 1] estimated as proportions of errors of type w1 and w0, respectively. (1-Pmiss) is often called the true positive rate (tpr), because Pmiss is estimated as the proportion of targets below the cut-off point, which is also the rate of false negatives and 1 - false negative rate means true positive rate. Similarly, Pfa is the proportion of non-targets labeled as false positives, also called false positive rate (fpr). And so, in the literature, (Pfa, 1-Pmiss) is referred to as (fpr, tpr), also called operating points. 
+The ROC curve slides through every possible cut-off point in descending order and plots the corresponding (Pfa, 1−Pmiss) values at that cut-off. [Pmiss and Pfa]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#using-pmiss-pfa) are error rates  estimated as proportions of errors of class $\omega_1$ and $\omega_0$, resp. (1-Pmiss) is often called the true positive rate (tpr), because Pmiss is estimated as the proportion of targets below the cut-off point, which is also the rate of false negatives. Similarly, Pfa is the proportion of non-targets labeled as false positives, also called false positive rate (fpr). And so, (Pfa, 1-Pmiss) is often referred to as (fpr, tpr) or just called operating points.
 
 [source](https://github.com/mkffl/decisions/blob/edc8cf34d8e3d82e7fdd1cdb48914e1bd1bfbbd3/Decisions/src/Evaluations.scala#L183)
 ```scala
@@ -28,23 +28,23 @@ The ROC curve slides through every possible cut-off point in descending order an
   }
 ```
 
-Combining error rates with the application-dependent priors and error costs yields expected risks. In the ROC space, the operating points that correspond to the same expected risk are plotted along the so-called isocost lines (iso=same and, here, cost=risk). So, the intersection between a ROC operating point and the isocost line tells us what risk is expected at that cut-off point. Doing this for every ROC operating point and “argmin-ing” returns the optimal threshold.
+Combining error rates with the application-dependent priors and error costs yields expected risks. In the ROC space, the operating points that correspond to the same expected risk are plotted along the so-called isocost lines (iso=same and here, cost means risk). So, the intersection between a ROC operating point and the isocost line tells us what risk is expected at that cut-off point. Doing this for every ROC operating point and “argmin-ing” returns the optimal threshold.
 
 The bottom graph below plots the ROC curve with the isocost line - red-dotted line with slope 0.2 - for the fraud application of Part 1, `AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`. The isocost intersects the ROC curve at the optimal operating point. Every other parallel line would also be an isocost but it would intersect at a sub-optimal point because either (1-Pmiss) would be lower and/or Pfa would be higher. That is, the optimal operating point is where the isocost line is tangent to the ROC. 
 
 {% include demo15-bayesdecisions2.html %}
 
-### Connection with the Bayes decision procedure
+### Connection to the Bayes decision procedure
 
-We can draw a connection to the Bayes decision rule from the observation that "the optimal threshold is where the isocost line is tangent to the ROC". As a reminder, the rule states that we should should targets when defines the cost-weighted prior ratio, 
+We can draw a connection to the Bayes decision rule from the observation that "the optimal threshold is where the isocost line is tangent to the ROC". As a reminder, the rule states that we should should targets when the cost-weighted prior ratio, 
 $$
 \delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}
-$$
+$$,
 is equals to the likelihood ratio. The key is that ROC operating points correspond to likelihood-ratios, and isocost lines have a gradient of $\delta$, so ROC optimization is equivalent to a Bayes decision. Let’s unpick this.
 
-#### Isocost lines have a gradient equal to $\delta$
+#### Isocost lines have a derivative equal to $\delta$
 
-Starting with equation 1.2 [TODO: link], we get the isocost defined as a linear relationship between (1-Pmiss) and Pfa with $\delta$ as the derivative
+Starting with [equation 1.2]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#rule-1-2), we get the isocost defined as a linear relationship between (1-Pmiss) and Pfa with $\delta$ as the derivative
 
 $$
 \begin{equation}
@@ -66,13 +66,13 @@ $$
 
 with $\delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}$ and $\text{a}=\frac{p(\omega_1) \times \text{Cmiss} - E(\text{risk})}{p(\omega_1) \times \text{Cmiss}}$.
 
-And $\delta$ is the right-hand side in equation 1.1
+And $\delta$ is the right-hand side in [equation 1.1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#rule-1-1)
 
 #### ROC curve gradients are likelihood ratios
 
-First, the derivative of the ratio $\frac{\text{1-Pmiss}}{\text{Pfa}}$ is the ratio of the derivatives: $\frac{\text{(1-Pmiss)’}}{\text{(Pfa)’}}$. Then, Pmiss (Pfa) is based on the cumulative function of omega_1 (omega_0), so the derivative of Pmiss (Pfa) is just the probability of targets (non-targets), and the ROC gradient is $\frac{p(\omega_1)}{p(\omega_0)}$
+First, the derivative of the ratio wrt scores, is the ratio of the derivatives: ($\frac{\text{1-Pmiss}}{\text{Pfa}})' = \frac{\text{(1-Pmiss)’}}{\text{(Pfa)’}}$. Then, Pmiss (Pfa) is based on the cumulative distribution function of scores conditionned on $\omega_1$ ($\omega_0$), so the derivative of Pmiss (Pfa) is just the probability of targets (non-targets), and the ROC gradient is the likelihood ratio $\frac{p(s \vert \omega_1)}{p(s \vert \omega_0)}$.
 
-A numerical example can help hammer that point. The code snippet below calculates two values for every operating point: `lr` gets the likelihood ratio directly from the `Tradeoff` object's counts, while `slope` gets the lr from the slope of (tpr,fpr). Both values are the same, so the derivative of the ROC is the likelihood ratio.
+Let's double check with a numerical example below, which calculates two values for every operating point: `lr` gets the likelihood ratio directly from the `Tradeoff` object's counts, while `slope` gets the lr from the slope of (tpr,fpr). Both values are the same, so the derivative of the ROC is the likelihood ratio.
 
 Note that the ROC curve is not a continuous function but it's a line, so its slope is the segment that connects a point to the next one. The slope at $(1-\text{Pmiss(t)},\text{Pfa(t)})$ is $\frac{ \text{Pmiss(t)}-\text{Pmiss(t-1)} }{ \text{Pfa(t-1)}-\text{Pfa(t)} }$.
 
@@ -111,19 +111,15 @@ res1: Vector[Double] = Vector(0.0, 0.0, 0.0, 0.0, 0.007871325628334975, 0.0, 0.0
 res2: Vector[Double] = Vector(0.0, 0.0, 0.0, 0.0, 0.007871325628334973, 0.0, 0.0, 0.012501517174414365, 0.07484429961857492, 0.19986233803966608, 0.6509123275478419, 1.912732127685398, 5.629137095074125, 20.780299658804417, 55.4692317028767, 82.21206052514438, 360.01869158876053, Infinity, Infinity, Infinity, Infinity, Infinity, NaN, Infinity, NaN)
 ```
 
-That gives the left-hand side of equation 1.1, and so the ROC solution is equivalent to the Bayes decision procedure.
-
 #### Benefits of a ROC-based analysis
 
-The ROC curve emphasizes the tradeoff between missing and false alarm errors in determining the optimal decision. As long as the curve is not flat, we get a lower miss rate $\text{Pmiss}$ if we accept a higher false alarm rate $\text{Pfa}$. How much $\text{Pfa}$ we tolerate is determined by the application type, captured by the derivative of the isocost line. Given flat priors and high Cmiss, our application requires low $\text{Pmiss}$ and thus tolerates high Pfa. Visually, that corresponds to operating points in the right upper-hand corner.
+The ROC curve emphasizes the tradeoff between missing and false alarm errors in determining the optimal decision. Starting at the bottom left corner where $\text{Pmiss}=1$ and $\text{Pfa}=0$, and moving up the curve by decreasing the threshold, we get a lower miss rate if we accept a higher false alarm rate as long as the curve is not flat. How much $\text{Pfa}$ we tolerate is determined by the application type, captured by the derivative of the isocost line. Given flat priors and high Cmiss, our application requires low $\text{Pmiss}$ and thus tolerates high Pfa. Visually, that corresponds to operating points in the right upper-hand corner.
 
-[TODO: rephrase] The graph also shows the connections between LLR and ROC. The fraud application penalizes false negatives heavily, which corresponds to a low $\delta$ in the definition above and therefore to a flattish ROC isocost, which maps to the low threshold in the LLR graph. 
+If the application type had a more balanced ratio of cost-weighted priors, the isocost slope would be approximately parallel to the $tpr=fpr$ line, e.g. when minimising error rates with equal prior probabilities, i.e. Cmiss = Cfa = 1 and $p(\omega_1)=p(\omega_0)=0.5$. In that case, we would be looking at operating points near the middle bump of the curve. This type of visual inspection is even more useful when comparing multiple recognizers, as a quick glance indicates whose isocost is closer to the top left corner, i.e. which is the better performer[^f1].
 
-A steep isocost would map to a high LLR threshold. If the ratio of priors and costs balance each other and $-\theta$ is close to 0, then the isocost slope is parallel to the $tpr=fpr$ line. An example of such application would be to minimise the error rate (Cmiss = Cfa = 1) when prior probabilities are assumed to be equal.
+## B. The PAV algorithm
 
-## The PAV algorithm
-
-ROC-based threshold optimisation loops through every score to compute its tangent, with the result being the closest to $\delta$. As a side note, popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) calculate the expected risk instead of the tangent, then find the minimum. At any rate, looping through all scores requires being careful about how we construct intervals as we face sort of accuracy vs efficiency trade off: large bins risk missing the true optimal threshold, whereas thin bins include many unsuitable candidates that waste resources.
+ROC-based threshold optimisation loops through every score to compute its tangent, with the result being the closest to $\delta$. As a side note, popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) calculate the expected risk instead of the tangent, then find the minimum. At any rate, looping through all scores requires being careful about how we construct intervals to balance accuracy vs efficiency - large bins risk missing the true optimal threshold, whereas thin bins include many unsuitable candidates that could waste resources.
 
 `Tradeoff` starts with a histogram of score counts, but the issue with histograms is to define the bin width. If it’s too wide, the optimal cut-off may be lost inside a bin, resulting in a higher expected risk than we would have with thinner bins. Conversely, if the bins are too thin, some points will not be reliable - a usual problem when estimating continuous distributions from samples. 
 
@@ -239,13 +235,11 @@ res3: Double = 5.16
 res4: Double = 2.81
 ```
 
-The LLR and ROC plots help to make sense of the disagremment between AUC and $E(\text{risk})$. 
+The LLR and ROC plots help to make sense of the disagremment between AUC and $E(\text{risk})$. First, the LLR plot confirms that hiAUC's AUC is higher because of its steeper LLR line. lowAUC's LLR line is flatter around 0 for negative scores, and LLR values near 0 corresponds to less discrimination power.
 
-The high $-\theta$ value penalises false positives more than false negatives, which makes sense because there are many more non-targets for only slightly lower Cfa. This corresponds to a high optimal score cut-off and a steep ROC isocost located in the lower left-hand corner.
+The high $-\theta$ means that false positives are penalised more than false negatives, so the optimal cut-off point will be in the bottom-left corner where fpr remains high. The better performing recognizer will have the steeper ROC curve, and that's not highAUC. Starting from the bottom-left corner at (Pmiss=1, Pfa=0), highAUC's derivative quickly drops below the high value required by the application type, which leaves the optimal threshold close to its maximum observed value, which makes hiAUC not very different from a dummy rule that assigns every instance to non-target. We shall call this extreme case an all-$\omega_0$ classifer.
 
-The LLR plot confirms the previous AUC results, as can be seen from hiAUC's steeper LLR curve vs lowAUC's line that is flatter around 0.
-
-lowAUC can identify more positives than hiAUC while keeping fpr low, as can be seen by the steep increase of its ROC curve. In other words, hiAUC needs to be closer to an all-$\omega_0$ classifer to keep a low enough fpr, and that means it has a higher expected risk. 
+lowAUC's ROC curve is very steep in the high Pmiss, low Pfa region, which makes it possible for lowAUC to identify more positives than hiAUC while keeping fpr low enough, which translates into a lower expected risk. Past the 0.1 mark, lowAUC quickly flattens, which would make its performance worse for most application types, hence its lower AUC. The key point is that AUC measures the overall discrimination ability, i.e. all application types, but it doesn't say how a classifier performs locally, i.e. on specific application types.
 
 {% include Demo17-llrRoc4panes.html %}
 
@@ -306,7 +300,7 @@ $$
 \text{(tpr-d)} = \text{(fpr-d)} \times \delta
 $$
 
-[^f1]: The ROC framework makes it easy to not only compare but also combine recognizers, which can be a better option when one recognizer achieves better risk only on some parts of the ROC curve. See following section on the convex hull, and T. Fawcett and F. Provost (2001).
+[^f1]: The ROC framework makes it easy to not only compare but also combine recognizers, which can be a better option when one recognizer achieves better risk only on some parts of the ROC curve. See T. Fawcett and F. Provost (2001) for details and examples.
 
 [^f2]: See "Algorithm 2" in T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with varying-size bins, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, one could argue semantics and say that implementations actually use histograms. For an example implementation in R, see [ROCR](https://github.com/ipa-tys/ROCR/blob/master/R/prediction.R) `.compute.unnormalized.roc.curve`. My R is rough around the edges but I think it implements Fawcett's algorithm.
 

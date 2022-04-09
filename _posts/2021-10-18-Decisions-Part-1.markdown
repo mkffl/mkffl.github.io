@@ -245,7 +245,7 @@ c) A class that encapsulates sample score predictions and the related evaluation
 
 The `asCCD` value provides the class-conditional density estimates previously used in the plots. It computes the proportion of counts corresponding to every threshold, and is readily available from histogram counts and the probability density transform `pdf`.
 
-#### i) Using log-likeihood ratios
+#### i) Using log-likelihood ratios
 
 Next, we implement `minS`, a method to find the Bayes decision cut-off point - the score value $\text{s}$ that minimises the expected risk given our application type.
 
@@ -276,9 +276,11 @@ def paramToθ(pa: AppParameters): Double =
 def minusθ(pa: AppParameters) = -1*paramToθ(pa)
 ```
 
-#### ii) Using Pmiss and Pfa
+<h4 id="using-pmiss-pfa">ii) Using Pmiss and Pfa</h4>
 
 We can estimate the expected risk of a Bayes decision classifer using the evaluation data:
+
+<p id="rule-1-2">The expected risk depends on two error rates, Pmiss and Pfa</p>
 
 $$
 E(\text{risk}) = \text{Cmiss}*p(\omega_1)*\text{Pmiss} + \text{Cfa}*p(\omega_0)*\text{Pfa}
@@ -293,7 +295,6 @@ $$
 E(\text{risk(c)}) = \text{Cmiss}*p(\omega_1)*\text{Pmiss(c)} + \text{Cfa}*p(\omega_0)*\text{Pfa(c)}
 \tag{1.3}
 $$
-
 
 A note on the derivation of the expected risk - the Pmiss and Pfa notation comes from the BOSARIS documentation, however, the formula is used in many assessment frameworks and is quite intuitive. That is perhaps why its derivation is often not documented, so I include it below.
 
