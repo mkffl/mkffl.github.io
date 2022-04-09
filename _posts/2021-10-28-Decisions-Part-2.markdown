@@ -121,7 +121,7 @@ If the application type had a more balanced ratio of cost-weighted priors, the i
 
 ROC-based threshold optimisation loops through every score to compute its tangent, with the result being the closest to $\delta$. As a side note, popular implementations like R's [ROCR](http://ipa-tys.github.io/ROCR/) or python's [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_curve.html) calculate the expected risk instead of the tangent, then find the minimum. At any rate, looping through all scores requires being careful about how we construct intervals to balance accuracy vs efficiency - large bins risk missing the true optimal threshold, whereas thin bins include many unsuitable candidates that could waste resources.
 
-`Tradeoff` starts with a histogram of score counts, but the issue with histograms is to define the bin width. If it’s too wide, the optimal cut-off may be lost inside a bin, resulting in a higher expected risk than we would have with thinner bins. Conversely, if the bins are too thin, some points will not be reliable - a usual problem when estimating continuous distributions from samples. 
+For example, `Tradeoff` starts with a histogram of score counts, but the issue is then to define bin width. If it’s too wide, the optimal cut-off may be lost inside a bin, resulting in a higher expected risk than we would have with thinner bins. Conversely, if the bins are too thin, some points will not be reliable - a usual problem when estimating continuous distributions from samples. 
 
 Below, the blue (LLR) and green (ROC) estimates are built on very thin intervals. The blue curve goes up and down, i.e. it’s not a monotonous function of scores, and the green ROC curve has a steppy pattern, i.e. it’s not convex. Not only is the result visually unpleasant, it is also inefficient because it is possible to construct a threshold with lower fpr and/or higher tpr than any point below the ROC convex hull. 
 
@@ -235,24 +235,22 @@ res3: Double = 5.16
 res4: Double = 2.81
 ```
 
-The LLR and ROC plots help to make sense of the disagremment between AUC and $E(\text{risk})$. First, the LLR plot confirms that hiAUC's AUC is higher because of its steeper LLR line. lowAUC's LLR line is flatter around 0 for negative scores, and LLR values near 0 corresponds to less discrimination power.
+The LLR and ROC plots help to make sense of the disagremment between AUC and $E(\text{risk})$. First, the LLR plot confirms that hiAUC's AUC is higher because its LLR line is steeper. lowAUC's LLR line is flatter around 0 for negative scores, and by definition, LLR values near 0 means have no discrimination power.
 
-The high $-\theta$ means that false positives are penalised more than false negatives, so the optimal cut-off point will be in the bottom-left corner where fpr remains high. The better performing recognizer will have the steeper ROC curve, and that's not highAUC. Starting from the bottom-left corner at (Pmiss=1, Pfa=0), highAUC's derivative quickly drops below the high value required by the application type, which leaves the optimal threshold close to its maximum observed value, which makes hiAUC not very different from a dummy rule that assigns every instance to non-target. We shall call this extreme case an all-$\omega_0$ classifer.
+The high $-\theta$ means that false positives are penalised more than false negatives, so the optimal cut-off point will be in the bottom-left corner where fpr remains high. The better performing recognizer will have the steeper ROC curve, and that's not highAUC. Starting from the bottom-left corner at (Pmiss=1, Pfa=0), highAUC's derivative quickly drops below the isocost derivative, which leaves the optimal threshold close to its maximum observed value. That makes hiAUC not very different from a dummy rule that assigns every instance to non-target. We shall call this extreme case an all-$\omega_0$ classifer.
 
 lowAUC's ROC curve is very steep in the high Pmiss, low Pfa region, which makes it possible for lowAUC to identify more positives than hiAUC while keeping fpr low enough, which translates into a lower expected risk. Past the 0.1 mark, lowAUC quickly flattens, which would make its performance worse for most application types, hence its lower AUC. The key point is that AUC measures the overall discrimination ability, i.e. across all application types, but it doesn't say how a classifier performs locally, i.e. on specific application types.
 
 {% include Demo17-llrRoc4panes.html %}
 
 <h2 id="majority-classifier">D. Majority-isocost lines</h2>
-The all-$\omega_0$ "classifier" mentioned above is a simple rule that assigns all instances to non-target. Another name may be majority classifier because it assigns the most prevalent class in the dataset. Its expected risk is a benchmark that any recognizer should beat because it is inexpensive, simple and thus it is often the status quo before any automated solution is considered. 
+The all-$\omega_0$ "classifier" mentioned above is a simple rule that assigns all instances to non-target. Another name may be majority classifier because it assigns the class with the highest cost-weighted prior probability[^f2]. Its expected risk is a benchmark that any recognizer should beat because it is inexpensive, simple and thus it is often the status quo before any automated solution is considered. 
 
-The all-$\omega_0$ expected risk is $p(\omega_1) \times \text{Pmiss} \times \text{Cmiss} = 0.05 \times 1 \times £107 = £5.35$, i.e. close to hiAUC's risk of £5.16, which thus does not add a lot of value. If hiAUC was our only option, it would be a good idea to double check its costs to ensure that it's better than the simple rule.
+In the previous example, the all-$\omega_0$ expected risk is $p(\omega_1) \times \text{Pmiss} \times \text{Cmiss} = 0.05 \times 1 \times £107 = £5.35$, i.e. close to hiAUC's risk of £5.16, which thus does not add a lot of value. If hiAUC was our only option, it would be a good idea to double check its costs to ensure that it's better than the simple rule.
 
-The status quo labels instance as targets or non-target depending on which option has the lower expected risk. The isocost line of the status quo - the majority-isocost line (naming is mine) - determines if a recogniser can bring any value on top of the status quo. If the recognizer's ROC curve is below the the line, then its optimal risk is higher than the status quo and it does not make economic sense to use it. 
+It is useful to add the isocost line of the majority classifer as a benchmark - let's call it the majority-isocost line. It tells if a recogniser can bring any value on top of the status quo, i.e. if a recognizer's ROC curve is below this line, its expected risk under any application would be higher than the status quo, so it does not make economic sense to use it. Hence, the majority-isocost line can inform go/no-go decisions about building ML solutions. 
 
-As explained in the aforementioned blog post, the majority-isocost line can inform go/no-go decisions to develop ML solutions. Besides, I think it is useful for sensitivity analyses of different application scenarios. The application parameter inputs are subjective so using a range of inputs is preferrable if it's possible.
-
-For example, an increase in supplier costs, a change in regulation impacting labour wage or an improvement in the supplier's defect rates would impact the operating context, and therefore the expected risk of a recogniser. Visualising these scenarios via the majority-isocost lines can provide reassurance that a recognizer adds value even in the worst case.
+Besides, the majority-isocost line is useful for sensitivity analyses of different application scenarios. Deciding on the application type to deploy a solution is somewhat of a subjective exercise, so using a range of inputs is preferrable if it's possible. For example, an increase in supplier costs, a change in regulation impacting labour wage or an improvement in the supplier's defect rates all would impact the operating context, and therefore the expected risk of a recogniser. Visualising these scenarios via the majority-isocost lines can provide reassurance that a recognizer adds value even in the worst case.
 
 The graph below shows the previous parameters and another scenario that penalises false positives  more, which corresponds to the steeper line. It's interesting that lowAUC still has points above the steeper isocost. 
 
@@ -302,7 +300,8 @@ $$
 
 [^f1]: The ROC framework makes it easy to not only compare but also combine recognizers, which can be a better option when one recognizer achieves better risk only on some parts of the ROC curve. See T. Fawcett and F. Provost (2001) for details and examples.
 
-[^f2]: See "Algorithm 2" in T. Fawcett and A. Niculescu-Mizil (2007). This is similar to constructing histograms with varying-size bins, which gets the lowest bin width such that there is at least a positive value in tpr or fpr. So, one could argue semantics and say that implementations actually use histograms. For an example implementation in R, see [ROCR](https://github.com/ipa-tys/ROCR/blob/master/R/prediction.R) `.compute.unnormalized.roc.curve`. My R is rough around the edges but I think it implements Fawcett's algorithm.
+[^f2]: For example, `ApplicationParameters(p_w1=0.45, Cmiss=2, Cfa=1)` corresponds to an all-$\omega_1$ rule because $p(\omega_1) \times \text{Cmiss}$ > $p(\omega_0) \times \text{Cfa}$
+
 
 ### References
 - T. Fawcett and F. Provost (2001). Robust Classification for Imprecise Environments.
