@@ -101,7 +101,7 @@ To sum everything up:
 | No error / Perfectly calibrated 	| Bayes optimal           	| risk = A+B+C (irreducible error) ⇔ minDCF 	|
 | Miscalibration                  	| Non-optimal (non-Bayes) 	| risk = A+B+C+D ⇔ DCF                      	|
 
-The alternative to predicting scores calibrated as probabilities is to output llr-like scores. Then, the analysis is not tied to particular $p(\omega_1)$ and the cut-off point is $-\theta$ as derived in [part 1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#more-than-one-features)
+The alternative to predicting scores calibrated as probabilities is to output llr-like scores. Then, the analysis is not tied to particular $p(\omega_1)$ and the cut-off point is $-\theta$ as derived in [part 1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#more-than-one-features).
 
 How do we generate llr-like scores? The answer depends on the type of predictive system used, but logistic regression provides a simple, all-round solution for discriminative models. [This tutorial](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&ved=2ahUKEwjQ1Om6z_X2AhUCJBoKHW2IAn8QFnoECAcQAQ&url=https%3A%2F%2Farxiv.org%2Fpdf%2F2104.08846&usg=AOvVaw1a-ouxGTRnVGdGWsXhA1Xs) describes the approach in detail, which I also tried for myself in [this notebook](https://drive.google.com/file/d/1Vt3HckPX961u8xsg37xUvH9g_KKe_h9D/view?usp=sharing) using various assumptions about score distributions. Basically, logistic regression estimates the log-odds of $\omega_1$ and then we use Bayes’ formula to get the llr. As the examples in the notebook show, this approach works well when scores are approximately normally distributed.
 
@@ -130,9 +130,7 @@ i.e. we plug in the logistic regression prediction and subtract the sample prior
 
 The reliability diagram left us looking for the size of area D, which corresponds to the additional cost of making a decision using miscalibrated scores. 
 
-Applied Probability of Error (APE) and the related metrics consist of evaluation tools for systems that output llr scores. They enable us to not only estimate the size of area D, but to do so across all application types, plus other useful information, all on one graph.
-
-This information then enables go/no-go decisions, and to choose the best performing system among multiple competing options. 
+Applied Probability of Error (APE) and the related metrics, are evaluation tools for systems that output llr scores. They provide an estimate of the size of area D for all application types and other useful information, all on one graph, which supports go/no-go decisions and system selection (if there are multiple competing options). 
 
 Below is the APE plot for the reference system built with Recognizer 1, which is simply an SVM followed by a logit transform in an attempt to get LLR-like scores, using a separate evaluation sample. The dark red line is the expected performance of the system, aka the DCF. Given an application type located on the x-axis, the difference between DCF and minDCF is the cost of miscalibration.
 
@@ -142,9 +140,7 @@ Let’s look at each component in this graph.
 
 #### Horizontal axis
 
-An APE graph summarises performance across a large range of application types (x-axis). The 3 variables that define application types are squashed into one value, theta defined in part 1, which is also the negative Bayes threshold, which can then be shown in 1 dimension.
-
-It works because different application types correspond to the same Bayes thresholds. All examples below map to a threshold of c.0.916 so they are represented by the same x value in the APE plot.
+An APE graph summarises performance across a large range of application types (x-axis). The 3 variables that define application types are squashed into one value, $\theta$, which is also the negative Bayes threshold, to represent application parameters in 1 dimension. It works because different application types correspond to the same Bayes thresholds. All examples below map to a threshold of c.0.916, so they are represented by the same value on the APE x-axis.
 
 ```scala
 val app1 = AppParameters(0.2, 10, 1)
@@ -159,7 +155,7 @@ val app3 = AppParameters(0.71, 1, 1)
 0.916
 ```
 
-The first application type resembles a fraud transaction scenario where targets are rare events that cost 10 times more units when missed vs false alarms. With `app2`, we assume that targets are just as rare as non-targets, but now miss costs are only 2.5 times higher than false alarm costs. `app3` is yet another version expressed as an error rate. 
+The first application type resembles a fraud transaction scenario, where targets are rare events that cost 10 times more units when missed vs false alarms. With `app2`, we assume that targets are just as rare as non-targets, but now miss costs are only 2.5 times higher than false alarm costs. `app3` is yet another version expressed as an error rate. 
 
 From [equation 1.1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#rule-1-1), the key is that theta depends on the ratio between the cost-weighted prevalence probabilities. That ratio remains the same if we change prevalence and adjust error-costs accordingly, and vice versa.
 
@@ -178,17 +174,19 @@ Thanks to this constant relationship, any conclusions from comparing two systems
 
 The other lines on the graph put the system's DCF into perspective.
 
-Minimum DCF - or minDCF - is the empirical Bayes error-rate of a perfectly calibrated system at every operating point. The difference with the dark red line DCF is the error resulting from lack of calibration. The system is well calibrated if the two curves overlap for all thresholds. We typically track minDCF at the early stages of model development, when there’s still a lot of room to improve discrimination, then later as we seek to minimise the risk from miscalibration.
+Minimum DCF - or minDCF - is the empirical Bayes error-rate of a perfectly calibrated system for every application type. The difference with the dark red line DCF is the error resulting from lack of calibration. The system is well calibrated if the two curves overlap for all thresholds. We typically track minDCF at the early stages of model development, when there’s still a lot of room to improve discrimination.
 
-The Equal Error Rate is a scalar summary of minDCF, i.e. the error rate of a perfectly calibrated system at every operating point. This means that minDCF should be below EER. EER is a useful diagnostic metric, as will become evident in the next example.
+The Equal Error Rate is a scalar summary of discrimination power that corresponds to the worst case application type, i.e. $\theta$ with the largest minDCF. It's a useful diagnostic metric - see the next example.
 
-Majority-DCF is the empirical Bayes error-rate of the majority classifier, i.e. one that chooses the majority class every time. We should be worried if the DCF and majority-DCF overlap on most operating points, as our system is not better than flipping a coin - see [previous part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}#majority-classifier).
+Majority-DCF is the empirical Bayes error-rate of the majority classifier, i.e. one that chooses the majority class every time. We should be worried if the DCF and majority-DCF overlap on most application types, as our system is not better than flipping a coin - see [previous part]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}#majority-classifier).
 
 However, the gap between DCF and majority-DCF typically narrows from the centre out to the edges of the graph as with imbalanced datasets, the impact of the minority class on the total error rate becomes negligible, and so betting on the same outcome all the time starts making sense.
 
 #### Simulations
 
-With one or more systems on the graph, we can compare and choose the best performer. The Cllr metric summarises the DCF across all application types, but a visual inspection of the curves may lead to the same conclusion if one system DCF lies below other across all $\theta$'s. The graph becomes an essential evaluation tool if we are interested in one value or a range of values. For example, system 1 outperforms system 2 for values between -1 and 1.
+With two or more systems, we probably want to select the best performer. The Cllr metric summarises DCF across all application types, but a visual inspection of the curves may lead to the same conclusion if one system's DCF lies below the others'. The graph becomes an essential evaluation tool if we are interested in one value or a range of $\theta$ values. For example, system 1 outperforms system 2 between -1 and 1.
+
+Both recognizers use default parameter values, which leaves some room for improvement, in particular for system 2 as its EER is larger. In a real deployment context, we would probably improve discrimination with hyperparameter tuning to bring EER down, and then we'd look to minimise the loss caused by miscalibration.
 
 {% include Demo111-ape-compared-18.html %}
 
@@ -259,7 +257,7 @@ There are a few reasons to start using the NIST SRE application-independent appr
 
 That last bit means that the decisions process can be split between pattern recognition followed by assumption-led hard decisions. A technical team develops a system that outputs llr's, which subject-matter experts can combine with their best guess about the application parameters to issue a decision. Allowing this separation is a differentiating feature of the methodology, which I think played a role in establishing it in domains like forensics research.
 
-The binary-class, fixed error cost assumptions may be too limited for some real world applications, though, so it would be interesting to adapt the framework, e.g. allowing for multi-class decisions, or varying error costs - the cost of a false alarm is probably higher for a large, once-in-a-lifetime purchase (e.g. buying a house) than it is for routine online shopping. To add one more item to the wish list, the likelihood $p(x \vert w_i)$ could also be allowed to change, as it often reduces a calssifier's utility after being deployed, and the framework should assess the impact of that change on expected risk.
+The binary-class, fixed error cost assumptions may be too limited for some real world applications, though, so it would be interesting to adapt the framework to new hypotheses/constraints. For example, extending to multi-class decisions, or allowing error costs to vary with some attributes. The cost of a false alarm is probably higher for a large, once-in-a-lifetime purchase (e.g. buying a house) than it is for routine online shopping. To add one more item to the wish list, the likelihood $p(x \vert w_i)$ could also be allowed to change, as it often reduces the classifier's utility after being deployed, and the framework should assess the impact of that change on expected risk.
 
 
 ### Appendix
