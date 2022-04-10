@@ -14,9 +14,9 @@ By "evaluation of a predictive system", what I mean is answering questions to de
 
 There is a large and fragmented range of evaluation tools to address the points above, and we will review one popular example, however, NIST SRE provides a unified approach.
 
-We start by looking at a few scenarios that require score calibration. Then we will review two types of score calibration: as probabilities and as log-likelihood ratios (llr). The last section introduces the NIST SRE methodology via the Applied Probability of Error (APE) graph.
+We start by looking at a few scenarios that require score calibration. Then we will review two types of score calibration: as probabilities and as log-likelihood ratios (llr). The last section introduces the NIST SRE application-independent methodology via the Applied Probability of Error (APE) graph.
 
-A note on external source and the code used for this blog - the NIST SRE literature referred to in this blog is listed at the end. The source code used to generate all the examples is available at https://github.com/mkffl/. The financial fraud use case is based on the same data generating process detailed in Part 1. The main recognizer is based on SVM and the competing recognizer is based on Random Forests.
+A note on external sources and the code used for this blog - the NIST SRE literature referred to in this blog is listed at the end. The source code used to generate all the examples is on this personal [github repo](https://github.com/mkffl/decisions). The financial fraud use case is based on the same data generating process detailed in Part 1. The main recognizer is based on SVM and the competing recognizer is based on Random Forests.
 
 ## A. Why use calibrated scores
 
@@ -51,7 +51,7 @@ Another example may be an autonomous vehicle that makes a decision to stop at a 
 
 ## B. Calibration as probabilities or log-likelihood ratios
 
-Probability-like scores are bounded between 0 and 1 where the reference class is w1. This type of calibrated scores are easy to evaluate using sample frequency and they are intuitive to end users like a fraud expert. If a transaction has a 60% chance of being fraudulent, they may think “it’s slightly more than that of flipping a coin” and given the high cost of a miss they will investigate. The decision process to investigate can be made more rigorously with Bayes procedure. Going back to [equation 1.1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#rule-1-1), if we assume that $p(\omega_1)$ is known then the rule becomes
+Probability-like scores are bounded between 0 and 1 where the reference class is $\omega_1$. This type of calibrated scores are easy to evaluate using sample frequency and they are intuitive to end users like a fraud expert. If a transaction has a 60% chance of being fraudulent, they may think “it’s slightly more than that of flipping a coin” and given the high cost of a miss they will investigate. The decision process to investigate can be made more rigorously with Bayes procedure. Going back to [equation 1.1]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}#rule-1-1), if we assume that $p(\omega_1)$ is known then the rule becomes
 
 
 $$
@@ -257,11 +257,9 @@ val (berSystem1, berSystem2) = twoSystemErrorRates(5000, pa2, transact(pa2.p_w1)
 
 There are a few reasons to start using the NIST SRE application-independent approach -  it is grounded in decision theory, it offers visuals tools like APE graphs, and it separates pattern recognition from expert decisions. 
 
-That last bit means that the decisions process can be split between pattern recognition followed by assumption-led hard decisions. A technical team develops a system that outputs llr's, which subject-matter experts can combine with their best guess about the application parameters to issue a decision. Allowing this separation is a differentiating feature, which I think played a role in esatablishing the methodology in domains like forensics research.
+That last bit means that the decisions process can be split between pattern recognition followed by assumption-led hard decisions. A technical team develops a system that outputs llr's, which subject-matter experts can combine with their best guess about the application parameters to issue a decision. Allowing this separation is a differentiating feature of the methodology, which I think played a role in establishing it in domains like forensics research.
 
-The binary-class, fixed error cost assumptions may be too limited for some real world applications, so it would be interesting to adapt the framework, e.g. allowing for multi-class decisions, or varying error costs - the cost of a false alarm is probably higher for a large, once-in-a-lifetime purchase (e.g. buying a house) than it is for routine online shopping.
-
-To add one more item to the wish list, the likelihood $p(x \vert w_i)$ could also be allowed to change, as it often reduces a calssifier's utility after being deployed, and the framework should assess the impact of that change on expected risk.
+The binary-class, fixed error cost assumptions may be too limited for some real world applications, though, so it would be interesting to adapt the framework, e.g. allowing for multi-class decisions, or varying error costs - the cost of a false alarm is probably higher for a large, once-in-a-lifetime purchase (e.g. buying a house) than it is for routine online shopping. To add one more item to the wish list, the likelihood $p(x \vert w_i)$ could also be allowed to change, as it often reduces a calssifier's utility after being deployed, and the framework should assess the impact of that change on expected risk.
 
 
 ### Appendix
