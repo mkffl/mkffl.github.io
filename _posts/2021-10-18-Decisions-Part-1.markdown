@@ -58,11 +58,9 @@ As its name suggests, the package is written using monads, a pillar of the funct
 
 The next part briefly reviews a metric for discrimination ability, then we will jump into Bayes optimal decisions in C, and implement and validate an evaluation framework from scratch in D and E.
 
-Starting from first principles helps me firm up my understanding of key concepts like optimal thresholds or, in the next part of this blog series, the ROC curve analysis. Implementing the logic in code emphasizes the connections between different evaluation frameworks, using basic concepts like probability density functions. The code is meant to be a learning aid and nothing else.
-
 <h2 id="concordance">B. Concordance Metrics</h2>
 
-I have got some data and a trained recognizer that outputs scores - how good is it at differentiating between ${\omega_0}$ and ${\omega_1}$ instances? Start by looking at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
+If I have got some data and a trained recognizer that outputs scores, how good is it at differentiating between ${\omega_0}$ and ${\omega_1}$ instances? Let's start by looking at the distribution of scores by class, $p(s \vert w_i)$, and visually inspect if ${\omega_1}$ instances have higher scores. Good separation means that the two distributions barely overlap, and perfect separation means no overlap at all.
 
 For example, fitting a Support Vector Machine (SVM) with default parameters on the transaction data gives the following separation on a validation dataset. The histograms estimate the score probability conditioned on the class, so I call it a Class Conditional Distributions (CCD) chart.
 
@@ -289,7 +287,7 @@ $$
 
 where Pmiss is the proportion of targets with scores below the Bayes decision cutoff, $c$, and Pfa is the proportion of non-targets with scores above $c$. 
 
-Getting the expected risk at every threshold makes it possible to find the optimal cut-off (with argmin) and the corresponding risk estimate. That approach made more sense to me after I wrote the proportions as a function of the threshold.
+Getting the expected risk at every threshold makes it possible to find the optimal cut-off and the corresponding risk estimate. That approach made more sense to me after I wrote the proportions as a function of the threshold.
 
 $$
 E(\text{risk(c)}) = \text{Cmiss}*p(\omega_1)*\text{Pmiss(c)} + \text{Cfa}*p(\omega_0)*\text{Pfa(c)}
@@ -360,11 +358,13 @@ def paramToRisk(
 
 ## E. Tests
 
-Let's check that the calculations for $c$ and $E(\text{risk})$. 
+Let's check that the calculations for $c$ and $E(\text{risk})$ return sensible results.
 
 ### Optimal threshold
 
-The method `expectedRisks` calculates risks at every threshold. We want the minimum risk to match the risk at $c$ on a given sample.
+`expectedRisks` calculates risks at every threshold. We want the minimum risk to match the risk at $c$ on a given sample.
+
+Below, the bottom graph plots `expectedRisks`, which confirms that $c$ gives the minimum, so using llr is equivalent to using the Pmiss/Pfa approach.
 
 [source](https://github.com/mkffl/decisions/blob/e49290f5f01faadef2f4c383d663cfa28c457741/Decisions/src/Evaluations.scala#L175)
 ```scala
@@ -382,15 +382,13 @@ case classs Tradeoff(...){
 
 {% include demo14-bayesdecisions1.html %}
 
-The bottom pane plots `expectedRisks` and confirms that $c$ gives the minimum, and using llr is equivalent to using the Pmiss/Pfa approach.
-
 ### Expected risk
 
-Now, let's check that the estimated risk is reliable, i.e. if we use the corresponding cut-off on new instances, do we get close to the sample expected risk? Simulations provide an answer. 
+Now, let's check that the estimated risk is reliable, i.e. if we use the corresponding cut-off on new instances, do we get close to the sample expected risk? 
 
-The result matters less than the process to get to the result. As the expected value of a random variable, minRisk will be close to its sample average, but writing this random variable explicitly can help step out of the details and see the big picture again.
+I will simulate transactions to show that the optimal threshold is reliable. Note that the result matters less than the process used to get there. As the expected value of a random variable, minRisk will be close to its sample average, but writing this random variable explicitly can help step out from the details and see the big picture again.
 
-All the steps are grouped up into on random variable that generates a data instance, makes a hard prediction and calculates the corresponding risk.
+All the steps are grouped into one random variable that generates a data instance, makes a hard prediction and calculates the corresponding risk.
 
 ```scala
     /** Expected risk simulation

@@ -3,10 +3,12 @@ title: My Machine Learnt... Now What? - Part 2
 layout: post
 ---
 
-The [previous part]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) introduced the Bayes decision procedure to find the optimal threshold, i.e. the cut-off score that transforms a recognizer into a classifier that achieves the minimum expected risk. The Bayes rules simply compares likelihood ratios with an application-dependent ratio to assign a class. The Receiving Operator Characteristics (ROC) has a focus on error trade-offs rather than likelihood ratios, which allows to not only find optimal thresholds but also to run and visualise various investigations, all on one graph.
+The [previous part]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) introduced the Bayes decision procedure to find the optimal threshold, i.e. the cut-off score that transforms a recognizer into a classifier that achieves the minimum expected risk. 
 
-The first section looks at threshold optimisation using the ROC curve, and shows why  it is equivalent to using the Bayes decision procedure. The rest covers various topics around ROC analysis: 
-- Section 2: convexity and how to enforce it with the PAV algorithm
+The Bayes rules simply compared likelihood ratios with an application-dependent ratio to assign a class. The Receiving Operator Characteristics (ROC) has a focus on error trade-offs rather than likelihood ratios, which allows to not only find optimal thresholds but also to run and visualise various investigations, all on one graph.
+
+The first section looks at threshold optimisation using the ROC curve, and shows why it is equivalent to using the Bayes decision procedure. Understanding the connections between different evaluation frameworks is essential to compare and choose the best approach. The rest covers various topics related to ROC analysis:
+- Section 2: why ROC convexity matters and how to enforce it with the PAV algorithm
 - Section 3: the connection between ROC and concordance probability via AUC, and why you may *not* want to optimise for the latter
 - Section 4: benchmarking a classifier with majority rules using ROC analysis
 
@@ -30,19 +32,23 @@ The ROC curve slides through every possible cut-off point in descending order an
   }
 ```
 
-Combining error rates with the application-dependent priors and error costs yields expected risks. In the ROC space, isocosts linep lot operating points that correspond to the same expected risk. So, the intersection between a ROC operating point and the isocost line tells us what risk to expect at that cut-off point. Doing this for every ROC operating point and “argmin-ing” returns the optimal threshold.
+Combining error rates with the application-dependent priors and error costs yields expected risks. In the ROC space, isocost lines plot operating points that correspond to the same expected risk. So, the intersection between a ROC operating point and the isocost line tells us what risk to expect at that cut-off point. Doing this for every ROC operating point and “argmin-ing” returns the optimal threshold.
 
-The bottom graph below plots the ROC curve with the isocost line - red-dotted line with slope 0.2 - for the fraud application of Part 1, `AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`. The isocost intersects the ROC curve at the optimal operating point. Every other parallel line would also be an isocost, but it would intersect at a sub-optimal point because either (1-Pmiss) would be lower and/or Pfa would be higher. That means that the optimal operating point is where the isocost line is tangent to the ROC.
+The bottom graph below plots the ROC curve with the isocost line - red-dotted line with slope 0.2 - for the fraud application of Part 1, `AppParameters(p_w1=0.5,Cmiss=25,Cfa=5)`. The isocost intersects the ROC curve at the optimal operating point. 
+
+Every other parallel line would also be an isocost, but it would intersect at a sub-optimal point because either (1-Pmiss) would be lower and/or Pfa would be higher. That means that the optimal operating point is where the isocost line is tangent to the ROC.
 
 {% include demo15-bayesdecisions2.html %}
 
 ### Connection to the Bayes decision procedure
 
-There is a connection to the Bayes decision rule from the observation that "the optimal threshold is where the isocost line is tangent to the ROC". As a reminder, the rule instructs to choose targets when the cost-weighted prior ratio, 
+As the CCD graph above suggets, the ROC analysis is connected to the Bayes decision rule. As a reminder, the rule instructs to choose targets when the cost-weighted prior ratio, 
 $$
 \delta = \frac{p(\omega_0) \times \text{Cfa}}{p(\omega_1) \times \text{Cmiss}}
 $$,
-is equals to the likelihood ratio. The key is that ROC operating points correspond to likelihood-ratios, and isocost lines have a gradient of $\delta$, so ROC optimization is equivalent to a Bayes decision. Let’s unpick this.
+is equal to the likelihood ratio. 
+
+Going back to the observation that "the optimal threshold is where the isocost line is tangent to the ROC", the key is that ROC operating points correspond to likelihood-ratios, and isocost lines have a gradient of $\delta$, so ROC optimization is equivalent to a Bayes decision.
 
 #### Isocost lines have a derivative equal to $\delta$
 
@@ -133,9 +139,9 @@ It would be good to exclude non-optimal thresholds to avoid wasting compute reso
 
 ## C. Risk VS AUC use case
 
-ROC curves are offer a visual representation of the concordance probability covered in Part 1. The Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see [this](https://stats.stackexchange.com/questions/190216/why-is-roc-auc-equivalent-to-the-probability-that-two-randomly-selected-samples) SO question for a proof. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC? 
+ROC curves offer it possible to visually inspect the concordance probability covered in Part 1, because the Area Under the Curve (AUC) of the ROC is equal to $p(s_{\omega_0} < s_{\omega_0})$ - see [this](https://stats.stackexchange.com/questions/190216/why-is-roc-auc-equivalent-to-the-probability-that-two-randomly-selected-samples) SO question for a proof. What is not clear so far is why we should care about concordance probabilities. In particular, should we aim for a minimum AUC? 
 
-The next example shows that higher concordance is not necessarily better from a risk optimisation viewpoint. Then, if our objective is to minimise risk, we need not pay too much attention to AUC, which may at best be a good sense check - e.g. is it close or well above 0.5?
+The next example shows that higher concordance is not necessarily better from a risk optimisation viewpoint. Hence, if our objective is to minimise risk, we need not pay too much attention to AUC, which may at best be a good sense check - e.g. is it close or well above 0.5?
 
 The example is based on [ML Meets Economics](http://nicolas.kruchten.com/content/2016/01/ml-meets-economics/), which is a great practical introduction to AUC and ROC curves. I have made minor adjustments to their numbers to fit my simulated data.
 
@@ -238,9 +244,9 @@ res4: Double = 2.81
 
 The LLR and ROC plots help to make sense of the disagreement between AUC and $E(\text{risk})$. First, the LLR plot confirms that hiAUC's AUC is higher because its LLR line is steeper. lowAUC's LLR line is flatter around 0 for negative scores, and by definition, LLR values near 0 means have no discrimination power.
 
-The high $-\theta$ means that false positives are penalised more than false negatives, so the optimal cut-off point will be in the bottom-left corner, where fpr remains high. The better performing recognizer will have the steeper ROC curve, and that's not highAUC. Starting from the bottom-left corner at (Pmiss=1, Pfa=0), highAUC's derivative quickly drops below the isocost derivative, which leaves the optimal threshold close to the maximum observed score. That makes hiAUC not very different from a dummy rule that assigns every instance to non-target. We shall call this extreme case an all-$\omega_0$ classifier.
+The application's high $-\theta$ means that false positives are penalised more than false negatives, so the optimal cut-off point will be in the bottom-left corner, where fpr remains high. The better performing recognizer will have the steeper ROC curve, and that's not highAUC. Starting from the bottom-left corner at (Pmiss=1, Pfa=0), highAUC's derivative quickly drops below the isocost derivative, which leaves the optimal threshold close to the maximum observed score. That makes hiAUC not very different from a dummy rule that assigns every instance to non-target. We shall call this extreme case an all-$\omega_0$ classifier.
 
-lowAUC's ROC curve is very steep in the high Pmiss, low Pfa region, which makes it possible for lowAUC to identify more positives than hiAUC while keeping fpr low enough, which translates into a lower expected risk. Past the 0.1 mark, lowAUC quickly flattens, which would make its performance worse for most application types, hence its lower AUC. The key point is that AUC measures the overall discrimination ability, i.e. across all application types, but it doesn't say how a classifier performs locally, i.e. on specific application types.
+lowAUC's ROC curve is very steep in the high Pmiss / low Pfa region, which makes it possible for lowAUC to identify more positives than hiAUC while keeping fpr low enough, which translates into a lower expected risk. Past the 0.1 mark, lowAUC quickly flattens, which would make its performance worse for most application types, hence its lower AUC. The key point is that AUC measures the overall discrimination ability, i.e. across all application types, but it doesn't say how a classifier performs on specific application types.
 
 {% include Demo17-llrRoc4panes.html %}
 
@@ -249,9 +255,9 @@ The all-$\omega_0$ "classifier" mentioned above is a simple rule that assigns al
 
 In the previous example, the all-$\omega_0$ expected risk is $p(\omega_1) \times \text{Pmiss} \times \text{Cmiss} = 0.05 \times 1 \times £107 = £5.35$, i.e. close to hiAUC's risk of £5.16, which thus does not add a lot of value. If hiAUC was our only option, it would be a good idea to double-check its costs to ensure that it's better than the simple rule.
 
-It is useful to add the isocost line of the majority classifier as a benchmark - let's call it the majority-isocost line. It tells if a recognizer can bring any value on top of the status quo. If a recognizer's ROC curve is below this line, its expected risk under any application type would be higher than the majority rule, so it does not make economic sense to use it. Hence, the majority-isocost line can inform go/no-go decisions about building ML solutions. 
+It is useful to add the isocost line of the majority rule - let's call it the majority-isocost line - as a benchmark, as it indicates if using a recognizer makes any sense. If a recognizer's ROC curve is below the the majority-isocost line, its expected risk under any application type would be higher than the majority rule, so it does not make economic sense to use it. Hence, the majority-isocost line can inform go/no-go decisions about building ML solutions. 
 
-Besides, the majority-isocost line is useful for sensitivity analyses of different application scenarios. Deciding on the application type to deploy a solution is somewhat of a subjective exercise, so using a range of inputs is preferable if it's possible. For example, an increase in supplier costs, a change in regulation impacting labour wage or an improvement in the supplier's defect rates all would impact the operating context, and therefore the expected risk of a recognizer. Visualising these scenarios via the majority-isocost lines can provide reassurance that a recognizer adds value even in the worst case.
+Besides, this benchmark is useful for sensitivity analyses of different application scenarios. Deciding on the application type is somewhat of a subjective exercise, so using a range of inputs is preferable if it's possible. For example, an increase in supplier costs, a change in regulation impacting labour wage or an improvement in the supplier's defect rates all would impact the operating context, and therefore the expected risk of a recognizer. Visualising these scenarios via the majority-isocost lines can provide reassurance that a recognizer adds value even in the worst case.
 
 The graph below shows the previous parameters and another scenario that penalises false positives  more, which corresponds to the steeper line. It's interesting that lowAUC still has points above the steeper isocost. 
 

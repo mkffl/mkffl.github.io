@@ -12,11 +12,11 @@ By "evaluation of a predictive system", what I mean is answering questions to de
 - How does it compare with a [majority vote approach]({{ site.baseurl }}{% link _posts/2021-10-28-Decisions-Part-2.markdown %}#majority-classifier)
 - What calibrated system outperforms others on a range of application types? What about all possible application types?
 
-There is a large and fragmented range of evaluation tools to address the points above, and we will review one popular example, however, NIST SRE provides a unified approach.
+There is a large and fragmented range of evaluation tools to address the points above, and we will review one popular example, however, NIST SRE has built a more unified approach.
 
-We start by looking at a few scenarios that require score calibration. Then we will review two types of score calibration: as probabilities and as log-likelihood ratios (llr). The last section introduces the NIST SRE application-independent methodology via the Applied Probability of Error (APE) graph.
+We start by looking at a few scenarios that require score calibration, then we will review two types of score calibration: as probabilities and as log-likelihood ratios (llr). The last section introduces the NIST SRE application-independent methodology via the Applied Probability of Error (APE) graph.
 
-A note on external sources and the code used for this blog - the NIST SRE literature referred to in this blog is listed at the end. The source code used to generate all the examples is on this personal [github repo](https://github.com/mkffl/decisions). The financial fraud use case is based on the same data generating process detailed in Part 1. The main recognizer is based on SVM and the competing recognizer is based on Random Forests.
+A note on external sources and the code used for this blog - the NIST SRE literature referred to in this blog is listed at the end. The source code used to generate all the examples is on my personal [github repo](https://github.com/mkffl/decisions). The financial fraud use case is based on the same data generating process detailed in Part 1. The main recognizer is based on SVM and the competing recognizer is based on Random Forests.
 
 ## A. Why use calibrated scores
 
