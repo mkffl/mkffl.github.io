@@ -186,7 +186,90 @@ To recap - when looking at the direct effect of C on O, and if C is not observed
 
 ### C. Measure mediation effects
 
+### Appendix 1
 
+I use pymc3 to craft and sample from Data Generatin Process (DGP). The resulting simulated data meets some requirements that I can then verify with causal inference methods.
+
+Simulated data - or fake/dummy/synthetic (that one sounds more scientic) - is often generated using scipy or numpy's random variables, which it's fine if we just need a multivariate gaussian, but beyond this I find the code unreadable. Probability graphs are easier to read because they define the process for one observation, and the sampling method takes care of the rest. 
+
+None of the Bayesian inference tooling is necessary to create these DGPs, but pymc3's interface is simple and comes with useful tools like diagram visualisation. My top choice would have been scala's probability_monad, which I used for another article of this blog, but python has causal inference packages like pywhy.
+
+A Bayesian probabilistic graph is a set of conditional probability distributions (CPD) for each node -- starting nodes like Citizenship are just prior probabilities, i.e. not conditioned on another variable. That means that a node is defined as as probability distribution conditional on the nodes that it depends on. For example, the Business Unit node, $p(B_b \vert C_c, E_b)$, is Bernoulli rv defined for all 4 cases corresponding to the values that (C, E) can jointly take.
+
+Defining a DGP in this way means that constraints can be enforced by expressing them as CPDs defined in the graph. See the next appendix for details.
+
+### Appendix 2
+
+Given the notation
+
+$O_p$: Outcome=promoted, $E_b$: Ethnic group=BAME, $C_{ex}$: Citizenship=expatriate, $B_{cons}$: Business unit=Consumer
+
+The two constraints are
+
+Requirement 1:
+For each b (Consumer or b2b)
+$$
+    p(O_p \vert E_b, B_b) = p(O_p \vert E_{non}, B_b)
+$$
+
+Requirement 2:
+$p(O_p \vert E_b) < p(O_p \vert E_{non})$
+
+Requirement 3:
+$p(O \vert E)$ and $p(O \vert E, B)$ must be similar in `model1` and `model3`.
+
+
+For requirement 1, there's no constraint on the value of $p(O_p \vert E, B)$. Instead, I will use the value I get here to fix `model1`'s probability. It implies
+
+$$
+p(O_p \vert D_{cons}, E_{non}, C_l) = \frac{p(O_p \vert B_{cons}, E_b, C_{ex}) \times p(C_{ex} \vert E_b, B_{cons})}{p(C_l \vert E_{non}, B_{cons})}
+$$
+
+$p(C_{ex} \vert E_b, B_b)$ can be expanded into an experssion that takes CPDs set in the graph: $\frac{p(B_b \vert C_{ex},E_b) \times p(C_{ex})}{\sum_c(p(B_b \vert E_b, C_c) \times p(P(C_c))}$. 
+
+Requirement 2 is more interesting. Its expanded form is
+
+$$
+\sum_b p(O_p \vert E_b, C_{ex}, B_b)\times p(C_{ex})\times p(B_b \vert C_{ex}, E_b) < \sum_b p(O_p \vert E_{non}, C_l, B_b)\times p(C_l)\times p(B_b \vert C_l, E_{non})
+$$
+
+The middle terms $p(C)$ can be ignored because we assume that there are fewer expatriates, so $p(C_{ex})<p(C_l)$. What remains is the probablility of getting promoted conditioned on ethnicity and business unit times the chosen business unit given their ethnicity. The first probability is already fixed to meet requirement 1, so it's out of my control. I tried some substitutions, but I failed to get an expression that would garantee that the requirement is met, so the best I could do is to guess a value and do the calculation to check if the requirement is met. But we can come up with a good guess: If the b2b segment has a hire promotion rate than Consumer, then setting a higher frequency of consumer among BAME employees will mechanically reduce their promotion rates compared to non-BAMEs.
+
+In this case, we notice Simpson's paradox in full swing because promotion rates for BAME employees are higher than non-BAMEs across b2b and consumer, however, for both employee types Consumer has lower chances of promotion than b2b. So it's enough to set a high likelihood of b2b for non-BAMEs to get requirement 2.
+
+Requirement 3 is guaranteed simply by inputing `model3`'s CDP into `model1`, which requires $p(E)$, $p(B \vert E)$ and $p(O \vert E,B)$. The first probability isn't relevant to requirement 3, and the other two can be easily obtained. For example, $p(B_{b2b} \vert E_{bame})=\sum_{c}{p(B_{b2b} \vert E_{bame}, C_c) \times p(C_c)}$.
+
+It's also possible to check the requirements by sampling from the models. That approach was not available in 1970s, when all statistical work had be derived with a pen and paper -- so we should use our inexpensive computers. For example, requirement 1 can be empirically validated by sampling say, 50 datasets and computing $p(O \vert E_{bame}, B_b)-p(O \vert E_{non-bame}, B_b)$, for each business unit. `probability4` does it for a sampled dataset.
+
+source
+```python
+def probability4(data):
+    """ p(promotion | E_bame, B_b) - p(promotion | E_non, B_b) 
+        return
+            (pd.Series) The difference in promotion rates for b2b and consumer
+    """
+    return (
+        probability2(data)
+        .rename("promotion")
+        .reset_index()
+        .pivot(
+            index="business_unit",
+            columns="ethnic_category",
+            values="promotion"
+        )
+        .sort_index()
+        .assign(difference=lambda df: df["BAME"]-df["non-BAME"])
+        .loc[:, "difference"]
+    )
+```
+
+Repeating this 50 times and looking at the results confirms that the chances of promotion by ethnic category and business unit are the same for each ethnic category. The sample distributions are clearly centered around 0. If still in doubt, just draw more samples!
+
+{% include mediation/mediation_analysis41.html %}
+
+### References
+- TBOW
+- Pearl's paper on mediation
 
 
 
