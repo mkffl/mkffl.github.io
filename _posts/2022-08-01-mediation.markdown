@@ -175,7 +175,6 @@ The answer depends on the variables observed. If C is not observed, then blockin
 </details>
 <b>
 
-
 If C is observed, then holding both C and B constant allows only the direct effect to propagate, as per the results below.
 
 {% include mediation/mediation_analysis31_p3.html %}
@@ -186,60 +185,142 @@ To recap - when looking at the direct effect of C on O, and if C is not observed
 
 ### C. Measure mediation effects
 
+We have tools to know if effects exist, and now we would like to estimate their intensity to answer questions such as, Does discrimination account for most of the promotion difference? The answer to this question, combined with BankBank's goals, should dictate its response. If we find out that discrimination accounts for a tiny part of the promotion gap, the company may still want to remove the direct effect for ethical and reputational reasons, but it may focus on, say, raising awareness of B2B career opportunities for BAME graduates. Thus, the two effects command vastly different interventions.
+
+As a side note before getting into effect measurements, causal analysis enables "ationable analysis", a fashionable term that many analytics projects fail to deliver on. An team of analysts present their final results to all stakeholders, everyone agrees that the content is "interesting", but no one knows what to do next. "Actionable" insights is a thing that everyone talks about but most have never seen. At times, I have felt that only data produced through controlled experiments can lead to real decisions, because observational data is almost always frought with confounders that neutralise interventions.
+
+Going back to BankBank's use case, remember that the total effect of ethnic group on promotion rates is [0.03912082709307785], as shown on the first chart. Direct and indirect effects are calculated by imagining scenarios where some attributes change, and measuring the impact. It is like simulating and comparing different worlds.
+
+Starting with the direct effect, we can ask, How many BAME people would have been promoted if they worked B2B as non-BAME employees. That can be done by keeping $p(O_p\vert E_{bame}, B_b)$ intact and weighting it by $p(B_b \vert E_{non})$, effectively neutralising the difference in BAME employees' choice of business unit. In that scenario, $\sum_b p(O_p \vert E_{bame}, B_b)*p(B_b \vert E_{non}) \times 300$ BAME individuals would have been promoted if not for the discriminatory nature of BankBank’s performance process. 
+
+The direct effect compares this scenario with a baseline scenario where BAME employees get treated exactly like non-BAME employees. The number of newly promotes would go up to $p(Op \vert E_non) \times 300$. In the literature, the direct effect is called "natural" to refer to the baseline weights of the mediating variable, and expressed as a frequency, not an absolute number of individuals, so $\text{de} = \sum_b p(Op \vert Eb, BUb)*p(B_b \vert Enon) - p(Op \vert E_non)$. This is what `natural_direct_effect` below computes and, for BankBank, the value is [-0.029156843426365042], i.e. ethnic category reduces performance by c. 2.9 percentage points, or equivalently, about 2.9 percent of BAME candidates don't get promoted because they are discriminated against. That's about three quarters of the total effect, so BankBank has every reason to make the fight against discrimination their top priority.
+
+source
+```python
+class MediationMeasurementBinary:
+    def __init__(self, data):
+        self.data = data
+
+        # p(Op|E)
+        self.p1 = probability1(data)
+        
+        # p(Op|E,B)
+        self.p2 = probability2(data)
+        
+        # p(Bcons|E)
+        self.p5 = probability5(data)
+
+    def total_effect(self):
+        """ TE = p(O_p|E_bame) - p(Op|Enon)
+        """
+        return (
+            self.p1[1]-self.p1[0]
+        )
+
+    def natural_direct_effect(self):
+        """ NDE = \sum_b p(Op|Ebame, BUb)*p(BUb|Enon) - p(Op|Enon)
+        """
+        return (
+            self.p2[Employee.BAME,Business.B2B] * (1-self.p5[Business.B2B])
+            + self.p2[Employee.BAME,Business.CONSUMER] * self.p5[Business.B2B]
+            - self.p1[Employee.NON_BAME]
+        )
+```
+
+We may conclude that the indirect effect is the difference between the total and the direct effect, c.1%, and we are all done. That is true, so let's compute it from first principles then discuss why effects don't add up here. 
+
+The indirect effect works in a similar manner, by asking, How many non-BAME employees would have been promoted if they had chosen their BUs with the same frequency as BAME employees. If you think about, it neutralises the direct effect because non-BAME do not suffer from any discrimination, but it does introduce the bias owed to the choice of business unit. [note on bias and discrimination]. This is done by keeping the observed non-BAME promotion rate, $p(Op \vert E_{non}, B_b)$, and timing it by $p(Op \vert E_{bame}, B_b)$. The natural indirect effect is also expressed as the difference between this simulated probability with the baseline probability $p(B_b \vert E_{non})$. The formula is then ${ \sum_b p(Op|Enon, BUb)*(p(BUb|Ebame) - p(BUb|Enon) }$, which captures what promotions of non-BAME employees would have been if not for the choice of business. `natural_indirect_effect` computes it and gives [0.02165948519028952]
+
+source
+```python
+class MediationMeasurementBinary:
+    # ... 
+
+    def natural_indirect_effect(self):
+        """ NIE = \sum_b p(Op|Enon, BUb)*p(BUb|Ebame) - p(Op|Enon)
+        """
+        return (
+            self.p2[0,0]*(1-self.p5[1]) 
+            + self.p2[0,1]*self.p5[1]
+            - self.p1[0]
+        )        
+```
+
+
+To note:
+Not additive because there can be interactions
+That is true here
+If interactions then not mutually exclusive, i.e. the sum is not just adding the parts, i.e. if BU chosen influences the DE (CDE is proof) then we can’t say that te = de + ie i.e. can’t split the groups of potentially promoted into those that were not due to the BU they chose and those due to the discrimination, makes no sense.
+Necessary vs sufficient, we could look at the sufficient effect
+
+
+The product of these two terms is a joint probability of a special type, which can be expressed in notation using counterfactuals, but I will stick to traditional probability notation to keep things familiar. So
 ### Appendix 1
 
-I use pymc3 to craft and sample from Data Generatin Process (DGP). The resulting simulated data meets some requirements that I can then verify with causal inference methods.
+I use pymc3 to craft and sample from imaginary Data Generatin Processes (DGPs). The DGP meet some requirements that Ithen verify with causal inference methods.
 
-Simulated data - or fake/dummy/synthetic (that one sounds more scientic) - is often generated using scipy or numpy's random variables, which it's fine if we just need a multivariate gaussian, but beyond this I find the code unreadable. Probability graphs are easier to read because they define the process for one observation, and the sampling method takes care of the rest. 
+In general, simulated data - or fake/dummy/synthetic (that one sounds more scientic) - can be generated using `scipy` or `numpy`'s random variables, which is fine for simple DGPs like a multivariate gaussian, but beyond this I find the code unreadable. Probability graphs are easier to read because they define the process for one observation, and the sampling method takes care of the rest.
 
-None of the Bayesian inference tooling is necessary to create these DGPs, but pymc3's interface is simple and comes with useful tools like diagram visualisation. My top choice would have been scala's probability_monad, which I used for another article of this blog, but python has causal inference packages like pywhy.
+`pymc3` might sound overkill for this, because I don't need any bayesian inference functionality just to create DGPs, but the library interface is simple and it comes with useful tools like diagram visualisation. My top choice would have been scala's `probability_monad`, which I used for another article of this blog (TODO: link), but python has causal inference packages like [doWhy](https://github.com/py-why/dowhy).
 
-A Bayesian probabilistic graph is a set of conditional probability distributions (CPD) for each node -- starting nodes like Citizenship are just prior probabilities, i.e. not conditioned on another variable. That means that a node is defined as as probability distribution conditional on the nodes that it depends on. For example, the Business Unit node, $p(B_b \vert C_c, E_b)$, is Bernoulli rv defined for all 4 cases corresponding to the values that (C, E) can jointly take.
+A bayesian probabilistic graph is a set of conditional probability distributions (CPD) for each node. (starting nodes like Citizenship are just prior probabilities, i.e. not conditioned on any variables). To get a DGP, I need to define each node's probability distribution, conditioned on the depending nodes. For example, Business Unit ($p(B_b \vert C_c, E_b)$) is Bernoulli rv defined for all 4 cases corresponding to the values that (C, E) can jointly take.
 
 Defining a DGP in this way means that constraints can be enforced by expressing them as CPDs defined in the graph. See the next appendix for details.
 
 ### Appendix 2
 
-Given the notation
+Notation
 
-$O_p$: Outcome=promoted, $E_b$: Ethnic group=BAME, $C_{ex}$: Citizenship=expatriate, $B_{cons}$: Business unit=Consumer
+$O_p$: Outcome=promoted<br/>
+$E_b$: Ethnic group=BAME ($E_{non}$ for non-BAMEs)<br/>
+$C_{ex}$: Citizenship=expatriate ($C_l$ for locals)<br/>
+$B_{cons}$: Business unit=Consumer ($B_{b2b}$ for business-to-business)<br/>
 
-The two constraints are
+The constraints are
 
-Requirement 1:
-For each b (Consumer or b2b)
+#### Requirement 1
+For every b in {Consumer, b2b}<br/>
 $$
     p(O_p \vert E_b, B_b) = p(O_p \vert E_{non}, B_b)
 $$
 
-Requirement 2:
-$p(O_p \vert E_b) < p(O_p \vert E_{non})$
-
-Requirement 3:
-$p(O \vert E)$ and $p(O \vert E, B)$ must be similar in `model1` and `model3`.
-
-
-For requirement 1, there's no constraint on the value of $p(O_p \vert E, B)$. Instead, I will use the value I get here to fix `model1`'s probability. It implies
+For Consumer, this expression implies<br/>
 
 $$
 p(O_p \vert D_{cons}, E_{non}, C_l) = \frac{p(O_p \vert B_{cons}, E_b, C_{ex}) \times p(C_{ex} \vert E_b, B_{cons})}{p(C_l \vert E_{non}, B_{cons})}
 $$
 
-$p(C_{ex} \vert E_b, B_b)$ can be expanded into an experssion that takes CPDs set in the graph: $\frac{p(B_b \vert C_{ex},E_b) \times p(C_{ex})}{\sum_c(p(B_b \vert E_b, C_c) \times p(P(C_c))}$. 
+I skip the details, but it's essentially integrating out and using the fact that we set $p(O_p \vert B, E_{non}, C_{ex})=0$ and $p(O_p \vert B, E_b, C_l)=0$.
 
-Requirement 2 is more interesting. Its expanded form is
+Then, $p(C_{ex} \vert E_b, B_b)$ can be expanded into an expression that takes CPDs that we set: $\frac{p(B_b \vert C_{ex},E_b) \times p(C_{ex})}{\sum_c(p(B_b \vert E_b, C_c) \times p(P(C_c))}$. So, I get a value for $p(O_p \vert D, E_{non}, C_l)$ that I can set in the graph.
+
+#### Requirement 2
+The overall chances of promotion are lower for BAME employees:<br/>
+$p(O_p \vert E_b) < p(O_p \vert E_{non})$
+
+That one's interesting. The expanded form is
 
 $$
 \sum_b p(O_p \vert E_b, C_{ex}, B_b)\times p(C_{ex})\times p(B_b \vert C_{ex}, E_b) < \sum_b p(O_p \vert E_{non}, C_l, B_b)\times p(C_l)\times p(B_b \vert C_l, E_{non})
 $$
 
-The middle terms $p(C)$ can be ignored because we assume that there are fewer expatriates, so $p(C_{ex})<p(C_l)$. What remains is the probablility of getting promoted conditioned on ethnicity and business unit times the chosen business unit given their ethnicity. The first probability is already fixed to meet requirement 1, so it's out of my control. I tried some substitutions, but I failed to get an expression that would garantee that the requirement is met, so the best I could do is to guess a value and do the calculation to check if the requirement is met. But we can come up with a good guess: If the b2b segment has a hire promotion rate than Consumer, then setting a higher frequency of consumer among BAME employees will mechanically reduce their promotion rates compared to non-BAMEs.
+The middle terms, $p(C)$, can be ignored because we assume that there are fewer expatriates, so $p(C_{ex})<p(C_l)$. The remaining two probablilities are that of getting promoted conditioned on ethnicity and business unit, times that of the chosen business unit given E. 
 
-In this case, we notice Simpson's paradox in full swing because promotion rates for BAME employees are higher than non-BAMEs across b2b and consumer, however, for both employee types Consumer has lower chances of promotion than b2b. So it's enough to set a high likelihood of b2b for non-BAMEs to get requirement 2.
+The first probability is already fixed to meet requirement 1, so it's out of my control. I tried some substitutions, but I failed to get an expression that would garantee that the requirement is met, and the best I could do is to guess a value and do the calculation to check if the requirement is met. We can come up with a good guess, though - if b2b has a higher promotion rate than Consumer, then setting a higher probability of Consumer for BAME employees will mechanically reduce their promotion rates compared to non-BAMEs. 
 
-Requirement 3 is guaranteed simply by inputing `model3`'s CDP into `model1`, which requires $p(E)$, $p(B \vert E)$ and $p(O \vert E,B)$. The first probability isn't relevant to requirement 3, and the other two can be easily obtained. For example, $p(B_{b2b} \vert E_{bame})=\sum_{c}{p(B_{b2b} \vert E_{bame}, C_c) \times p(C_c)}$.
+That's essentially Simpson's paradox in full force, because as shown on `model3`'s chart, promotion rates conditioned on E and B are higher for BAME employees than non-BAMEs, and yet, requirement 2 is also true.
 
-It's also possible to check the requirements by sampling from the models. That approach was not available in 1970s, when all statistical work had be derived with a pen and paper -- so we should use our inexpensive computers. For example, requirement 1 can be empirically validated by sampling say, 50 datasets and computing $p(O \vert E_{bame}, B_b)-p(O \vert E_{non-bame}, B_b)$, for each business unit. `probability4` does it for a sampled dataset.
+#### Requirement 3
+$p(O \vert E)$ and $p(O \vert E, B)$ must be similar in `model1` and `model3`.
+
+This is guaranteed by inputing `model3`'s CDP into `model1`, using $p(B \vert E)$ and $p(O \vert E,B)$, which can be easily derived. For example<br/>
+$p(B_{b2b} \vert E_{bame})=\sum_{c}{p(B_{b2b} \vert E_{bame}, C_c) \times p(C_c)}$.
+
+#### Empirical checks
+
+It's possible to verify that requirements are met by way of sampling. That approach was not available in 1970s, when all statistical work had be done by hand, so we should be grateful and use our inexpensive computers. 
+
+For the example of Requirement 1, let's sample say, 50 datasets, and compute $p(O \vert E_{bame}, B_b)-p(O \vert E_{non-bame}, B_b)$, for each business unit. `probability4` does it for one sample dataset.
 
 source
 ```python
@@ -263,7 +344,7 @@ def probability4(data):
     )
 ```
 
-Repeating this 50 times and looking at the results confirms that the chances of promotion by ethnic category and business unit are the same for each ethnic category. The sample distributions are clearly centered around 0. If still in doubt, just draw more samples!
+Repeating this 50 times and looking at the results confirms that the chances of promotion by business unit are the same for each ethnic category. The sample distributions are clearly centered around 0. If still in doubt, just draw more samples!
 
 {% include mediation/mediation_analysis41.html %}
 
