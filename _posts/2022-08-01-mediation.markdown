@@ -1,5 +1,5 @@
 ---
-title: Causal Analysis - Mediation Minimalist Example
+title: Practical Application of Causal Analysis
 layout: post
 ---
 
@@ -7,13 +7,13 @@ I have recently read Judea Pearl and Dana McKenzie’s [The Book of Why (TBoW)](
 
 Pearl bases his demonstration of the benefits of causal theory on real-world problems that need solving. In doig so, he avoids a common pitfall of engaging only on a philosophical level, which I have found to be sterile and unconvincing. (For example, see the endless debates between frequentist and bayesian statistics.) Instead, when asked to choose between the scientific status quo and an alternative - here, the so-called Causal Revolution - one should ask “How does the new thing help to solve existing problems better/faster? Does it help to solve new problems?”. In this blog article, I apply causal analysis to a classic problem in statistical inference. I will also play with causal diagrams to assess if they are as useful as J. Pearl claims.
 
-### Promotion cycles at BankBank Corp.
+### Promotion cycles at BigBankCorp
 
 Chapter [5] of TBoW discusess the Berkeley admission paradox, where the Dean of the Berkeley university asked if the admission process discriminated against women. An analysis of admissions by gender showed that, while total admission rates were lower for female, they were higher or equal to males for each department. In what follows, I apply the same type of problem in a slightly different context where the head of a HR department asks if promotions are fair towards minority candidates. I use synthetic data to playa round with causal analysis tools to provide an answer.
 
 [This is an example of Simpson’s paradox, which is not really a paradox after we realise that females applied to departments with lower admission rates. However, it's not clear if Berkeley's admissions were unfair towards female applicants.]
 
-In my old company, HR asked our team if minority employees were discriminated against during promotion rounds. This happened around the time of George Floyd’s death in the US, which prompted internal discussions about fairness for blacks and minorities in general. Imagine that BankBank Corp, a large lending company, annually reviews the performance of its junior staff to determine if they are ready to move to middle management positions. HR ask you if, on the basis of the data below, the promotion process is unfair towards minority employees, which in the UK are often identified as Black Asian and Middle Eastern (BAME).
+In my old company, HR asked our team if minority employees were discriminated against during promotion rounds. This happened around the time of George Floyd’s death in the US, which prompted internal discussions about fairness for blacks and minorities in general. Imagine that BigBankCorp, a large lending company, annually reviews the performance of its junior staff to determine if they are ready to move to middle management positions. HR ask you if, on the basis of the data below, the promotion process is unfair towards minority employees, which in the UK are often identified as Black Asian and Middle Eastern (BAME).
 
 ### A. Identifying discrimination
 
@@ -24,7 +24,7 @@ Overall promotion rates for BAME employees stand at 2.7%, almost half the rate f
 
 “Should we double check the figures?”, asked the HR analyst, looking confused. “Should I cut the data in a different way, for example, using more granular business departments? What to conclude if percentages are still similar between minorities and non? What if they show an inverse trend, as we thought would be the case? Hold on, what's the question, again?”
 
-A causal diagram can help visualise and answer the question. We might agree that the situation can be represented as follows - "might" because there could be multiple ways to model BankBank's promotion process, as will become clear.
+A causal diagram can help visualise and answer the question. We might agree that the situation can be represented as follows - "might" because there could be multiple ways to model BigBankCorp's promotion process, as will become clear.
 
 
 <div class="mermaid" style="width:180px; margin:0 auto;">
@@ -38,11 +38,11 @@ E -->|?| P
 D --> P
 </div>
 
-An employee's ethnic category is either BAME or non-BAME, and that determines the business unit they choose to work in, which is either Consumer of B2B. Consumer has lower promotion rates than B2B. This makes sense because BankBank's B2B department is more recent than Consumer, with more opportunities to grow inside the firm. Besides, the ethnic category may also determine the likelihood of being promoted, in which case the selection process discriminates on a racial basis. But how do we know if there is such an arrow from ethnicity to outcome?
+An employee's ethnic category is either BAME or non-BAME, and that determines the business unit they choose to work in, which is either Consumer of B2B. Consumer has lower promotion rates than B2B. This makes sense because BigBankCorp's B2B department is more recent than Consumer, with more opportunities to grow inside the firm. Besides, the ethnic category may also determine the likelihood of being promoted, in which case the selection process discriminates on a racial basis. But how do we know if there is such an arrow from ethnicity to outcome?
 
 Under this causal model, the solution is to holding the business unit constant. If the effect of ethnicity onto the promotion outcome only happens through the elected business unit, then holdiing the latter constant blocks the arrow from ethnic category to business unit, allowing the analyst to observe the effect from business unit to outcome. If there's also a direct effect, then holding the business unit constant does not block the mediated path, and the direct, discriminatory effect will show in promotion rates by BU.
 
-Here, under these causal assumptions, we conclude that BankBank's managerial review process does not discrimate against minority employees. In fact, the data was generated using a simple model with no direct arrow from E to O. 
+Here, under these causal assumptions, we conclude that BigBankCorp's managerial review process does not discrimate against minority employees. In fact, the data was generated using a simple model with no direct arrow from E to O. 
 
 [source](https://dev.azure.com/mkiffel/_git/personal-blog?path=/blog-mediator/blog_mediation/model.py&version=GBmain-mediation&line=8&lineEnd=9&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
 ```python
@@ -74,7 +74,7 @@ with model1:
     outcome = pm.Bernoulli("promotion", p_promotion)
 ```
 
-`model1` represents the outcome of a BankBank employee review process as a random variable, which depends on the employee's minority status only via the business unit they chose to work in. We can check the absence of direct connection by inspecting `model1`'s graph
+`model1` represents the outcome of a BigBankCorp employee review process as a random variable, which depends on the employee's minority status only via the business unit they chose to work in. We can check the absence of direct connection by inspecting `model1`'s graph
 
 ```python
 pymc3.model_to_graphviz(model1)
@@ -140,14 +140,14 @@ And running the previous analysis on a random draw from the model confirms that 
 
 Now, BAME candidates have a lower chance of acceptance even when holding the business unit constant.
 
-I have called discrimination the direct effect of E on O, because I focus on the performance review process. There may be discrimination when BankBank hires new employees by influencing which business unit they apply for. It's not impossible, though I find it hard to believe, as BAME individuals more likely self-select the department they choose to work in. I think that one benefit of causal diagrams is to make it very clear what type of effect we want to measure.
+I have called discrimination the direct effect of E on O, because I focus on the performance review process. There may be discrimination when BigBankCorp hires new employees by influencing which business unit they apply for. It's not impossible, though I find it hard to believe, as BAME individuals more likely self-select the department they choose to work in. I think that one benefit of causal diagrams is to make it very clear what type of effect we want to measure.
 
 
 ### B. Keep your "controlling urges" in check
 
 The previously described approach was also applied by Bikel, U.C. Berkeley's analyst appointed by the dean to report any evidence of discrimination. Bikel saw that admission rates by department (math, biology, etc.) were not lower for females, so, he concluded that the university acceptance procedure did not discrimimnate against women. But the story doesn't stop her, and TBOW reports on a conversation between Bikel and Krushke, another statistician who got interested in the case. Krushkal took note of Bikel's result, though he claimed that it did not prove that there were not other causes of discrmination, and he built a simple numeric example as proof. 
 
-I wanted to reproduce Krushkal's small example because I find minimalist use cases very useful as learning tools. However, I could not access the original document referenced in TBOW because of academic paywalls. So, I have used J. Pearl's notes to cook up a hopefully similar model, and I applied it to my BankBank use case. It will illustrate another type of causal effect called a collider, which J. Pearl uses to debunk the deeply anchored myth that statistical analysis should hold any observed variable constant when measuring an effect.
+I wanted to reproduce Krushkal's small example because I find minimalist use cases very useful as learning tools. However, I could not access the original document referenced in TBOW because of academic paywalls. So, I have used J. Pearl's notes to cook up a hopefully similar model, and I applied it to my BigBankCorp use case. It will illustrate another type of causal effect called a collider, which J. Pearl uses to debunk the deeply anchored myth that statistical analysis should hold any observed variable constant when measuring an effect.
 
 `model3` 's source of discrimination candidates' citizenship (referred to as C), with values as local" or "expat". Further assume that BAME employees are always rejected if C is "local", and non-BAME employees are always rejected if C is "expat". In the other cases - BAME expats or non-BAME local - the chances of promotion are similar. These strong assumptions may not seem credible, but they make the maths easier. We could use a smoother hypothesis to the same effect. But, remember that the goal is to show that there exists a model with discrimination, which returns the same query results as `model1`.
 
@@ -165,7 +165,7 @@ Running the same queries a before gives the following results.
 
 The promotion rates look very similar to `model1`'s and that is by design. In fact, the expected values of these probabilities are the same for both models. That means that the small differences are only due to sampling variations or, alternatively, we get the same results if we repeatedly sampled from the models and averaged the query results. The appendix includes the deriation and the results from repeated sampling.
 
-Imagine that we correctly identify that the true generative process is `model3`, i.e. we rightly assume that the diagram just above reflects reality, but we don't know if an arrow's value is zero or not. In particular, we are not sure if E connects directly to O with a value that's not zero. How do we know if BankBank discrimiates against BAME employees? 
+Imagine that we correctly identify that the true generative process is `model3`, i.e. we rightly assume that the diagram just above reflects reality, but we don't know if an arrow's value is zero or not. In particular, we are not sure if E connects directly to O with a value that's not zero. How do we know if BigBankCorp discrimiates against BAME employees? 
 
 The answer depends on the variables observed. If C is not observed, then blocking the mediation effect E->B->P is possible only by observing promotion rates by ethnic groups, i.e. the first query captures only the direct effect. The second query captures both the direct and the mediated effect. The reason is that under `model3`, B becomes a collider, a type of node that blocks information when not held constant. But when it's fixed at a certain value, the collider lets information pass from parent nodes to its children. This is why the second query does not reveal the discriminator effect E->O, as it gets "diluted" with the mediated effect E->B->O.
 
@@ -185,15 +185,33 @@ To recap - when looking at the direct effect of C on O, and if C is not observed
 
 ### C. Measure mediation effects
 
-We have tools to know if effects exist, and now we would like to estimate their intensity to answer questions such as, Does discrimination account for most of the promotion difference? The answer to this question, combined with BankBank's goals, should dictate its response. If we find out that discrimination accounts for a tiny part of the promotion gap, the company may still want to remove the direct effect for ethical and reputational reasons, but it may focus on, say, raising awareness of B2B career opportunities for BAME graduates. Thus, the two effects command vastly different interventions.
+We have tools to know if effects exist, and now we would like to estimate their intensity to answer questions like
 
-As a side note before getting into effect measurements, causal analysis enables "ationable analysis", a fashionable term that many analytics projects fail to deliver on. An team of analysts present their final results to all stakeholders, everyone agrees that the content is "interesting", but no one knows what to do next. "Actionable" insights is a thing that everyone talks about but most have never seen. At times, I have felt that only data produced through controlled experiments can lead to real decisions, because observational data is almost always frought with confounders that neutralise interventions.
+>Does discrimination account for most of the promotion difference?
 
-Going back to BankBank's use case, remember that the total effect of ethnic group on promotion rates is [0.03912082709307785], as shown on the first chart. Direct and indirect effects are calculated by imagining scenarios where some attributes change, and measuring the impact. It is like simulating and comparing different worlds.
+The answer to this question, combined with BigBankCorp's goals, can guide the company's response. If discrimination accounts for a tiny part of the promotion gap, the company may still want to remove it for ethical and reputational reasons, but it may spend most of its resources on e.g. raising awareness of B2B career opportunities for BAME graduates. Thus, the two effects command vastly different interventions.
 
-Starting with the direct effect, we can ask, How many BAME people would have been promoted if they worked B2B as non-BAME employees. That can be done by keeping $p(O_p\vert E_{bame}, B_b)$ intact and weighting it by $p(B_b \vert E_{non})$, effectively neutralising the difference in BAME employees' choice of business unit. In that scenario, $\sum_b p(O_p \vert E_{bame}, B_b)*p(B_b \vert E_{non}) \times 300$ BAME individuals would have been promoted if not for the discriminatory nature of BankBank’s performance process. 
+As a side note, causal analysis enables "ationable insights", a term that has became fashionable but that many analytics projects fail to deliver. This situation may sound oddly familiar - a team present their final results to all project parties, everyone agrees that the content is "interesting", but no one knows what to do next. "Actionable" insights is a thing that everyone talks about but most have never experienced. 
 
-The direct effect compares this scenario with a baseline scenario where BAME employees get treated exactly like non-BAME employees. The number of newly promotes would go up to $p(Op \vert E_non) \times 300$. In the literature, the direct effect is called "natural" to refer to the baseline weights of the mediating variable, and expressed as a frequency, not an absolute number of individuals, so $\text{de} = \sum_b p(Op \vert Eb, BUb)*p(B_b \vert Enon) - p(Op \vert E_non)$. This is what `natural_direct_effect` below computes and, for BankBank, the value is [-0.029156843426365042], i.e. ethnic category reduces performance by c. 2.9 percentage points, or equivalently, about 2.9 percent of BAME candidates don't get promoted because they are discriminated against. That's about three quarters of the total effect, so BankBank has every reason to make the fight against discrimination their top priority.
+At times, I have felt that only controlled experiments could generate data used for real decisions, because observational data is almost always frought with confounders. Causal analysis provides tools to infer the results from interventions in the real world using obervational data - provided we have a causal model of the world.
+
+Going back to BigBankCorp's use case, remember that the total effect of ethnic group on promotion rates is [0.03912082709307785], as shown on the first chart. Direct and indirect effects are calculated by imagining scenarios where some attributes change, and measuring the impact. It is like simulating and comparing different worlds.
+
+Starting with the direct effect, we can ask
+
+> How many BAME people would have been promoted if the same proportion worked in B2B as for non-BAME employees
+
+B2B has higher promotion rates, so this adjustment would bring promotion rates closer between the two groups. For each business unit, keep BAME employee's chance of promotions but weigh it by non-BAME employee's frequency:
+$p(O_p\vert E_{bame}, B_b) \times p(B_b \vert E_{non})$
+
+Doig this effectively neutralises the difference in BAME employees' choice of business unit, which is the indirect effect. 
+
+In that hypothetical scenario, $\sum_b p(O_p \vert E_{bame}, B_b)*p(B_b \vert E_{non}) \times 3000$ BAME individuals would have been promoted if not for the discriminatory nature of BigBankCorp’s performance process. 
+We can then compare this number with a baseline scenario where BAME employees get treated exactly like non-BAME employees, resulting in $p(Op \vert E_{non}) \times 3000$ promotions. The difference is the direct effect, expressed as a frequency (not as a number of individuals):
+
+$\text{de} = \sum_b p(Op \vert Eb, BUb)*p(B_b \vert Enon) - p(Op \vert E_non)$
+
+In the literature, the direct effect is called "natural" to refer to the baseline weights of the mediating variable, and it's calculated by `natural_direct_effect` below. For BigBankCorp, the value is [-0.029156843426365042], i.e. ethnic category reduces performance by c. 2.9 percentage points, or equivalently, about 2.9 percent of BAME candidates don't get promoted solely because of discrimination. That's about three quarters of the total effect, so BigBankCorp has every reason to make the fight against discrimination their top priority.
 
 source
 ```python
@@ -227,9 +245,19 @@ class MediationMeasurementBinary:
         )
 ```
 
-We may conclude that the indirect effect is the difference between the total and the direct effect, c.1%, and we are all done. That is true, so let's compute it from first principles then discuss why effects don't add up here. 
+We may conclude that the indirect effect is the difference between the total and the direct effect, c.1%, and we are all done. However, things don't work exactly like that, so let's compute it from first principles then discuss why effects don't always add up. 
 
-The indirect effect works in a similar manner, by asking, How many non-BAME employees would have been promoted if they had chosen their BUs with the same frequency as BAME employees. If you think about, it neutralises the direct effect because non-BAME do not suffer from any discrimination, but it does introduce the bias owed to the choice of business unit. [note on bias and discrimination]. This is done by keeping the observed non-BAME promotion rate, $p(Op \vert E_{non}, B_b)$, and timing it by $p(Op \vert E_{bame}, B_b)$. The natural indirect effect is also expressed as the difference between this simulated probability with the baseline probability $p(B_b \vert E_{non})$. The formula is then ${ \sum_b p(Op|Enon, BUb)*(p(BUb|Ebame) - p(BUb|Enon) }$, which captures what promotions of non-BAME employees would have been if not for the choice of business. `natural_indirect_effect` computes it and gives [0.02165948519028952]
+The indirect effect works in a similar manner, by asking
+
+>How many non-BAME employees would have been promoted if they had chosen their BUs with the same frequency as BAME employees. 
+
+Think about it - doing this neutralises the direct effect because non-BAME do not suffer from any discrimination, but it does introduce the bias owed to the choice of business unit. [note on bias and discrimination]. So, the recipe is: keep the observed non-BAME promotion rate, $p(Op \vert E_{non}, B_b)$, and time it by $p(Op \vert E_{bame}, B_b)$.
+
+The natural indirect effect is also expressed as the difference between this simulated probability and the baseline probability $p(B_b \vert E_{non})$:
+
+$\text{nie}=\sum_b p(Op \vert Enon, BUb)*(p(BUb \vert Ebame) - p(BUb \vert Enon))$
+
+which estimates the number of non-BAME promotes in the hypothetical scenario that only the frequency of business units would differ. The method `natural_indirect_effect` computes this quantity, estimated at [0.02165948519028952] for BigBankCorp.
 
 source
 ```python
@@ -246,12 +274,21 @@ class MediationMeasurementBinary:
         )        
 ```
 
+That means that the choice of business unit by itself drives a of 2.1% of promotions, i.e. not miles away from the 2.9% direct effect. From an intervention perspective, if BigBankCorp's primary concern was to close the promotion gap, management should still focus on discrimination, but may decide otherwise if the indirect effect had been larger than the direct one.
 
-To note:
-Not additive because there can be interactions
-That is true here
-If interactions then not mutually exclusive, i.e. the sum is not just adding the parts, i.e. if BU chosen influences the DE (CDE is proof) then we can’t say that te = de + ie i.e. can’t split the groups of potentially promoted into those that were not due to the BU they chose and those due to the discrimination, makes no sense.
-Necessary vs sufficient, we could look at the sufficient effect
+Why do direct and indirect effects don't add up? Mediation theory teaches us that it's due to interactions between the direct effect and the mediator (add source). In our context, it means that the intensity of discrimination is not the same for each business unit.
+
+It helps me to move away from probabilities for a second and think about individuals. If effects added up, the gap in promotees could be neatly separated beetween individuals who made the wrong business unit choice, and those who were discriminated against. It's unlikely to happen in reality, as discrimination may impact business units differently, e.g. with a higher discrimination in B2B vs Consumer. 
+
+That is exactly what happens at BigBankCorp. Looking back at promotion rates by business unit, the difference is almost 4 times bigger in B2B, so there are interactions going on. To be clear, conditioning on the mediator value neutralises the mediating effect to exhibit only the direct effect, and reveals any interactions at play if direct effects vary by mediation value.
+
+If you look at how `model2` generates direct effect, you will see a flat rejection rate of 50% for BAME employees that doesn't vary by business unit. That sounds like a linear rate that should prevent any interactions but, in fact, it's only linear in the log-probability space [demo code].
+
+If BigBankCorp's HR successfully remove discrimination before next year's round of promotions, only the natural indirect effect will remain. If the Head of HR asks if a successful intervention will close the promotion gap between employee types, the analyst can confidently explain why there will still remain a difference that is expected to amount to 2.1%.
+
+With no direct effect, all that remain are indirect effects, which by themselves amount to an expected 2.1% of BAME employees. The literature refers to this measurement as the sufficient cause for indirect effects, i.e. excluding any direct mechanism. Similarly, the 2.9% figure referred to the sufficient cause for direct effect (excluding any mediation mechanism). The difference between total effects and sufficient causes are called necessary. For example, the necessary mediation effect here is 3.9-2.9=1.0, which corresponds to what discrimination on its own can't explain, i.e. the part the direct effect that relies on mediation to exist. The concept of Sufficient and Necessary causes have connections to legal [] - see [this] for more details
+
+### Conclusion
 
 
 The product of these two terms is a joint probability of a special type, which can be expressed in notation using counterfactuals, but I will stick to traditional probability notation to keep things familiar. So
