@@ -3,13 +3,42 @@ title: Practical Application of Causal Analysis
 layout: post
 ---
 
+I have recently read [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/) by Judea Pearl and Dana McKenzie. It is an introduction to causal inference, which aims to answer causal questions using data. The book is written from the perspective of J. Pearl, who has made major contributions to this field. 
+
+Through 10 chapters, the book illustrates key concepts of causal analysis with applications. A number of pages also discuss the differences between traditional stats and causal analysis, and J. Pearl's own experience (and frustrations) sometimes come out from the tone and anecdotes.
+
+Though I think the book could have done with fewer autobiographic passages, it is a useful introduction to causal thinking for beginners like myself. The focus of the book is primarly on the practical benefits of causal theory, and thus it avoids a common pitfall of academic debates - I am looking at you, bayesians vs frequentists.
+
+As I read the book and discovered this new discuples, my main questions have been
+- What does causal analysis allow me to achieve beyond what mainstream statistics already does?
+    - Does it provide better or faster answers to the same problems?
+    - Can it help me solve new problems?
+- How do I get started?
+    - What is the aboslute minimum theoretical baggage needed to start applying causal analysis to real-world problems?
+    - What software packages should I get familiar with?
+
+In this blog article, I will try and answer the first question using a case study on employee racial discrimination. As chapter 9 of TBoW explains, traditional ansalyses have not given a satisfying answer to this important class of problems.
+
+In what follows, I will try and apply causal inference tools to unpick the problems behind a  question like "does organisation XYZ discriminate against its people?". I will be mostly concerend with the intuitions rather than mathematical rigour and the ability to generalise to other problem classes. I write this blog mostly for myself, to check if I really understood what TBoW had to say about mediation analysis.
+
+- minimalist code
+- intuitions behind math equations
+
+
+[
 I have recently read Judea Pearl and Dana McKenzie’s [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/), which is an introduction to causal inference. I found the book to be autobiographical as it describes the tensions and frustrations experienced by J. Peal with traditional statistics, which seeks to learn from data without assuming a particular model. Causal inference, meanwhile, requires a model-based view, i.e. an assumption about the generative mechanism underlying the observed data.
 
 Pearl bases his demonstration of the benefits of causal theory on real-world problems that need solving. In doig so, he avoids a common pitfall of engaging only on a philosophical level, which I have found to be sterile and unconvincing. (For example, see the endless debates between frequentist and bayesian statistics.) Instead, when asked to choose between the scientific status quo and an alternative - here, the so-called Causal Revolution - one should ask “How does the new thing help to solve existing problems better/faster? Does it help to solve new problems?”. In this blog article, I apply causal analysis to a classic problem in statistical inference. I will also play with causal diagrams to assess if they are as useful as J. Pearl claims.
 
+- don't assess the book as a literary commentary but discuss its main conclusions - 
+]
 ### Promotion cycles at BigBankCorp
 
-Chapter [5] of TBoW discusess the Berkeley admission paradox, where the Dean of the Berkeley university asked if the admission process discriminated against women. An analysis of admissions by gender showed that, while total admission rates were lower for female, they were higher or equal to males for each department. In what follows, I apply the same type of problem in a slightly different context where the head of a HR department asks if promotions are fair towards minority candidates. I use synthetic data to playa round with causal analysis tools to provide an answer.
+In Chapter 9, TBoW discusess the Berkeley admission paradox, where the Dean of the Berkeley university asked if the admission process discriminated against women. An analysis of admissions by gender showed that, while total admission rates were lower for female, they were higher or equal to males for each department. In what follows, I apply the same type of problem in a slightly different context where the head of a HR department asks if promotions are fair towards minority candidates. I use synthetic data to playa round with causal analysis tools to provide an answer.
+
+- Note: later realised that The HR admission use case is another popular use case described in various paper by Pearl
+- Note: 8572 employees, which comprises of 35% BAME employees ; two departments
+- What questions asked?
 
 [This is an example of Simpson’s paradox, which is not really a paradox after we realise that females applied to departments with lower admission rates. However, it's not clear if Berkeley's admissions were unfair towards female applicants.]
 
@@ -25,6 +54,7 @@ Overall promotion rates for BAME employees stand at 2.7%, almost half the rate f
 “Should we double check the figures?”, asked the HR analyst, looking confused. “Should I cut the data in a different way, for example, using more granular business departments? What to conclude if percentages are still similar between minorities and non? What if they show an inverse trend, as we thought would be the case? Hold on, what's the question, again?”
 
 A causal diagram can help visualise and answer the question. We might agree that the situation can be represented as follows - "might" because there could be multiple ways to model BigBankCorp's promotion process, as will become clear.
+- Note: thinking about all the factors influencing an employee's successful promotion and linked to their ethnic category, they vary by business unit, so the model is simple and described as
 
 
 <div class="mermaid" style="width:180px; margin:0 auto;">
@@ -193,7 +223,7 @@ The answer to this question, combined with BigBankCorp's goals, can guide the co
 
 As a side note, causal analysis enables "ationable insights", a term that has became fashionable but that many analytics projects fail to deliver. This situation may sound oddly familiar - a team present their final results to all project parties, everyone agrees that the content is "interesting", but no one knows what to do next. "Actionable" insights is a thing that everyone talks about but most have never experienced. 
 
-At times, I have felt that only controlled experiments could generate data used for real decisions, because observational data is almost always frought with confounders. Causal analysis provides tools to infer the results from interventions in the real world using obervational data - provided we have a causal model of the world.
+At times, I have felt that only controlled experiments could generate data used for real decisions, because observational data is almost always fraught with confounders. Causal analysis provides tools to infer the results from interventions in the real world using obervational data - provided we have a causal model of the world.
 
 Going back to BigBankCorp's use case, remember that the total effect of ethnic group on promotion rates is [0.03912082709307785], as shown on the first chart. Direct and indirect effects are calculated by imagining scenarios where some attributes change, and measuring the impact. It is like simulating and comparing different worlds.
 
@@ -276,17 +306,43 @@ class MediationMeasurementBinary:
 
 That means that the choice of business unit by itself drives a of 2.1% of promotions, i.e. not miles away from the 2.9% direct effect. From an intervention perspective, if BigBankCorp's primary concern was to close the promotion gap, management should still focus on discrimination, but may decide otherwise if the indirect effect had been larger than the direct one.
 
-Why do direct and indirect effects don't add up? Mediation theory teaches us that it's due to interactions between the direct effect and the mediator (add source). In our context, it means that the intensity of discrimination is not the same for each business unit.
+#### Non additive effects
 
-It helps me to move away from probabilities for a second and think about individuals. If effects added up, the gap in promotees could be neatly separated beetween individuals who made the wrong business unit choice, and those who were discriminated against. It's unlikely to happen in reality, as discrimination may impact business units differently, e.g. with a higher discrimination in B2B vs Consumer. 
+Direct and indirect effects don't add up if the direct effect varies with the mediator (add source). For BigBankCorp, this means that the intensity  of discrimination varies by business unit. The previous chart  reveals it, as the gap between the pale brown consumer bars is smaller than the gap between the dusky purple B2B bars.
 
-That is exactly what happens at BigBankCorp. Looking back at promotion rates by business unit, the difference is almost 4 times bigger in B2B, so there are interactions going on. To be clear, conditioning on the mediator value neutralises the mediating effect to exhibit only the direct effect, and reveals any interactions at play if direct effects vary by mediation value.
+It's easier when looking at the same numbers in a table 
 
-If you look at how `model2` generates direct effect, you will see a flat rejection rate of 50% for BAME employees that doesn't vary by business unit. That sounds like a linear rate that should prevent any interactions but, in fact, it's only linear in the log-probability space [demo code].
 
-If BigBankCorp's HR successfully remove discrimination before next year's round of promotions, only the natural indirect effect will remain. If the Head of HR asks if a successful intervention will close the promotion gap between employee types, the analyst can confidently explain why there will still remain a difference that is expected to amount to 2.1%.
+|          | Non-BAME | BAME | CDE  | 
+|----------|----------|------|------|
+| B2B      | 8.3      | 3.7  | -4.6 | 
+| Consumer | 2.1      | 1.0  | -1.1 | 
+
+If the CDE values were approximately the same for each business unit, we could rule out interactions, and effects would add up to the total effect. CDE stands for Controlled Direct Effect and carries the same meaning as the NDE, only holding the business unit constant. It asks - Within each business unit, how many BAME employees would have been promoted if not for their ethnic category? Holding the mediator value constant neutralises any indirect effect, hence allowing discrimination only. About 4.6% of BAME individuals in BAME were not promoted due to discrimination, and this is over 4 times higher than in Consumer, so the direct effect does interact with the mediating effect.
+
+As a side note, that result can be surprising because in `model2` [incl link], discrimination is built in through a flat 50% rejection rule via `drop_minority_application`. This design suggests that discrimation does not vary by business unit, although after more careful inspection this is only true in the log-probability space, as the CDE then becomes
+
+$\log \{0.5 \times p(Op \vert E_{non}, B_{b})\} - \log p(Op \vert E_{non}, B_{b}) = log {0.5}$
+
+for each business unit b. So, the results from the sample are consistent with the data generative process.
+
+[REMOVE] If effects added up, the difference in promotees could be neatly separated beetween BAME inviduals who did not get promoted due to the business unit they chose (more BAME employees work in Consumer compared to non-BAME), and those who were discriminated against. But, effects are more likely intertwined, as discrimination may impact business units differently, e.g. with a higher discrimination in B2B vs Consumer.
+
+TODO: Don't add up but reconciliation
+TODO: necessary and sufficient
+
+#### Implications for interventions
+
+If BigBankCorp's HR successfully remove discrimination before next year's round of promotions, only the natural indirect effect will remain. So, if the Head of HR asks if a successful intervention will close the promotion gap between employee types, the analyst should revise their expectaions - ending discrimination will reduce the gap, but there will remain an expected difference of c.2.1% owing to employees' business unit choices.
 
 With no direct effect, all that remain are indirect effects, which by themselves amount to an expected 2.1% of BAME employees. The literature refers to this measurement as the sufficient cause for indirect effects, i.e. excluding any direct mechanism. Similarly, the 2.9% figure referred to the sufficient cause for direct effect (excluding any mediation mechanism). The difference between total effects and sufficient causes are called necessary. For example, the necessary mediation effect here is 3.9-2.9=1.0, which corresponds to what discrimination on its own can't explain, i.e. the part the direct effect that relies on mediation to exist. The concept of Sufficient and Necessary causes have connections to legal [] - see [this] for more details
+
+### More comments
+- counterfactuals
+- working with causal models
+    - more complex models
+    - automated identification
+- 
 
 ### Conclusion
 
