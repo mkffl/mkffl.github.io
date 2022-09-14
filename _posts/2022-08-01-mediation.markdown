@@ -1,48 +1,38 @@
 ---
-title: Practical Application of Causal Analysis
+title: Data analysis using causal models
 layout: post
 ---
 
-I have recently read [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/) by Judea Pearl and Dana McKenzie. It is an introduction to causal inference, which aims to answer causal questions using data. The book is written from the perspective of J. Pearl, who has made major contributions to this field. 
+I have recently read [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/) by Judea Pearl and Dana McKenzie. It is an introduction to causal inference, which estimates the impact of changes in conditions (treatments, external interventions, etc.) using sample data. The book is written from the perspective of J. Pearl, a researcher who has made major contributions to the field.
 
-Through 10 chapters, the book illustrates key concepts of causal analysis with applications. A number of pages also discuss the differences between traditional stats and causal analysis, and J. Pearl's own experience (and frustrations) sometimes come out from the tone and anecdotes.
+In 10 chapters, the book covers the key concepts of causal analysis and discusses differences between traditional stats and causal analysis. J. Pearl's own experience and frustrations with mainstream statistics  become apparent through the tone and anecdotes chosen. Though I think the book could have done with fewer autobiographical passages, overall it is a useful introduction to causal thinking for beginners like myself. Its focus on the practical benefits of causal theory keeps it away from never-ending philosophical debates, as sometimes happens in books about frequentist vs bayesian statistics.
 
-Though I think the book could have done with fewer autobiographic passages, it is a useful introduction to causal thinking for beginners like myself. The focus of the book is primarly on the practical benefits of causal theory, and thus it avoids a common pitfall of academic debates - I am looking at you, bayesians vs frequentists.
+While reading one of the last chapters on mediation analysis, I thought of several past analytical problems where the methods described would have helped me. This blog post builds on this chapter to answer common questions an HR department may have.
 
-As I read the book and discovered this new discuples, my main questions have been
-- What does causal analysis allow me to achieve beyond what mainstream statistics already does?
-    - Does it provide better or faster answers to the same problems?
-    - Can it help me solve new problems?
-- How do I get started?
-    - What is the aboslute minimum theoretical baggage needed to start applying causal analysis to real-world problems?
-    - What software packages should I get familiar with?
+In what follows, I will introduce a small use case, then identify direct and mediated effects, and measure these effects to estimate the impact of potential interventions. 
 
-In this blog article, I will try and answer the first question using a case study on employee racial discrimination. As chapter 9 of TBoW explains, traditional ansalyses have not given a satisfying answer to this important class of problems.
+As I started writing this blog, I set the following goals
 
-In what follows, I will try and apply causal inference tools to unpick the problems behind a  question like "does organisation XYZ discriminate against its people?". I will be mostly concerend with the intuitions rather than mathematical rigour and the ability to generalise to other problem classes. I write this blog mostly for myself, to check if I really understood what TBoW had to say about mediation analysis.
+- Change the background story
+  - Just using the same methods in a different context helps validate my understanding
+  - I also write data generating processes to sample the data from as a way, as a validation mechanism
+- Write a simple code implementation
+  - Simplified, custom code implementation is the ultimate way to check my understanding of abstract/mathematical concepts
+  - Minimalist code also helps me get comfortable with real-world packages like [dagitty](http://www.dagitty.net/) of [doWhy](https://github.com/py-why/dowhy)
+- Further break down mathematic formula
+  - The book’s demonstrations are written in a top-down style that is reminiscent of academic papers
+  - I learn best by combining it with a bottom-up/inductive approach, starting from specific examples to the general case
 
-- minimalist code
-- intuitions behind math equations
-
-
-[
-I have recently read Judea Pearl and Dana McKenzie’s [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/), which is an introduction to causal inference. I found the book to be autobiographical as it describes the tensions and frustrations experienced by J. Peal with traditional statistics, which seeks to learn from data without assuming a particular model. Causal inference, meanwhile, requires a model-based view, i.e. an assumption about the generative mechanism underlying the observed data.
-
-Pearl bases his demonstration of the benefits of causal theory on real-world problems that need solving. In doig so, he avoids a common pitfall of engaging only on a philosophical level, which I have found to be sterile and unconvincing. (For example, see the endless debates between frequentist and bayesian statistics.) Instead, when asked to choose between the scientific status quo and an alternative - here, the so-called Causal Revolution - one should ask “How does the new thing help to solve existing problems better/faster? Does it help to solve new problems?”. In this blog article, I apply causal analysis to a classic problem in statistical inference. I will also play with causal diagrams to assess if they are as useful as J. Pearl claims.
-
-- don't assess the book as a literary commentary but discuss its main conclusions - 
-]
 ### Promotion cycles at BigBankCorp
 
-In Chapter 9, TBoW discusess the Berkeley admission paradox, where the Dean of the Berkeley university asked if the admission process discriminated against women. An analysis of admissions by gender showed that, while total admission rates were lower for female, they were higher or equal to males for each department. In what follows, I apply the same type of problem in a slightly different context where the head of a HR department asks if promotions are fair towards minority candidates. I use synthetic data to playa round with causal analysis tools to provide an answer.
+Chapter 9 in TBoW gives an historical account of the U.C. Berkeley admission paradox, where the University's dean wanted to know if the admission process discriminated against women. Numbers showed that, while total admission rates were lower for female, they were higher or equal to males for each department. 
+
+I apply the same type of problem - known as Simpson's paradox - using an example drawn from past experience. In my old company, HR asked our team if minority employees were discriminated against during promotion rounds. This happened around the time of George Floyd’s death in the US, which prompted internal discussions about fairness for blacks and minorities in general. Imagine that BigBankCorp, a large lending company, reviews junior staff performance on an annual basis to determine if they are ready to move to middle management positions. HR ask you if, on the basis of the data below, the promotion process is unfair towards minority employees, which in the UK are often identified as Black Asian and Middle Eastern (BAME).
 
 - Note: later realised that The HR admission use case is another popular use case described in various paper by Pearl
 - Note: 8572 employees, which comprises of 35% BAME employees ; two departments
 - What questions asked?
 
-[This is an example of Simpson’s paradox, which is not really a paradox after we realise that females applied to departments with lower admission rates. However, it's not clear if Berkeley's admissions were unfair towards female applicants.]
-
-In my old company, HR asked our team if minority employees were discriminated against during promotion rounds. This happened around the time of George Floyd’s death in the US, which prompted internal discussions about fairness for blacks and minorities in general. Imagine that BigBankCorp, a large lending company, annually reviews the performance of its junior staff to determine if they are ready to move to middle management positions. HR ask you if, on the basis of the data below, the promotion process is unfair towards minority employees, which in the UK are often identified as Black Asian and Middle Eastern (BAME).
 
 ### A. Identifying discrimination
 
