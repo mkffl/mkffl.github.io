@@ -165,12 +165,11 @@ A final note on causal model selection: if BigBankCorp was a real bank, we may a
 
 Causal models should be constantly reviewed and critiqued. So far, I have defined discrimination as the direct effect of E on O, though other discriminatory mechanisms could happen e.g. when BigBankCorp hires new employees by influencing which business unit they apply for. In my opinion, this is unlikely to happen and I think BAME individuals would self-select the department they choose to work in. But competing views should be voiced, and teams should aim for a consensus.
 
-That causal inference requires an assumption about the underlying model can be seen as a weakness, but I'd think about it as a small price to pay for many more benefits. I think that one benefit of causal diagrams is to make it very clear what type of effect we want to measure.
-
+That causal inference requires an assumption about the underlying model can be seen as a weakness, but mainstream statistics also relies on assumptions to provide valid estimates. The choice to use a framework is transactional - do benefits outweigh costs?
 
 ### B. Keep your "controlling urges" in check
 
-The previously described approach was also applied by Bikel, U.C. Berkeley's analyst appointed by the dean to report any evidence of discrimination. Bikel saw that admission rates by department (math, biology, etc.) were not lower for females, which he took as a decisive argument against female discrimimination. But the story doesn't stop here as the book reports on a conversation between Bikel and Krushke, another statistician who got interested in the case and claimed that Bikel's analysis did not prove abence of discrimination. 
+The previous analytical approach was applied by Bikel, U.C. Berkeley's analyst appointed by the dean to report any evidence of discrimination. Bikel saw that admission rates by department (math, biology, etc.) were not lower for females, which he took as a decisive argument against female discrimimination. But the story doesn't stop here as the book reports on a conversation between Bikel and Krushke, another statistician who got interested in the case and claimed that Bikel's analysis did not prove abence of discrimination. 
 
 Krushke built a simple numeric example that I could not access the original document because of academic paywalls, so I use the notes from TBoW to cook up a hopefully similar model and apply it to BigBankCorp. It will illustrate another type of causal effect called a collider, which the authors use to debunk the deeply anchored myth that statistical analysis should always hold observed variables to correctly estimate effects.
 
