@@ -3,24 +3,19 @@ title: Adventures in Causal Inference
 layout: post
 ---
 
-I have recently read [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/) by Judea Pearl and Dana McKenzie. It is an introduction to causal inference, which estimates the impact of changes in conditions (treatments, external interventions, etc.) on outcomes using sample data. The majority of the analytical tools described in the book were developed by J. Pearl's research team in the last 4 decades.
+I have recently read [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/) by Judea Pearl and Dana McKenzie. It is an introduction to causal inference, which estimates the impact of changes in conditions (treatments, external interventions, etc.) on outcomes using sample data. In 10 chapters, the book covers key concepts of causality and discusses the differences with mainstream statistics, with which J. Pearl's own experience and frustrations become apparent at times.
 
-In 10 chapters, the book covers the key concepts of causal analysis and discusses its differences with mainstream statistics, with which J. Pearl's own experience and frustrations become apparent at times, and I think that itcould have done with fewer autobiographical passages.
+Though I think that TBoW have done with fewer autobiographical passages, it does more than narrate a squabble between scientists as it includes several use cases to illustrate the benefits of causal inference. It seems that J. Pearl has been obsessed with building useful tools for practitioners by re-inventing the way we learn from data.
 
-However, TBoW does more than narrate a squabble between scientists as it includes several use cases to illustrate the benefits of causal inference. It seems that throughout his academic career, J. Pearl's has sought to build useful tools for practitioners by re-inventing the way we learn from data.
-
-While reading one of the last chapters on mediation analysis, I thought of several past analytical problems where the methods described would have helped me. This blog post builds on this chapter to answer common questions an HR department may have.
-
-In what follows, I will introduce the use case, then identify direct and mediated effects, and measure these effects to estimate the impact of potential interventions.
-
+While reading one of the last chapters on mediation analysis, I thought of several past analytical problems where the methods described would have helped me. This blog post builds on this chapter to answer common questions an HR department may have. In what follows, I will introduce the use case, then identify direct and mediated effects, and measure these effects to estimate the impact of potential interventions.
 
 ### Promotion cycles at BigBankCorp
 
-Chapter 9 in TBoW gives an historical account of the U.C. Berkeley admission paradox, where the University's dean wanted to know if the admission process discriminated against women. Numbers showed that, while total admission rates were lower for female, they were higher or equal to males for each department. 
+Chapter 9 in TBoW gives an historical account of the U.C. Berkeley admission paradox, where the University's dean wanted to know if the admission process discriminated against women. Overall admission rates were lower for female but  higher or equal to males for each department.
 
-I apply the same type of problem - known as Simpson's paradox - using an example drawn from past experience. In my old company, HR asked our team if minority employees were discriminated against during promotion rounds. This happened around the time of George Floyd’s death in the US, which prompted internal discussions about fairness for blacks and minorities in general. 
+I apply the same type of problem - known as Simpson's paradox - using an example drawn from past experience. In my old company, Human Resources asked our team if minority employees were discriminated against during promotion rounds. This happened around the time of George Floyd’s death in the US, which prompted internal discussions about fairness for blacks and minorities in general.
 
-Imagine that BigBankCorp, a large lending company, reviews junior staff performance on an annual basis to determine if they are ready to move to middle management positions. HR looked want to know if the promotion process is unfair towards minority employees, which in the UK are often identified as Black Asian and Middle Eastern (BAME).
+Imagine that BigBankCorp, a large lending company, reviews junior staff performance on an annual basis to determine if they are ready to move to middle management positions. Human Resources want to know if the promotion process is unfair towards minority employees, which in the UK are often identified as Black Asian and Middle Eastern (BAME).
 
 ### A. Identifying discrimination
 
@@ -68,31 +63,32 @@ The analytical solution is to compare promotion rates O between values of E whil
 
 In fact, the data sample behind the above charts was generated from a process where E only influences O via B.
 
-[source](https://dev.azure.com/mkiffel/_git/personal-blog?path=/blog-mediator/blog_mediation/model.py&version=GBmain-mediation&line=8&lineEnd=9&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
+[source](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/model.py&version=GBmain-mediation&line=7&lineEnd=8&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
 ```python
 model1 = pm.Model()
 
 with model1:
-    ethnic_category = pm.Bernoulli("ethnic_category", 50 / 100.0)
+    ethnic_category = pm.Bernoulli("ethnic_category", 35 / 100.0)
 
-    p_b2b = if_else(
-        is_equal(ethnic_category, 1.0),
+    p_consumer = if_else(
+        is_equal(ethnic_category, Employee.BAME),
         # BAME
         # p(department=b2b|ethnic_category=BAME) = 21.0%
-        21 / 100.0,
+        67 / 100.0,
         # Non BAME
-        67 / 100.0
+        33 / 100.0
     )
 
-    business_unit = pm.Bernoulli("business_unit", p_b2b)
+    business_unit = pm.Bernoulli("business_unit", p_consumer)
 
     p_promotion = if_else(
-        is_equal(business_unit, 1.0),
+        is_equal(business_unit, Business.CONSUMER),
+        # Consumer
+        # p(outcome=promotion|business_unit=b2b) = 1.34%
+        1.34328358 / 100.0,
         # b2b
         # p(outcome=promotion|business_unit=b2b) = 7.27%
-        7.27272727 / 100.0,
-        # Consumer
-        1.34328358 / 100.0
+        7.27272727 / 100.0
     )
 
     outcome = pm.Bernoulli("promotion", p_promotion)
@@ -112,34 +108,37 @@ Here, every data generating process is built as a `pymc3` model, a random variab
 
 With a discriminatory process, promotion rates should be lower for BAME employees even when holding the business unit constant. To double check this, let's emulates a direct effect using another model.
 
-TODO: add source
+<p id="model2"></p>
+[source](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/model.py&version=GBmain-mediation&line=35&lineEnd=36&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
 ```python
 model2 = pm.Model()
 
 with model2:
-    ethnic_category = pm.Bernoulli("ethnic_category", 65 / 100.0)
+    # p(E=BAME)
+    ethnic_category = pm.Bernoulli("ethnic_category", 35 / 100.0)
 
-    business_unit = if_else(is_equal(ethnic_category, 1.0), 60 / 100.0, 40 / 100.0)
+    p_consumer = if_else(is_equal(ethnic_category, Employee.BAME), 60 / 100.0, 20 / 100.0)
 
-    business_unit = pm.Bernoulli("business_unit", business_unit)
+    business_unit = pm.Bernoulli("business_unit", p_consumer)
 
-    drop_minority_application = pm.Bernoulli("drop_minority_application", 50 / 100.0)
+    bame_rejection = pm.Bernoulli("bame_rejection", 50 / 100.0)
 
     p_promotion = if_else(
-        # If minority
-        is_equal(ethnic_category, 0.0),
+        is_equal(ethnic_category, Employee.BAME),
+        # BAME
         if_else(
-            # If is discarded
-            is_equal(drop_minority_application, 1.0),
+            is_equal(bame_rejection, 1.0),
+            # Promotion is rejected
             0.0,
             if_else(
-                # If b-to-b
-                is_equal(business_unit, 1.0),
-                20 / 100.0,
-                12 / 100.0,
+                is_equal(business_unit, Business.CONSUMER),
+                # Consumer
+                2 / 100.0,
+                # b2b
+                8 / 100.0,
             ),
         ),
-        if_else(is_equal(business_unit, 1.0), 20 / 100.0, 12 / 100.0),
+        if_else(is_equal(business_unit, Business.CONSUMER), 2 / 100.0, 8 / 100.0),
     )
 
     outcome = pm.Bernoulli("promotion", p_promotion)
@@ -157,7 +156,9 @@ pymc3.model_to_graphviz(model2)
 
 Running the previous analysis on this model confirms the discriminatory effect. BAME candidates have a lower chance of acceptance even when holding the business unit constant.
 
+<p id="model2-chart1"></p>
 {% include mediation/mediation_analysis21_p1.html %}
+<p id="model2-chart2"></p>
 {% include mediation/mediation_analysis21_p2.html %}
 
 A final note on causal model selection: if BigBankCorp was a real bank, we may ask which of `model1` or `model2` reflects the real selection process. However, this question is not very useful because models are first and foremost objects that encapsulate our beliefs about the world; they are not mathematical propositions awaiting a proof. (It's a bit more complicated because it is possible to refute a model if it's at odds with the sample data observed).
@@ -213,7 +214,6 @@ This is just an example and, in general, the correct query given a causal model 
 
 ### C. Measuring mediation
 
-## TODO: this is based on model2. Must be clearly stated
 
 In the previous section we detected effects to answer questions like 
 
@@ -234,7 +234,7 @@ For example, if discrimination accounts for only a small part of the promotion g
 </details>
 <b>
 
-The reference scenario is based on model 2 [TODO: link] seen previously. The first chart [TODO: link] showed that the total effect of ethnic group on promotion rates is -4.9%, which we want to decompose into direct and indirect effects. The answer will appear by reframing the problem as What-If (or How many-If) scenarios. For the direct effect, we could ask
+The following is based on [model 2](#model2). The [first chart](#model2-chart1) showed that the total effect of ethnic group on promotion rates is -4.9%, which we want to decompose into direct and indirect effects. The answer will appear by reframing the problem as What-If (or How many-If) scenarios. For the direct effect, we could ask
 
 > How many BAME people would have been promoted if the same proportion worked in B2B as for non-BAME employees?
 
@@ -247,12 +247,10 @@ Then, compare this number with a baseline scenario where BAME employees get trea
 
 $\text{de} = \sum_b p(Op \vert Eb, BUb)*p(B_b \vert Enon) - p(Op \vert E_non)$
 
-TODO: update all numbers
+
 In the literature, the direct effect is called "natural" to refer to the baseline weights of the mediating variable, and it's calculated by `natural_direct_effect` below. For BigBankCorp, the value is -3.9%, i.e. ethnic category reduces performance by c. 3.9 percentage points, or equivalently, about 3.9 percent of BAME candidates don't get promoted solely because of discrimination. That's about 80%% of the total effect, so BigBankCorp has every reason to make the fight against discrimination their top priority.
 
-TODO: update with latest code
-
-source
+[source](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/util.py&version=GBmain-mediation&line=81&lineEnd=82&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
 ```python
 class MediationMeasurementBinary:
     def __init__(self, data):
@@ -300,7 +298,7 @@ $\text{nie}=\sum_b p(Op \vert Enon, BUb)*(p(BUb \vert Ebame) - p(BUb \vert Eno
 
 which estimates the number of non-BAME promotees in the hypothetical scenario that only the frequency of business units would differ. The method `natural_indirect_effect` computes this quantity, estimated at 2.5% for BigBankCorp.
 
-source
+[source](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/util.py&version=GBmain-mediation&line=124&lineEnd=125&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
 ```python
 class MediationMeasurementBinary:
     # ... 
@@ -319,7 +317,7 @@ That means that the choice of business unit by itself explains 2.5% of promotion
 
 #### Non additive effects
 
-Direct and indirect effects don't add up if the direct effect varies with the mediator. For BigBankCorp, this means that the intensity of discrimination varies by business unit. The previous chart (TODO: link) reveals it, as the gap between the pale brown consumer bars is smaller than the gap between the dusky purple B2B bars.
+Direct and indirect effects don't add up if the direct effect varies with the mediator. For BigBankCorp, this means that the intensity of discrimination varies by business unit. The [previous chart](#model2-chart2) reveals it, as the gap between the pale brown consumer bars is smaller than the gap between the dusky purple B2B bars.
 
 The difference between B2B and Consumer is more obvious when seen as a table
 
@@ -401,7 +399,7 @@ I use pymc3 to craft and sample from imaginary Data Generatin Processes (DGPs). 
 
 In general, simulated data - or fake/dummy/synthetic (that one sounds more scientic) - can be generated using `scipy` or `numpy`'s random variables, which is fine for simple DGPs like a multivariate gaussian, but beyond this I find the code unreadable. Probability graphs are easier to read because they define the process for one observation, and the sampling method takes care of the rest.
 
-`pymc3` might sound overkill for this, because I don't need any bayesian inference functionality just to create DGPs, but the library interface is simple and it comes with useful tools like diagram visualisation. My top choice would have been scala's `probability_monad`, which I used for another article of this blog (TODO: link), but python has causal inference packages like [doWhy](https://github.com/py-why/dowhy).
+`pymc3` might sound overkill for this, because I don't need any bayesian inference functionality just to create DGPs, but the library interface is simple and it comes with useful tools like diagram visualisation. My top choice would have been scala's `probability_monad`, which I used for [another article]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) of this blog, but python has causal inference packages like [doWhy](https://github.com/py-why/dowhy).
 
 A bayesian probabilistic graph is a set of conditional probability distributions (CPD) for each node. (starting nodes like Citizenship are just prior probabilities, i.e. not conditioned on any variables). To get a DGP, I need to define each node's probability distribution, conditioned on the depending nodes. For example, Business Unit ($p(B_b \vert C_c, E_b)$) is Bernoulli rv defined for all 4 cases corresponding to the values that (C, E) can jointly take.
 
@@ -462,7 +460,7 @@ It's possible to verify that requirements are met by way of sampling. That appro
 
 For the example of Requirement 1, let's sample say, 50 datasets, and compute $p(O \vert E_{bame}, B_b)-p(O \vert E_{non-bame}, B_b)$, for each business unit. `probability4` does it for one sample dataset.
 
-source
+[source](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/util.py&version=GBmain-mediation&line=52&lineEnd=53&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
 ```python
 def probability4(data):
     """ p(promotion | E_bame, B_b) - p(promotion | E_non, B_b) 
@@ -486,6 +484,7 @@ def probability4(data):
 
 Repeating this 50 times and looking at the results confirms that the chances of promotion by business unit are the same for each ethnic category. The sample distributions are clearly centered around 0. If still in doubt, just draw more samples!
 
+[source](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/recipe.py&version=GBmain-mediation&line=218&lineEnd=219&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
 {% include mediation/mediation_analysis41.html %}
 
 
