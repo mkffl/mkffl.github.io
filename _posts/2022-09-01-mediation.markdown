@@ -19,14 +19,16 @@ Imagine that BigBankCorp, a large lending company, reviews junior staff performa
 
 ### A. Identifying discrimination
 
-BigBankCorp has almost 29,000 employees and 35% of them belong to the BAME category. An HR analyst looked a the chances of promotion for each ethnic categories.
+BigBankCorp has almost 29,000 employees and 35% of them belong to the BAME category. A HR manager looked a the chances of promotion for each ethnic categories.
 
 {% include mediation/mediation_analysis11_p1.html %}
+<p id="model1-chart2"></p>
+
 {% include mediation/mediation_analysis11_p2.html %}
 
 The promotion rate of BAME employees stands at 3.5%, which is about 35% lower than the rate of non-BAME employees. But, the chances of promotion by business unit (Consumer vs business-to-business) are so similar that we may think the difference would only reflect sampling variations (not true differences in means).
 
-The results cause some confusion. The HR analyst asks:
+The results cause some confusion. The HR manager asks:
 “Should we double check the numbers?"
 
 "Should I cut the data in a different way, for example, using more granular business departments?"
@@ -39,9 +41,9 @@ A causal diagram can help formulate the problem and its context:
 
 <div class="mermaid" style="width:180px; margin:0 auto;">
 graph TD
-E((ethnic_category))
-D((business_unit))
-O((outcome))
+E((E: Ethnic_category))
+D((B: Business_unit))
+O((O: Outcome))
 
 E --> D
 E -->|?| O
@@ -57,7 +59,7 @@ A few observations
 - However, it helps to formulate the business question *as if* ethnic category could be manipulated - what happens to a non-BAME employee's chances of promotions if they became BAME?
 - One can further ask - if they became a BAME employee **but** their inital choice of business unit remains the same, what would their chances of promotions be?
 
-To rephrase the last bullet: swapping E to BAME changes the mix ratio of B, but to identify a possible direct effect, we keep B the same and we ask if there remains any change in promotion outcomes.
+To rephrase the last bullet: swapping E to BAME changes the distribution of B, but to identify a possible direct effect, we keep B the same and we ask if there remains any change in promotion outcomes.
 
 The analytical solution is to compare promotion rates O between values of E while holding B constant. The second chart above shows no difference in outcomes, so under our causal model, there is no reason to believe that the bank's review process discriminates on a racial basis.
 
@@ -161,33 +163,31 @@ Running the previous analysis on this model confirms the discriminatory effect. 
 <p id="model2-chart2"></p>
 {% include mediation/mediation_analysis21_p2.html %}
 
-A final note on causal model selection: if BigBankCorp was a real bank, we may ask which of `model1` or `model2` reflects the real selection process. However, this question is not very useful because models are first and foremost objects that encapsulate our beliefs about the world; they are not mathematical propositions awaiting a proof. (It's a bit more complicated because it is possible to refute a model if it's at odds with the sample data observed).
-
-Causal models should be constantly reviewed and critiqued. So far, I have defined discrimination as the direct effect of E on O, though other discriminatory mechanisms could happen e.g. when BigBankCorp hires new employees by influencing which business unit they apply for. In my opinion, this is unlikely to happen and I think BAME individuals would self-select the department they choose to work in. But competing views should be voiced, and teams should aim for a consensus.
-
-That causal inference requires an assumption about the underlying model can be seen as a weakness, but mainstream statistics also relies on assumptions to provide valid estimates. The choice to use a framework is transactional - do benefits outweigh costs?
+A final note on causal model selection
+- We may ask which of `model1` or `model2` reflects the real selection process (if BigBankCorp was a real company), but it is not very useful because models are  objects that encapsulate our beliefs about the world, not mathematical propositions awaiting a proof. (It's a bit more complicated because it is possible to refute a model if it's at odds with the sample data observed).
+- Causal models should be constantly reviewed and critiqued. One could argue that other factors of promotion are missing and suggest an alternative causal diagram, which may become the new consensus.
+- That causal inference requires an assumption about the underlying model can be seen as a weakness, but mainstream statistics also relies on assumptions to provide valid estimates. I like to think about framework choices in a transactional way - do benefits (the class of business problems that the framework solves) outweigh the costs (the required causal assumptions)?
 
 ### B. Keep your "controlling urges" in check
 
-The previous analytical approach was applied by Bikel, U.C. Berkeley's analyst appointed by the dean to report any evidence of discrimination. Bikel saw that admission rates by department (math, biology, etc.) were not lower for females, which he took as a decisive argument against female discrimimination. But the story doesn't stop here as the book reports on a conversation between Bikel and Krushke, another statistician who got interested in the case and claimed that Bikel's analysis did not prove abence of discrimination. 
+The previous analytical approach was applied by Bikel, U.C. Berkeley's analyst appointed by the dean to report any evidence of discrimination. Bikel saw that admission rates by department (math, biology, etc.) were not lower for females, which he took as a decisive argument against female discrimimination. But the story doesn't stop there. TBoW tells about a conversation between Bikel and Krushke, another statistician who got interested in the case and claimed that Bikel's analysis did not prove abence of discrimination. 
 
-Krushke built a simple numeric example that I could not access the original document because of academic paywalls, so I use the notes from TBoW to cook up a hopefully similar model and apply it to BigBankCorp. It will illustrate another type of causal effect called a collider, which the authors use to debunk the deeply anchored myth that statistical analysis should always hold observed variables to correctly estimate effects.
+Krushke built a simple numeric example to demonstrate that the same results may apply under different causal assumtions. I could not access the original document because of academic paywalls, so I use TBoW's descriptions to cook up a hopefully similar model. It will illustrate type of causal effect called a collider, which the authors use to debunk a deeply anchored myth: statistical analysis should always "control for" observed variables to correctly estimate effects.
 
-In `model3`, the source of discrimination are candidates' citizenship (C), which takes values "local" or "expat". The logic of disrimination is very simple - local BAME employees are always rejected, expatriate non-BAME employees are always rejected, and their chances of promotion are similar otherwise. These strong assumptions may not seem realistic, but they make the maths easier, and the point would stand with smoother assumptions. Ultimately, the goal is to show that there exists a model with discrimination, which returns the same query results as `model1`.
+My goal is to show that there exists a model with discrimination that returns the same results as [Query 2](#model1-chart2) from `model1`. In `model3`, the source of discrimination is candidates' citizenship (C), which takes values "local" or "expat". The logic of disrimination is very simple - local BAME employees are always rejected, expatriate non-BAME employees are always rejected, and their chances of promotion are similar otherwise. These strong assumptions may not seem realistic, but they make the maths easier, and the point would stand with smoother assumptions.
 
-The model definition is available at [provide link], and its graph below shows a direct link from E and C. 
+The model definition is available on the [same repo](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/model.py&version=GBmain-mediation&line=68&lineEnd=69&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents). Its graph shows a direct link from E and C. 
 
 {:refdef: style="text-align: center;"}
 ![Model 2 Diagram](/assets/analysis32_diagram.html.svg){: width="300"}
 {: refdef}
 
-Running the same queries as before gives the following results.
+Running Query 1 and Query 2 gives the following results.
 
 {% include mediation/mediation_analysis31_p1.html %}
 {% include mediation/mediation_analysis31_p2.html %}
 
-
-As expected, promotion rates are similar to `model1` and the differences are only due to sampling variations. In both models, the expected values of Outcome are the same, i.e. we would get the same ratios by repeatidly sampling, which the appendix shows alongside the derivations.
+As expected, promotion rates are similar to `model1`. The small differences only reflect sampling variations. The expected values of Outcome are the same, i.e. we would get the same ratios by repeatidly sampling, which the appendix shows alongside the derivations.
 
 Imagine that we correctly identify that the true generative process is `model3`, but we don't know if E connects directly to O with a value that's not zero. How would we know if BigBankCorp discriminates against BAME employees? 
 
@@ -207,7 +207,7 @@ But, if C is observed, then holding both C and B constant (Query 3) allows only 
 
 {% include mediation/mediation_analysis31_p3.html %}
 
-Contrary to statistical folk wisdom, one should not always hold a variable constant to correctly estimate parameters. The collider example shows that letting a collider variable freely change with its covariates can be a requirement.
+Here we have it: contrary to statistical folk wisdom, one should not always hold a variable constant to correctly estimate parameters. The collider example shows that letting a collider variable freely change with its covariates can be a requirement.
 
 This is just an example and, in general, the correct query given a causal model and a quantity to estimate is known by running causal algorithms. In some cases, no query can correctly capture the effect sought after.
 
