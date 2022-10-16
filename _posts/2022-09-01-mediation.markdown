@@ -209,12 +209,9 @@ But, if C is observed, then holding both C and B constant (Query 3) allows only 
 
 {% include mediation/mediation_analysis31_p3.html %}
 
-Here we have it: contrary to statistical folk wisdom, one should not always hold a variable constant to correctly estimate parameters. The collider example shows that letting a collider variable freely change with its covariates can be a requirement.
-
-This is just an example and, in general, the correct query given a causal model and a quantity to estimate is known by running causal algorithms. In some cases, no query can correctly capture the effect sought after.
+Contrary to statistical folk wisdom, one should *not* always hold a variable constant to correctly estimate parameters. The collider example shows that letting a collider variable freely change with its covariates can be necessary to capture the effect.
 
 ### C. Measuring mediation
-
 
 In the previous section we detected effects to answer questions like 
 
@@ -229,17 +226,18 @@ The answer, combined with BigBankCorp's strategic goals can then inform the comp
 For example, if discrimination accounts for only a small part of the promotion gap, the company may run an investigation and find the root cause to suppress it, but it may allocate the bulk of its resources to e.g. raising awareness of B2B career opportunities for BAME graduates.
 
 <details>
-    <summary>Actional insights</summary>
-    Causal analysis aims to deliver "actionable insights", a fashionable term that most analytics projects seem to fail to comply with. This situation may sound familiar: a team present their final results to all parties, everyone agrees that the content is "interesting", but at the end everyone wonders what to do next.
-    Observational data is almost always fraught with confounders, which make analysts nervous when they are asked if the data support an action, e.g. "Based on your results, do you think we should invest in/divest xyz?". Causal analysis is designed to answer this type of interventional questions.
+    <summary>Actionable insights</summary>
+    Causal analysis aims to deliver "actionable insights", a fashionable term that most analytics projects seem to fail to deliver. This situation may sound familiar: after a team present their final results, everyone agrees that the content is "interesting", but no one is really sure what to do next.
+    Observational data is almost always fraught with confounders, which make analysts nervous when they are asked if the data support an action, e.g. "Based on your results, do you think we should invest in/divest xyz?". Causal analysis is designed to answer interventional questions.
 </details>
 <b>
 
-The following is based on [model 2](#model2). The [first chart](#model2-chart1) showed that the total effect of ethnic group on promotion rates is -4.9%, which we want to decompose into direct and indirect effects. The answer will appear by reframing the problem as What-If (or How many-If) scenarios. For the direct effect, we could ask
+What follows is based on [model 2](#model2). The [first chart](#model2-chart1) showed that the total effect of ethnic group on promotion rates is -4.9%, which we want to decompose into direct and indirect effects. The answer will appear by reframing the problem as What-If (or How many-If) scenarios. For the direct effect, we could ask
 
 > How many BAME people would have been promoted if the same proportion worked in B2B as for non-BAME employees?
 
-Note that in this imaginary scenario, BAME promotion rates would be higher because the B2B promotion rate is higher. The answer works by keeping the observed BAME promotion percentage and weighing it by the non-BAME promotion percentage, which neutralises the difference in BAME employees' choice of business unit, i.e. it removes the indirect effect:
+Note that in this scenario, BAME promotion rates would be higher because a higher proportion will be in B2B, which has a higher promotion rate. The answer to the above question works by keeping the observed BAME promotion percentage and weighing it by the non-BAME promotion percentage, which neutralises the difference in BAME employees' choice of business unit, i.e. it removes the indirect effect:
+
 $p(O_p\vert E_{bame}, B_b) \times p(B_b \vert E_{non})$ for each business unit $b$.
 
 $\sum_b p(O_p \vert E_{bame}, B_b)*p(B_b \vert E_{non}) \times 8000$ BAME individuals would have been promoted if not for the discriminatory nature of BigBankCorp’s performance process.
@@ -249,7 +247,7 @@ Then, compare this number with a baseline scenario where BAME employees get trea
 $\text{de} = \sum_b p(Op \vert Eb, BUb)*p(B_b \vert Enon) - p(Op \vert E_non)$
 
 
-In the literature, the direct effect is called "natural" to refer to the baseline weights of the mediating variable, and it's calculated by `natural_direct_effect` below. For BigBankCorp, the value is -3.9%, i.e. ethnic category reduces performance by c. 3.9 percentage points, or equivalently, about 3.9 percent of BAME candidates don't get promoted solely because of discrimination. That's about 80%% of the total effect, so BigBankCorp has every reason to make the fight against discrimination their top priority.
+In the literature, the direct effect is called "natural" to refer to the baseline weights of the mediating variable, and it's calculated by `natural_direct_effect` below. For BigBankCorp, the value is -3.9%, i.e. ethnic category reduces performance by c. 3.9 percentage points, or equivalently, about 3.9 percent of BAME candidates don't get promoted solely because of discrimination. That's about 80% of the total effect, so BigBankCorp has every reason to make the fight against discrimination their top priority.
 
 [source](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/util.py&version=GBmain-mediation&line=81&lineEnd=82&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents)
 ```python
@@ -283,7 +281,7 @@ class MediationMeasurementBinary:
         )
 ```
 
-We may conclude that the indirect effect is the difference between the total and the direct effect, c.1%, and we are done. That NIE equals TE-NDE is not always true though, so let's compute NIE from first principles then discuss why effects don't always add up.
+We may conclude that the indirect effect is the difference between the total and the direct effect, c.1%, and we are done. NIE does is not always equal to TE-NDE, though, so let's compute NIE from first principles then discuss why effects don't always add up.
 
 The solution to indirect effect works by asking
 
@@ -314,7 +312,7 @@ class MediationMeasurementBinary:
         )
 ```
 
-That means that the choice of business unit by itself explains 2.5% of promotions, i.e. not miles away from the 3.9% direct effect. From an intervention perspective, this result confirms that BigBankCorp should focus on fighting discrimination, whether it prioritises ethics, or the its annual sustainability report.
+That means that the choice of business unit by itself explains 2.5% of promotions, which is not miles away from the 3.9% direct effect but smaller. From an intervention perspective, this result confirms that BigBankCorp should focus on fighting discrimination, whether top management prioritise ethics or numbers published the annual sustainability report.
 
 #### Non additive effects
 
@@ -386,8 +384,6 @@ $$
 $$
 
 Quite a rich idea in a compact formula.
-
-- More than aesthetics, engine behind inference; describe question in counterfactual terms, combine with model, translate into a query using observed data (if at all possible.)
 
 
 ### References
