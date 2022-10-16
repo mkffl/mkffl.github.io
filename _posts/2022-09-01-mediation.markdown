@@ -164,8 +164,8 @@ Running the previous analysis on this model confirms the discriminatory effect. 
 {% include mediation/mediation_analysis21_p2.html %}
 
 A final note on causal model selection
-- We may ask which of `model1` or `model2` reflects the real selection process (if BigBankCorp was a real company), but it is not very useful because models are  objects that encapsulate our beliefs about the world, not mathematical propositions awaiting a proof. (It's a bit more complicated because it is possible to refute a model if it's at odds with the sample data observed).
-- Causal models should be constantly reviewed and critiqued. One could argue that other factors of promotion are missing and suggest an alternative causal diagram, which may become the new consensus.
+- We may ask which of `model1` or `model2` reflects the real selection process (if BigBankCorp was a real company), but it is not very useful because models are  objects that encapsulate our beliefs about the world, not mathematical propositions awaiting a proof. (It's a bit more complicated because it is possible to refute a model if it's at odds with the sample data observed)
+- Causal models should be constantly reviewed and critiqued. One could argue that other factors of promotion are missing and suggest an alternative causal diagram, which may become the new consensus
 - That causal inference requires an assumption about the underlying model can be seen as a weakness, but mainstream statistics also requires assumptions for valid estimates. The need to provide a causal model is like a cost, so a question to keep in mind is "Do the benefits of causal inference compensate for its cost?"
 
 ### B. Keep your "controlling urges" in check
@@ -174,7 +174,7 @@ The previous analytical approach was applied by Bikel, a statistician from U.C. 
 
 Krushke built a simple numeric example to demonstrate that the same results may apply under different causal assumptions. I could not access the original document because of academic paywalls, so I use TBoW's descriptions to cook up a hopefully similar model. It will illustrate a type of causal effect called a collider, which the authors use to debunk a deeply anchored myth: statistical analysis should always "control for" observed variables to correctly estimate effects.
 
-`model3` shows that there exists a model with discrimination that returns the same results as [Query 2](#model1-chart2) from `model1`, where there was no discrimination. If a query returns the same results under two opposite models, then the query alone is not enough to prove a hypothesis such as "BigBankCorp's HR process is discriminatory". Both the query and the causal model are necessary to get the true answer. This illustrates the limits of a data-led approach as opposed to a (causal) model-led approach.
+`model3` will show that there exists a model with discrimination that returns the same results as [Query 2](#model1-chart2) from `model1`, where there was no discrimination. If a query returns the same results under two opposite models, then the query alone is not enough to prove a hypothesis such as "BigBankCorp's HR process is discriminatory". Both the query and the causal model would be necessary to get the true answer, which suggests that data-led decisions are not good enough - we need decisions based on causal models.
 
 In `model3`, the source of discrimination is candidates' citizenship (C), which takes values "local" or "expat". The logic of discrimination is very simple - local BAME employees are always rejected, expatriate non-BAME employees are always rejected, and their chances of promotion are similar otherwise. These strong assumptions may not seem realistic, but they make the maths easier, and the point would stand with smoother assumptions.
 
@@ -205,7 +205,7 @@ Under `model3`, B becomes a collider, a type of node that blocks information whe
 </details>
 <b>
 
-If C is observed, then holding both C and B constant (Query 3) allows only the direct effect to propagate, so this query answers the same question as Query 1.
+If C is observed, then holding both C and B constant (Query 3) allows only the direct effect to propagate, so this query also tells us if there is discrimination.
 
 {% include mediation/mediation_analysis31_p3.html %}
 
