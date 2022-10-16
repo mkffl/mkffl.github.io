@@ -5,7 +5,7 @@ layout: post
 
 I have recently read [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/) by Judea Pearl and Dana McKenzie. It is an introduction to causal inference, which estimates the impact of changes in conditions (treatments, external interventions, etc.) on outcomes using sample data. In 10 chapters, the book covers key concepts of causality and discusses the differences with mainstream statistics, with which J. Pearl's own experience and frustrations become apparent at times.
 
-Though I think that TBoW have done with fewer autobiographical passages, it does more than narrate a squabble between scientists as it includes several use cases to illustrate the benefits of causal inference. It seems that J. Pearl has been obsessed with building useful tools for practitioners by re-inventing the way we learn from data.
+Though I think TBoW could have done with fewer autobiographical passages, it does more than narrate a squabble between scientists.  as it includes several use cases to illustrate the benefits of causal inference. It seems that J. Pearl has been obsessed with building useful tools for practitioners by re-inventing the way we learn from data.
 
 While reading one of the last chapters on mediation analysis, I thought of several past analytical problems where the methods described would have helped me. This blog post builds on this chapter to answer common questions an HR department may have. In what follows, I will introduce the use case, then identify direct and mediated effects, and measure these effects to estimate the impact of potential interventions.
 
@@ -103,7 +103,7 @@ pymc3.model_to_graphviz(model1)
 ```
 
 {:refdef: style="text-align: center;"}
-![Model 2 Diagram](/assets/analysis12_diagram.html.svg){: width="180"}
+![Model 2 Diagram](/assets/analysis12_diagram.png){: width="180"}
 {: refdef}
 
 Here, every data generating process is built as a `pymc3` model, a random variable that can be thought of as a template of an employee-to-outcome instance. The model defines the existence and the true magnitude of every effect, so causal analysis results can be compared to the "ground truth".
@@ -153,7 +153,7 @@ pymc3.model_to_graphviz(model2)
 ```
 
 {:refdef: style="text-align: center;"}
-![Model 2 Diagram](/assets/analysis22_diagram.html.svg){: width="300"}
+![Model 2 Diagram](/assets/analysis22_diagram.png){: width="300"}
 {: refdef}
 
 Running the previous analysis on this model confirms the discriminatory effect. BAME candidates have a lower chance of acceptance even when holding the business unit constant.
@@ -174,12 +174,14 @@ The previous analytical approach was applied by Bikel, U.C. Berkeley's analyst a
 
 Krushke built a simple numeric example to demonstrate that the same results may apply under different causal assumtions. I could not access the original document because of academic paywalls, so I use TBoW's descriptions to cook up a hopefully similar model. It will illustrate type of causal effect called a collider, which the authors use to debunk a deeply anchored myth: statistical analysis should always "control for" observed variables to correctly estimate effects.
 
-My goal is to show that there exists a model with discrimination that returns the same results as [Query 2](#model1-chart2) from `model1`. In `model3`, the source of discrimination is candidates' citizenship (C), which takes values "local" or "expat". The logic of disrimination is very simple - local BAME employees are always rejected, expatriate non-BAME employees are always rejected, and their chances of promotion are similar otherwise. These strong assumptions may not seem realistic, but they make the maths easier, and the point would stand with smoother assumptions.
+`model3` shows that there exists a model with discrimination that returns the same results as [Query 2](#model1-chart2) from `model1`, where there was no discrimination. If a query returns the same results under two opposite models, then the query alone is not enough to prove a hypothesis such as "BigBankCorp's HR process is discriminatory". Both the query and the causal model are necessary to get the true answer. This illustrates the limits of a data-led approach as opposed to a (causal) model-led approach.
+
+ In `model3`, the source of discrimination is candidates' citizenship (C), which takes values "local" or "expat". The logic of disrimination is very simple - local BAME employees are always rejected, expatriate non-BAME employees are always rejected, and their chances of promotion are similar otherwise. These strong assumptions may not seem realistic, but they make the maths easier, and the point would stand with smoother assumptions.
 
 The model definition is available on the [same repo](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/model.py&version=GBmain-mediation&line=68&lineEnd=69&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents). Its graph shows a direct link from E and C. 
 
 {:refdef: style="text-align: center;"}
-![Model 2 Diagram](/assets/analysis32_diagram.html.svg){: width="300"}
+![Model 2 Diagram](/assets/analysis32_diagram.png){: width="300"}
 {: refdef}
 
 Running Query 1 and Query 2 gives the following results.
@@ -335,9 +337,9 @@ which can be rephrased as
 
 > For each business unit, what would the chances of promotions for BAME employees have been if not for their ethnic category?
 
-To emphasize discrimination. The question is similar to the NDE's, only at the business unit level. The corresponding query works by holding the mediator value constant to stop the indirect effect. About 4.6% of BAME individuals in B2B were not promoted due to discrimination, and this is over 5 times higher than in Consumer, so the direct effect clearly interact with mediation and effects are not additive.
+To emphasize discrimination. The question is similar to the NDE's, only at the business unit level. The corresponding query works by holding the business unit (i.e. the mediator) constant and comparing promotion rates. About 4.6% of BAME individuals in B2B were not promoted due to discrimination, and this is over 5 times higher than in Consumer, so the direct effect clearly interact with mediation and effects are not additive.
 
-As a side note, that result can be surprising because in `model2` [incl link], discrimination is built in through a flat 50% rejection rule via `drop_minority_application`. This design suggests that discrimation does not vary by business unit, although after more careful inspection this is only true in the log-probability space, as the CDE then becomes
+As a side note, that result can be surprising because in [`model2`](#model2), discrimination is built in through a flat 50% rejection rule via `drop_minority_application`. This design suggests that discrimation does not vary by business unit, although after more careful inspection this is only true in the log-probability space, as the CDE then becomes
 
 $\log \{0.5 \times p(Op \vert E_{non}, B_{b})\} - \log p(Op \vert E_{non}, B_{b}) = log {0.5}$
 
@@ -394,11 +396,11 @@ Quite a rich idea in a compact formula.
 - J. Pearl (2014). Interpretation and Identification of Causal Mediation.
 ### Appendix 1
 
-I use pymc3 to craft and sample from imaginary Data Generatin Processes (DGPs). The DGP meet some requirements that Ithen verify with causal inference methods.
+I use pymc3 to craft and sample from imaginary Data Generatin Processes (DGPs). The true parameters of this DGP can then be compared with causal inference estimates.
 
 In general, simulated data - or fake/dummy/synthetic (that one sounds more scientic) - can be generated using `scipy` or `numpy`'s random variables, which is fine for simple DGPs like a multivariate gaussian, but beyond this I find the code unreadable. Probability graphs are easier to read because they define the process for one observation, and the sampling method takes care of the rest.
 
-`pymc3` might sound overkill for this, because I don't need any bayesian inference functionality just to create DGPs, but the library interface is simple and it comes with useful tools like diagram visualisation. My top choice would have been scala's `probability_monad`, which I used for [another article]({{ site.baseurl }}{% link _posts/2021-10-18-Decisions-Part-1.markdown %}) of this blog, but python has causal inference packages like [doWhy](https://github.com/py-why/dowhy).
+`pymc3` might sound overkill for this, because I don't need any bayesian inference functionality just to create DGPs, but the library interface is simple and it comes with useful tools like diagram visualisation.
 
 A bayesian probabilistic graph is a set of conditional probability distributions (CPD) for each node. (starting nodes like Citizenship are just prior probabilities, i.e. not conditioned on any variables). To get a DGP, I need to define each node's probability distribution, conditioned on the depending nodes. For example, Business Unit ($p(B_b \vert C_c, E_b)$) is Bernoulli rv defined for all 4 cases corresponding to the values that (C, E) can jointly take.
 
