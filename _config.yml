@@ -21,8 +21,7 @@
 title: Michel Kiffel
 email: m.kiffel@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  The personal blog I thought I would never find time to start, where I write about
-  ML and data science.
+  My personal blog, where I write about things to check if I understand them.
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  mkffl

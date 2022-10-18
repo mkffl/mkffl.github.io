@@ -19,7 +19,7 @@ Imagine that BigBankCorp, a large lending company, reviews junior staff performa
 
 ### A. Identifying discrimination
 
-BigBankCorp has almost 29,000 employees and 35% of them belong to the BAME category. A HR manager looked at the chances of promotion for each ethnic categories.
+BigBankCorp has almost 29,000 employees and 35% of them belong to the BAME category. A manager from Human Resources looked at the chances of promotion for each ethnic categories.
 
 {% include mediation/mediation_analysis11_p1.html %}
 <p id="model1-chart2"></p>
@@ -37,7 +37,7 @@ The results cause some confusion. The HR manager asks:
 
 "Hold on, what's the question, again?"
 
-A causal diagram can help formulate the problem and its context:
+A causal diagram can help formulate the problem:
 
 <div class="mermaid" style="width:180px; margin:0 auto;">
 graph TD
@@ -54,7 +54,7 @@ The diagram shows that an employee's ethnic category influences their choice of 
 
 A few observations
 - There must be a "mechanism" through which discrimination would happen, e.g. a bigoted assessor who sits on the promotion panel or an unconscious bias in all assessors
-- Because we assume that the only other factors linked to ethnicity that influence promotions is B, what remains is discrimination; the actual mechanism actually doesn't matter so we call discrimination the "direct effect"
+- Because we assume that the only other factors linked to ethnicity that influence promotions is B, what remains is discrimination; the actual mechanism doesn't matter so we call discrimination the "direct effect"
 - No arrows point into ethnic category because it's assumed to be a genetic trait not influenced by the employee's environment
 - However, it helps to formulate the business question *as if* ethnic category could be manipulated - what happens to a non-BAME employee's chances of promotions if they became BAME?
 - One can further ask - if they became a BAME employee **but** their initial choice of business unit remains the same, what would their chances of promotions be?
@@ -164,21 +164,23 @@ Running the previous analysis on this model confirms the discriminatory effect. 
 {% include mediation/mediation_analysis21_p2.html %}
 
 A final note on causal model selection
-- We may ask which of `model1` or `model2` reflects the real selection process (if BigBankCorp was a real company), but it is not very useful because models are  objects that encapsulate our beliefs about the world, not mathematical propositions awaiting a proof. (It's a bit more complicated because it is possible to refute a model if it's at odds with the sample data observed).
-- Causal models should be constantly reviewed and critiqued. One could argue that other factors of promotion are missing and suggest an alternative causal diagram, which may become the new consensus.
+- We may ask which of `model1` or `model2` reflects the real selection process (if BigBankCorp was a real company), but this question sort of misses the point of a model. Models encapsulate our beliefs about the world; they are not mathematical propositions awaiting a proof. (It's a bit more complicated because it is possible to refute a model that is at odds with the sample data observed)
+- Causal models should be constantly reviewed and critiqued. One could argue that other factors of promotion are missing and suggest an alternative causal diagram, which may become the new consensus
 - That causal inference requires an assumption about the underlying model can be seen as a weakness, but mainstream statistics also requires assumptions for valid estimates. The need to provide a causal model is like a cost, so a question to keep in mind is "Do the benefits of causal inference compensate for its cost?"
 
 ### B. Keep your "controlling urges" in check
 
-The previous analytical approach was applied by Bikel, a statistician from U.C. Berkeley tasked with finding if numbers proved that the selection process discriminated against females. Bikel saw that admission rates by department (math, biology, etc.) were not lower for females, which he took as a decisive argument against female discrimination. But the story doesn't stop there. TBoW tells about a conversation between Bikel and Krushke, another statistician who got interested in the case and claimed that Bikel's analysis did not prove absence of discrimination. 
+The previous analytical approach was applied by Bikel, a statistician from U.C. Berkeley tasked with looking at the numbers to answer the question: Does the University selection process discriminate against females?
 
-Krushke built a simple numeric example to demonstrate that the same results may apply under different causal assumptions. I could not access the original document because of academic paywalls, so I use TBoW's descriptions to cook up a hopefully similar model. It will illustrate a type of causal effect called a collider, which the authors use to debunk a deeply anchored myth: statistical analysis should always "control for" observed variables to correctly estimate effects.
+Bikel saw that admission rates by department (math, biology, etc.) were not lower for females, which he took as a decisive argument against female discrimination. But the story doesn't stop there. TBoW tells about a conversation between Bikel and Krushke, another statistician who got interested in the case and claimed that Bikel's analysis did not prove absence of discrimination. 
 
-`model3` shows that there exists a model with discrimination that returns the same results as [Query 2](#model1-chart2) from `model1`, where there was no discrimination. If a query returns the same results under two opposite models, then the query alone is not enough to prove a hypothesis such as "BigBankCorp's HR process is discriminatory". Both the query and the causal model are necessary to get the true answer. This illustrates the limits of a data-led approach as opposed to a (causal) model-led approach.
+Krushke built a simple numeric example to demonstrate that the same results may apply under different causal assumptions. That means that, the same data can lead to opposite conclusions depending on the causal model we hold true. I wanted to reproduce Krushke's example, but I could not access the original document because of academic paywalls. I use TBoW's descriptions to cook up a hopefully similar model - `model3` - to prove Krushke's point. The 3rd model is built around a type of causal effect called a collider, which the authors use to debunk a deeply anchored myth: statistical analysis should always "control for" observed variables to correctly estimate effects.
 
-In `model3`, the source of discrimination is candidates' citizenship (C), which takes values "local" or "expat". The logic of discrimination is very simple - local BAME employees are always rejected, expatriate non-BAME employees are always rejected, and their chances of promotion are similar otherwise. These strong assumptions may not seem realistic, but they make the maths easier, and the point would stand with smoother assumptions.
+`model3` is a discriminatory process that returns the same results as [Query 2](#model1-chart2) from `model1`, where there was no discrimination. If a query returns the same results under two opposite models, then the query alone is not enough to test a hypothesis such as "BigBankCorp's HR process is discriminatory". Both the query and the causal model would be necessary to get the true answer. That's an interesting lesson for organisations that pride themselves for making data-led decisions.
 
-The model definition is available on the [same repo](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/model.py&version=GBmain-mediation&line=68&lineEnd=69&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents). Its graph shows a direct link from E and C. 
+In `model3`, the source of discrimination is candidates' citizenship (C), which takes values "local" or "expat". The logic of discrimination is very simple: local BAME employees are always rejected, expatriate non-BAME employees are always rejected, otherwise their chances of promotion are the same. These may seem like unrealistic assumptions, but it makes the maths easier and the point would stand with smoother assumptions.
+
+The model definition is available in the [same repo](https://dev.azure.com/mkiffel/personal-blog/_git/personal-blog?path=/blog-mediator/blog_mediation/model.py&version=GBmain-mediation&line=68&lineEnd=69&lineStartColumn=1&lineEndColumn=1&lineStyle=plain&_a=contents). Its graph shows a direct link from E and C. 
 
 {:refdef: style="text-align: center;"}
 ![Model 2 Diagram](/assets/analysis32_diagram.png){: width="300"}
@@ -199,13 +201,13 @@ Under `model3`, B becomes a collider, a type of node that blocks information whe
 
 
 <details>
-    <summary>Colliders</summary>
+    <summary>Colliders (click the arrow)</summary>
     Colliders seem to play games with our intuitions because it's hard to accept that two independent variables can become dependent when conditioned on a third variable's value. 
     A simple example: my cat occasionally triggers the house alarm when she plays inside and in rare instances a burglar breaking into my home would also trigger the alarm. Assume that no other factors trigger the alarm, and my cat's behaviour is independent from the burglar's. When the alarm's on, I usually think it's because of my cat so I don't panic. But, if I have left the cat at my friends' while I am on holiday, and my neighbour calls me because the alarm is on, I will think of a burglary... In other words, if I don't know the state of the alarm, then the two causal factors are independent, i.e. knowing that the cat's not at home tells me nothing about a potential thief. But, conditioned on the alarm ringing, knowing that the cat's away increases the probability of a burglary. That is, holding the collider at the value "on" allows the "cat" information to flow through and to influence my belief about "burglar".
 </details>
 <b>
 
-If C is observed, then holding both C and B constant (Query 3) allows only the direct effect to propagate, so this query answers the same question as Query 1.
+If C is observed, then holding both C and B constant (Query 3) allows only the direct effect to propagate, so this query also tells us if there is discrimination.
 
 {% include mediation/mediation_analysis31_p3.html %}
 
@@ -226,7 +228,7 @@ The answer, combined with BigBankCorp's strategic goals can then inform the comp
 For example, if discrimination accounts for only a small part of the promotion gap, the company may run an investigation and find the root cause to suppress it, but it may allocate the bulk of its resources to e.g. raising awareness of B2B career opportunities for BAME graduates.
 
 <details>
-    <summary>Actionable insights</summary>
+    <summary>Actionable insights (click the arrow)</summary>
     Causal analysis aims to deliver "actionable insights", a fashionable term that most analytics projects seem to fail to deliver. This situation may sound familiar: after a team present their final results, everyone agrees that the content is "interesting", but no one is really sure what to do next.
     Observational data is almost always fraught with confounders, which make analysts nervous when they are asked if the data support an action, e.g. "Based on your results, do you think we should invest in/divest xyz?". Causal analysis is designed to answer interventional questions.
 </details>
