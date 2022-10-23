@@ -396,15 +396,20 @@ Quite a rich idea in a compact formula.
 
 I use pymc3 to craft and sample from imaginary Data Generatin Processes (DGPs). The true parameters of this DGP can then be compared with causal inference estimates.
 
-In general, simulated data - or fake/dummy/synthetic (that one sounds more scientic) - can be generated using `scipy` or `numpy`'s random variables, which is fine for simple DGPs like a multivariate gaussian, but beyond this I find the code unreadable. Probability graphs are easier to read because they define the process for one observation, and the sampling method takes care of the rest.
+Simulated data - or fake/dummy/synthetic data - can be generated using `scipy` or `numpy`'s random variables, which is fine for simple DGPs like a multivariate gaussian, but beyond this I find the code unreadable. Probability graphs are easier to read because they define the process for one observation, and the sampling method takes care of the rest.
 
 `pymc3` might sound overkill for this, because I don't need any bayesian inference functionality just to create DGPs, but the library interface is simple and it comes with useful tools like diagram visualisation.
 
-A bayesian probabilistic graph is a set of conditional probability distributions (CPD) for each node. (starting nodes like Citizenship are just prior probabilities, i.e. not conditioned on any variables). To get a DGP, I need to define each node's probability distribution, conditioned on the depending nodes. For example, Business Unit ($p(B_b \vert C_c, E_b)$) is Bernoulli rv defined for all 4 cases corresponding to the values that (C, E) can jointly take.
+A bayesian probabilistic graph is a set of conditional probability distributions (CPD) for each node. (starting nodes like Citizenship are just prior probabilities, i.e. not conditioned on any variables). To get a DGP, I need to define each node's probability distribution, conditioned on the depending nodes. For example, Business Unit ($p(B_b \vert C_c, E_b)$) is a Bernoulli rv defined for all 4 cases corresponding to the values that (C, E) can jointly take.
 
 Defining a DGP in this way means that constraints can be enforced by expressing them as CPDs defined in the graph. See the next appendix for details.
 
 ### Appendix 2
+
+To prove that there exists a discriminatory model, called `model3`, that returns the same query results a the non-discriminatory model `model1`, the following must be true
+- Requirement 1: in `model1` and `model3` promotion promotion rates by business unit must be the same for each ethnic group
+- Requirement 2: promotion rates for BAME employees must be lower than for non
+- Requirement 3: the expected value of the probabilty of promotions must be the same for both models
 
 Notation
 
