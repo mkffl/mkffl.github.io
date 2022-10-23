@@ -5,7 +5,7 @@ layout: post
 
 I have recently read [The Book of Why (TBoW)](http://bayes.cs.ucla.edu/WHY/) by Judea Pearl and Dana McKenzie. It is an introduction to causal inference, which estimates the impact of changes in conditions (treatments, external interventions, etc.) on outcomes using sample data. In 10 chapters, the book covers key concepts of causality and discusses the differences with mainstream statistics, with which J. Pearl's own experience and frustrations become apparent at times.
 
-There could have done with fewer autobiographical passages, but TBoW is more than a squabble between scientists as it illustrates the benefits of causal inference with many use cases across domains like public health or education policy. It seems that J. Pearl has been obsessed with building useful tools for practitioners by re-inventing the way we learn from data.
+There could have been fewer autobiographical passages but TBoW is more than a squabble between scientists as it includes multiple use cases across domains like public health or education policy. It seems that J. Pearl has been obsessed with building useful tools for practitioners by re-inventing the way we learn from data.
 
 While reading one of the last chapters on mediation analysis, I thought of several past analytical problems where the methods described would have helped me. This blog post builds on this chapter to answer common questions an HR department may have. In what follows, I will introduce the use case, then identify direct and mediated effects, and measure these effects to estimate the impact of potential interventions.
 
