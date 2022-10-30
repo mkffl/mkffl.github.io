@@ -75,7 +75,7 @@ with model1:
     p_consumer = if_else(
         is_equal(ethnic_category, Employee.BAME),
         # BAME
-        # p(department=b2b|ethnic_category=BAME) = 21.0%
+        # p(department=consumer|ethnic_category=BAME) = 67%
         67 / 100.0,
         # Non BAME
         33 / 100.0
