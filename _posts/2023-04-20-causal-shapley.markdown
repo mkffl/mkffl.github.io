@@ -145,12 +145,17 @@ include 5-year old chain smokers, which the model is not trained to adequatly re
 
 To recap, $v_{f,x}(\text{race})$ is approximated with $E_{X_{\text{income, zip}} \vert X_{\text{race}}}f(x_{\text{race}}, X_{\text{income, zip}})$ with lower case x the known value and upper case X the conditionally distributed values. $v_{f,x}(\text{race, zip})$ is also estimated and the two sampling distributions overlap:
 
-plot of 010 and 011
+{:refdef: style="text-align: center;"}
+![sample distributions 010 vs 011](/assets/shap/outcome-samples-v_race-v_race_zip.svg){: width="500px"}
+{: refdef}
 
-A t-test testing if the mean difference is zero returns a p-value of [0.888], supporting the view that $\Delta_v(\text{zip}, \{\text{race}\})$ = 0 i.e. that zip code has not incremental effect on the prediction when only race is known.
+A t-test testing if the mean difference is zero returns a p-value of c.0.34, supporting the view that $\Delta_v(\text{zip}, \{\text{race}\})$ = 0 i.e. that zip code has not incremental effect on the prediction when only race is known.
 
 Other scenarios that capture meaningful variables show opposite results with clearly different distributions, e.g. $\Delta_v(\text{income}, \{\text{race}\})$:
 
+{:refdef: style="text-align: center;"}
+![Non Interventional](/assets/shap/outcome-samples-v_race-v_income_race.svg){: width="500px"}
+{: refdef}
 
 
 
