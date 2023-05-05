@@ -10,7 +10,7 @@ In practice, Shap can return misleading results, which I will illustrate in the 
 This blog post assumes some familiarity with SHAP as covered in introductions like [the Interpretable ML online book](https://christophm.github.io/interpretable-ml-book/shap.html#definition).
 
 
-## A. Unexpected Results
+## A. (Unexpected) Results
 
 Two examples will illustrate when SHAP may return unexpected results
 - A variable is not used, also called a non-interventional variable
@@ -111,7 +111,7 @@ $$
 Δ_v(\text{zip}, \{\text{income, race}\})=v_f(\{\text{income, race, zip}\}) - v_f(\{\text{income, race}\})
 $$
 
-This is how a prediction breaks down for one observation, using an application with average income, low race values and a high prediction of acceptance. 
+This is how a prediction breaks down for one observation, using an applicant - we'll call him Erick - with average income, low race values and a high prediction of acceptance. 
 
 Income: 0.9571218
 Race: -4.655322
@@ -162,6 +162,79 @@ Other scenarios that capture meaningful variables show opposite results with cle
 
 ## C. Asymmetric Shapley values
 
+### (Expected) Results
+
+Asymmetric SHAP, introduced [here], incorporates causal information into the calculation of Shapley values. For example, if we add the constraint that race comes before zip code is known, then $\phi_{race}$ will capture the total effect of race on the loan outcome, either directly or through the zip code, and $\phi_{zip}$ captures any incremental effect of the zip code on the loan outcome. Any causal relationship can be added to adjust Shapley values - we don't need to provide a full causal graph.
+
+After adjusting for "Race -> Zip -> Loan outcome", the range of Shapley values for zip code shrinks and the range of Race increases, in line with the data generation process.
+
+[insert graph]
+
+The adjusted Shapley values for Erick's application, the single example used before, show most of the attribution going to race, with zip code close to zero. Erick's race score is in the 10% lowest value whereas his income isjust below average. The sum of all weights remains equal to the loan outcome prediction because local accuracy still applies under asymmetric Shapley values.
+
+{:refdef: style="text-align: center;"}
+![Non Interventional](/assets/shap/test_example_asymmetric_shapley_values.svg){: width="500px"}
+{: refdef}
+
+
+### How it works
+
+I will try and provide some intuitions on the implementation of asymmetric Shapley used for this blog. For more information, in particular about the mathematical foundations behind it, I would refer to the original article.
+
+We want to ask more specific questions than "What's the effect of [target feature] on the predicted value?". For example, "What is the incremental effect of adding zip code to race on the predicted value?". That question agrees with our causal model of the data, as we know that race is an ancestor of zip code in the graph/lineage. Some scenarios don't help answer a refined question, for example the case based on the empty coaltion, where $\Delta_v(\text{zip}, \{\varnothing\})$ does not include the effect of race.
+
+Asymmetric Shapley gives us control over the scenarios by adjusting their weights depending on causal relationships. To get a look into its mechanics, we need to think about scenarios from feature ordering rather than coalitions, i.e. from (ordered) permutations rather than (unordered) combinations. If $t_{\text{zip}}$ builds a coalition using all variables that come before zip, e.g.
+
+$t_{\text{zip}}$(*income\|race\|zip*, excl) = {income, race}
+
+$t_{\text{zip}}$(*income\|race\|zip*, incl) = {income, race, zip} 
+
+$t_{\text{zip}}$(*zip\|race\|income*, excl) = {$\varnothing$}
+
+$t_{\text{zip}}$(*zip\|race\|income*, incl) = {zip},
+
+then a Shapley value is a sum of all orderings with equal weigths.
+
+For example, $\phi_{\text{zip}}$ = $\frac{1}{6}$ (v(t(*zip\|race\|income*, incl)) - v(t(*zip\|race\|income*, excl)) ) +
+
+$\frac{1}{6}$ (v($t_{\text{zip}}$(*zip\|income\|race*, incl)) - v($t_{\text{zip}}$(*zip\|income\|race*, excl)) ) +
+
+$\frac{1}{6}$ (v($t_{\text{zip}}$(*income\|race\|zip*, incl)) - v($t_{\text{zip}}$(*income\|race\|zip*, excl)) ) +
+
+$\frac{1}{6}$ (v($t_{\text{zip}}$(*income\|zip\|race*, incl)) - v($t_{\text{zip}}$(*income\|zip\|race*, excl)) ) +
+
+$\frac{1}{6}$ (v($t_{\text{zip}}$(*race\|zip\|income*, incl)) - v($t_{\text{zip}}$(*race\|zip\|income*, excl)) ) +
+
+$\frac{1}{6}$ (v($t_{\text{zip}}$(*race\|income\|zip*, incl)) - v($t_{\text{zip}}$(*race\|income\|zip*, excl)) )
+
+The sum is over six elements corresponding to all 3! permutations, each assigned the same weight $\frac{1}{3!}$. We can then map every item to a scenario, e.g. the first two orderings correspond to the empty coalition. Side note - staring enough at the permutation and the combination formulas helped me understand where  the weights from formula (1) come from.
+
+One flavour of asymmetric Shapley, called proximal, allows to assign weights of 1 to orderings that agree with our (partial) causal model, such that 
+
+$\phi_{\text{zip\_asymmetric}}$ = 
+
+$\frac{1}{3}$ (v($t_{\text{zip}}$(*income\|race\|zip*, incl)) - v($t_{\text{zip}}$(*income\|race\|zip*, excl)) ) +
+
+$\frac{1}{3}$ (v($t_{\text{zip}}$(*race\|income\|zip*, incl)) - v($t_{\text{zip}}$(*race\|income\|zip*, excl)) )
+
+$\frac{1}{3}$ (v($t_{\text{zip}}$(*race\|zip\|income*, incl)) - v($t_{\text{zip}}$(*race\|zip\|income*, excl)) ) +
+
+
+
+The 3 elements that the Shapley value sums over correspond to scenarios based on the coalitions {income, race} and {race}, which we have shown is very close or equal to zero. Therefore, $\phi_{\text{zip\_asymmetric}}$ is very small or equal to zero.
+
+### Open questions
+The introductory article shows creative and useful applications of asymmetric Shapley, e.g. for time series or feature selection. Enhancing Shapley values with causal subject matter is promising, but a few questions would need to be answered to apply asymmetric Shapley - or alternatives - on real applications. 
+
+First, it does not have the user community that standard Shapley provides, e.g. R'`shapr` in R or python's [`shap`](https://github.com/slundberg/shap), where people answer each other's questions and contributors keep the projects active. In fact, I wrote a script based on the equations from the article because I could not get the companion library to work for my example.
+
+Then, it's not clear how it would scale beyond a few hundred observations. The implemention just mentioned uses Monte Carlo sampling, which sounds good but may  trade off accuracy for efficiency.
+
+Last, without a process to capture and validate causal knowledge, there is a risk of implementing wrong causal assumptions, which could be as bad as not using any. One organisational challenge I have seen is the functional isolation of teams delivering Shapley solutions - often software engineers or data scientists, which have no or low interactions with subject matter experts who have a mental model of causal relationships.
+
+## Conclusion
+
+Standard Shapley value implementations can behave unexpectedly with correlated features, which recent causal-based methods like asymmetric Shapley can resolve. A Shapley value averages many scenarios that test the impact of a feature on the predicted value. When we look more closely into the list of scenarios considered, some do not ask relevant questions. I think of asymmetric Shapley as a way to take control of the scenarios to ask the right question.
 
 
 ## References
