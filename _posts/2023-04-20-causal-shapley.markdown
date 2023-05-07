@@ -28,6 +28,7 @@ To evaluate Shapley values, assume that we know the generative process that the 
 
 Diagram of the Data Generative Process (DGP) for the non-interventional example: a loan outcome is determined by the applicant’s Income and their Race. Their favourite TV show is caused by Race but isn’t an input into the outcome. If this causal model seems absurdly simplistic or weird, it probably is but the implications we’ll draw are applicable to more realistic scenarios.
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L21)
 ```R
 g_non_interventional <- function(N){
 	income <- 1 + 3*rnorm(N)
@@ -44,6 +45,7 @@ Next, we train an ML model and generate 300 obervations from this DGP to apply k
 
 Shapley value distributions span the same range for all three variables, meaning that `favourite_show` gets attributions often as large as the other two variables although it's not an input into the loan outcome. If we didn't know it, would we conclude that Netflix preferences partially determine an applicant's access to credit? Thinking beyond this exammple, Shapley values of non-interventional variables can be different than zero, which can lead analysts to the wrong conclusions.
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L107)
 {:refdef: style="text-align: center;"}
 ![Non Interventional](/assets/shap/11-shapley-distribution-non-interventional.png){: width="500px"}
 {: refdef}
@@ -53,9 +55,10 @@ Shapley value distributions span the same range for all three variables, meaning
 The next example keeps Income and Race and introduces Zip Code as a mediation variable. Race determines an applicant's zip code area but it has no direct effect on the loan approval outcome. Income and Zip code are the inputs into the loan approval outcome.
 
 {:refdef: style="text-align: center;"}
-![Non Interventional](/assets/shap/mediation-diagram.png){: width="500px"}
+![Mediation](/assets/shap/mediation-diagram.png){: width="500px"}
 {: refdef}
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L13)
 ```R
 g_indirect_effect <- function(N){
     income <- 1 + 3*rnorm(N)
@@ -70,6 +73,7 @@ g_indirect_effect <- function(N){
 
 The same ML model as before is trained and kernelSHAP is run on 300 observations. Shapley value distributions show, again, that all three variables have the same range. This means that the zip code "explains" the loan outcome as much as race does, although it is predominantly determined by race. Here we would expect race to have more explanatory power than zip code overall, so it seems that SHAP dilutes the true effect of race with the zip code. 
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L114)
 {:refdef: style="text-align: center;"}
 ![Non Interventional](/assets/shap/12-shapley-distribution-mediation.png){: width="500px"}
 {: refdef}
@@ -124,6 +128,7 @@ f: 2.58386
 
 Compare these values with all test observations to add some perspective.
 
+
 {:refdef: style="text-align: center;"}
 ![Non Interventional](/assets/shap/21-variable-distributions.png){: width="500px"}
 {: refdef}
@@ -134,8 +139,9 @@ Another interesting scenario is the last coaltion above with only rac, S={race}.
 
 The Shapley value for zip is [1.3] though. In the chart below, each bar shows the Shapley values for one of the three features and the baseline ("None"). All values add up to the applicant's predicted value 2.584 thanks to Local accuracy.
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L129)
 {:refdef: style="text-align: center;"}
-![Non Interventional](/assets/shap/22-symmetric-test-example.png){: width="500px"}
+![shapley test example](/assets/shap/22-symmetric-test-example.png){: width="500px"}
 {: refdef}
 
 Zip and Race together explain most of the prediction, with zip code approximately 1.23. The remaining scenarios from coalitions $\{\varnothing\}$ and $\{\text{income}\}$ fully account for the non-zero Shapley value of Race. Each scenario captures the effect of zip absent race, which passes any effect race may have onto the zip code, which threfore acts as a proxy for race. If we know that race is a causal ancestor of zip code, then we would like the zip Shapley value to only measure any additional effect, not the total effect of race and zip. Asymmetric Shapley value allows to rule out these two scenarios while keeping local accuracy. Let's look at an implementation right after clarifying one point about missing features estimation.
@@ -149,6 +155,7 @@ include 5-year old chain smokers, which the model is not trained to adequatly re
 
 To recap, $v_{f,x}(\text{race})$ is approximated with $E_{X_{\text{income, zip}} \vert X_{\text{race}}}f(x_{\text{race}}, X_{\text{income, zip}})$ with lower case x the known value and upper case X the conditionally distributed values. $v_{f,x}(\text{race, zip})$ is also estimated and the two sampling distributions overlap:
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L135)
 {:refdef: style="text-align: center;"}
 ![sample distributions 010 vs 011](/assets/shap/23-010-vs-011.png){: width="500px"}
 {: refdef}
@@ -157,8 +164,9 @@ A t-test testing if the mean difference is zero returns a p-value of c.0.34, sup
 
 Other scenarios that capture meaningful variables show opposite results with clearly different distributions, e.g. $\Delta_v(\text{income}, \{\text{race}\})$:
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L148)
 {:refdef: style="text-align: center;"}
-![Non Interventional](/assets/shap/24-010-vs-110.png){: width="500px"}
+![sample distributions 010 vs 110](/assets/shap/24-010-vs-110.png){: width="500px"}
 {: refdef}
 
 
@@ -172,12 +180,14 @@ Asymmetric SHAP, introduced [here], incorporates causal information into the cal
 
 After adjusting for "Race -> Zip -> Loan outcome", the range of Shapley values for zip code shrinks and the range of Race increases, in line with the data generation process.
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L161)
 {:refdef: style="text-align: center;"}
 ![Non Interventional](/assets/shap/31-asymmetric-global-distribution.png){: width="500px"}
 {: refdef}
 
 The adjusted Shapley values for Erick's application, the single example used before, show most of the attribution going to race, with zip code close to zero. Erick's race score is in the 10% lowest value whereas his income isjust below average. The sum of all weights remains equal to the loan outcome prediction because local accuracy still applies under asymmetric Shapley values.
 
+[source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L168)
 {:refdef: style="text-align: center;"}
 ![Non Interventional](/assets/shap/32-asymmetric-test-example.png){: width="500px"}
 {: refdef}
