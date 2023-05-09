@@ -3,9 +3,9 @@ title: Improving Shapley values with Causal Knowledge
 layout: post
 ---
 
-The SHAP explanation method has been widely used because of useful guarantees, availability across  frameworks and a sense of accessibility/flexibility. The most sought-after guarantee is local accuracy, by which Shapley values add up to explain the difference between a prediction and a baseline. There are fast implementations with good documentations across many frameworks, for example [shapr](https://cran.r-project.org/web/packages/shapr/vignettes/understanding_shapr.html), which supports the next parts of this blog. Finally, SHAP does not seem to require assumptions about the underlying data process and some implementations like KernelSHAP apply to any ML model.
+The SHAP explanation method has been widely used because of useful guarantees, availability across  frameworks and a sense of accessibility/flexibility. The most sought-after property is local accuracy, which guarantees that the sum of Shapley values match the difference between a prediction and a baseline value. There are fast implementations with good documentations across many frameworks, for example [shapr](https://cran.r-project.org/web/packages/shapr/vignettes/understanding_shapr.html), used in this blog. Finally, SHAP does not seem to require assumptions about the underlying data process and some implementations like KernelSHAP apply to any ML model.
 
-In practice, Shap can return misleading results, which I will illustrate in the first part with two examples. The second part looks at Shapley values as a combination of scenarios and identifies unhappy scnearios that we may want to exclude. Scenario exclusion should agree with any causal knowledge of the underlying data. The last part introduces [Asymmetric Shapley values](https://arxiv.org/pdf/1910.06358.pdf) to add causal assumptions to improve Shapley values.
+In practice though, it can return misleading results, which I will illustrate in the first part with two examples. The second part looks at Shapley values as a combination of scenarios and identifies unhappy scnearios that we may want to exclude. Scenario exclusion should agree with any causal knowledge of the underlying data. The last part introduces [Asymmetric Shapley values](https://arxiv.org/pdf/1910.06358.pdf) to add causal assumptions to improve Shapley values.
 
 This blog post assumes some familiarity with SHAP as covered in introductions like [the Interpretable ML online book](https://christophm.github.io/interpretable-ml-book/shap.html#definition).
 
@@ -43,7 +43,7 @@ g_non_interventional <- function(N){
 
 `g_non_interventional` implements the generative logic with only numeric variables for simplicity. If you prefer thinking about categorical variables, for example “1: Loan application approved ; 0: Loan application not approved”, you can assume variables like `race`and `y` to be described in the log-odds space, then we could apply an inverse logit transform to describe them as probabilities.
 
-Next, we train an ML model and generate 300 obervations from this DGP to apply kernelSHAP and plot the distribution of shapley values for all 3 variables `income`, `race` and `favourite_show`. 
+Next, we train an ML model and generate 300 obervations from this DGP to apply KernelSHAP and plot the distribution of shapley values for all 3 variables `income`, `race` and `favourite_show`. 
 
 Shapley value distributions span the same range for all three variables, meaning that `favourite_show` gets attributions often as large as the other two variables although it's not an input into the loan outcome. If we didn't know it, would we conclude that Netflix preferences partially determine an applicant's access to credit? Thinking beyond this exammple, Shapley values of non-interventional variables can be different than zero, which can lead analysts to the wrong conclusions.
 
@@ -268,3 +268,6 @@ Standard Shapley value implementations can behave unexpectedly with correlated f
 - C. Frye, C. Rowat and I. Feige (2020). Asymmetric Shapley values: incorporating causal
 knowledge into model-agnostic explainability.
 - E. Kumar, S. Venkatasubramanian, C. Scheidegger and S. Friedler (2020). Problems with Shapley-value-based explanations as feature importance measures.
+- D. Janzing, L. Minorics and P. Blöbaum (2019). Feature relevance quantification in explainable AI: A causal problem.
+- L. Merrick1 and A. Taly (2020). The Explanation Game: Explaining Machine Learning
+Models Using Shapley Values.
