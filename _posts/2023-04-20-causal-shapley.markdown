@@ -3,9 +3,9 @@ title: Improving Shapley values with Causal Knowledge
 layout: post
 ---
 
-The SHAP explanation method has been widely used because of useful guarantees, availability across  frameworks and a sense of accessibility/flexibility. The most sought-after property is local accuracy, which guarantees that the sum of Shapley values match the difference between a prediction and a baseline value. There are fast implementations with good documentations across many frameworks, for example [shapr](https://cran.r-project.org/web/packages/shapr/vignettes/understanding_shapr.html), used in this blog. Finally, SHAP does not seem to require assumptions about the underlying data process and some implementations like KernelSHAP apply to any ML model.
+The SHAP explanation method has been widely used because of useful guarantees, availability across frameworks and a sense of accessibility/flexibility. The most sought-after property is local accuracy, which guarantees that the sum of Shapley values match the difference between a prediction and a baseline value. There are fast implementations with good documentations across many frameworks, for example [shapr](https://cran.r-project.org/web/packages/shapr/vignettes/understanding_shapr.html), used in this blog. Finally, SHAP does not seem to require assumptions about the underlying data process and some implementations like KernelSHAP apply to any ML model.
 
-In practice though, it can return misleading results, which I will illustrate in the first part with two examples. The second part looks at Shapley values as a combination of scenarios and identifies unhappy scnearios that we may want to exclude. Scenario exclusion should agree with any causal knowledge of the underlying data. The last part introduces [Asymmetric Shapley values](https://arxiv.org/pdf/1910.06358.pdf) to add causal assumptions to improve Shapley values.
+In practice though, it can return misleading results, which I will illustrate in the first part with two examples. The second part looks at Shapley values as a combination of scenarios and identifies unhappy scenarios that we may want to exclude. Scenario exclusion should agree with any causal knowledge of the underlying data. The last part introduces [Asymmetric Shapley values](https://arxiv.org/pdf/1910.06358.pdf) to add causal assumptions to improve Shapley values.
 
 This blog post assumes some familiarity with SHAP as covered in introductions like [the Interpretable ML online book](https://christophm.github.io/interpretable-ml-book/shap.html#definition).
 
@@ -89,7 +89,7 @@ Shapley values underestimate the true effect of race, which hides the actual dis
 
 SHAP explains a prediction by taking each feature and estimating what the predicted value from model `f` would have been without this feature. The comparison involves many scenarios corresponding to coalitions of features. Every scenario is like a single experiment that attempts to answer the question "How much does the feature contribute to the prediction?". A feature’s Shapley value combines all the answers into a single value.
 
-In other words, the Shapley value averages scenarios to provie a contrastive explanation Δ(i). Δ explains why we shouldn’t drop feature i (assuming Δ is not zero, else it can be dropped). The explanation could be worded like  "You can't drop feature i because it changes the prediction by Δ(i) from the baseline". The baseline can be any reference value and is often chosen to be the expectation $\mathbb{E}(f(\text{X}))$.
+In other words, the Shapley value averages scenarios to provide a contrastive explanation Δ(i). Δ explains why we shouldn’t drop feature i (assuming Δ is not zero, else it can be dropped). The explanation could be worded like  "You can't drop feature i because it changes the prediction by Δ(i) from the baseline". The baseline can be any reference value and is often chosen to be the expectation $\mathbb{E}(f(\text{X}))$.
 
 The chain of contrastive statements “explain out” the prediction with reference to the baseline value, a property sometimes called local accuracy because SHAP describes exactly how, starting from the baseline expectation, each feature contributes to the final prediction.
 
@@ -99,7 +99,7 @@ To recap with some notations
 
 - A coalition, denoted S, is a group of features used to predict an instance. In-coalition features are part of the model whereas out-of-coalition features are excluded
 - The Outcome function or payoff function is a model’s prediction under a coalition, written $v_{f,x}$ where f is the predictive model and x are in-coalition features
-- A scenario is an outcome under a particular coalition, i.e. Δ_v(i, S) where i is the target feature for a prediction. For example, Δ_v(zip, {income, race}) assess the change in f when zip code is added to a coalition of income and race
+- A scenario is an outcome under a particular coalition, i.e. Δ_v(i, S) where i is the target feature for a prediction. For example, Δ_v(zip, {income, race}) assesses the change in f when zip code is added to a coalition of income and race
 
 <p id="shapley-formula-1"></p>
 
@@ -126,7 +126,7 @@ $$
 Δ_v(\text{zip}, \{\text{income, race}\})=v_f(\{\text{income, race, zip}\}) - v_f(\{\text{income, race}\})
 $$
 
-Let's take an example by an applicant called Erick, to illustrate this scenario. Erick has average income, low race values and a high prediction of acceptance. 
+Let's take an example by an applicant called Erick, to illustrate this scenario. Erick has an average income, low race values and a high prediction of acceptance. 
 
 |        | value |
 |-------|---|
@@ -147,9 +147,9 @@ We want to calculate $Δ_v(\text{zip}, \{\text{income, race}\})$.
 
 $v_f,x(\{\text{income, race, zip}\})$=$f(x)$=2.584 because it's the prediction when all features are in the coalition. What would be the outcome without zip, $v_f,x(\{\text{income, race}\})$? If it is the same as $f(x)$ then the difference Δ_v is zero and zip would make no contribution. For Erick, $v_f,x(\{\text{income, race}\})$=2.687, which is close to the predicted outcome. A statistical test does not allow to conclude that the two values are different, which reinforces the view adding the zip code has no effect on the prediction.
 
-Another interesting scenario is the last coaltion above with only rac, S={race}. Here again, the data supports the hypothesis that $\Delta_v$ is zero, so the zip code has no incremental effect when race is already factored in. That's two out of four scenarios that don't attribute any effect to zip.
+Another interesting scenario is S={race}, the coalition with only race. Here again, the data supports the hypothesis that $\Delta_v$ is zero, so the zip code has no incremental effect when race is already factored in. That's two out of four scenarios that don't attribute any effect to zip.
 
-In Erick's case, the Shapley value for zip is 1.104 though, so clearly not zero. In the chart below, each bar shows the Shapley values for one of the three features and the baseline, "None". The number next to the feature name corresponds to its actual value in the dataset. Most of the explanation is attributed to the combined effect of zip code and race. All values add up to the applicant's predicted value 2.584 thanks to Local accuracy.
+In Erick's case, the Shapley value for zip is 1.104 though, so clearly not zero. In the chart below, each bar shows the Shapley values for one of the three features and the baseline, "None". The number next to the feature name corresponds to its actual value in the dataset. Most of the explanation is attributed to the combined effect of zip code and race. All values add up to the applicant's predicted value of 2.584 owing to Local accuracy.
 
 [source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L129)
 {:refdef: style="text-align: center;"}
@@ -164,10 +164,10 @@ If we know that race is a causal ancestor of the zip code, then we want $\phi_{z
 
 To get $v_{f,x}$ we can retrain the same model keeping in-coalition features, e.g. $v_{f,x}({\text{race}})$ by dropping income and zip code. But training 2^M models where M is the number of features wouldn't be efficient in many cases, so we average the model predictions on a sample of likely values for out-of-coalition features. For example, if only race is known, the "likely" values of income and zip are determined by $p({\text{income, zip}} \vert \text{race})$. 
 
-Shapley has no opinion on how the outcome function is calculated or what the feature distribution is, so we make the best decision possible. Here the features are known to be generated from a normal distribution so I use `shapr`'s multivariate gaussian but this package has other options - parametric and otherwise - available. Worth noting that some packages only provide empirical estimates by independently sampling each feature, which makes samples prone to unrealistic hallucinations. For example, if features include smoking beahviour and age, sampling independently may
-include 5-year old chain smokers, which the model is not trained to adequatly repond to - what would an adequate prediction even mean?
+Shapley has no opinion on how the outcome function is calculated or what the feature distribution is, so we make the best decision possible. Here the features are known to be generated from a normal distribution so I use `shapr`'s multivariate Gaussian but this package has other options - parametric and otherwise - available. Worth noting that some packages only provide empirical estimates by independently sampling each feature, which makes samples prone to unrealistic hallucinations. For example, if features include smoking behaviour and age, sampling independently may
+include 5-year old chain smokers, which the model is not trained to adequately respond to - what would an adequate prediction even mean?
 
-To recap, $v_{f,x}(\text{race})$ is approximated with $E_{X_{\text{income, zip}} \vert X_{\text{race}}}f(x_{\text{race}}, X_{\text{income, zip}})$, the expected prediction with respect to the probability of income and zip (out-of-coalition features) conditioned on the known value of race. Lower case $x$  is the known value and upper case $X$ are the conditional distribution values. The other outcome function $v_{f,x}(\text{race, zip})$ is also estimated and the sample distributions show some overlap.
+To recap, $v_{f,x}(\text{race})$ is approximated with $E_{X_{\text{income, zip}} \vert X_{\text{race}}}f(x_{\text{race}}, X_{\text{income, zip}})$, the expected prediction with respect to the probability of income and zip (out-of-coalition features) conditioned on the known value of race. $x$ is the known value and $X$ are the conditional distribution values. The other outcome function $v_{f,x}(\text{race, zip})$ is also estimated and the sample distributions  strongly overlap.
 
 [source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L135)
 {:refdef: style="text-align: center;"}
@@ -208,7 +208,7 @@ For Erick’s application, most of the explanation goes to race rather than inco
 
 I will try and provide some intuitions on the implementation of asymmetric Shapley used for this blog. For more information, in particular about the mathematical foundations behind it, I would refer to the original article.
 
-We want to ask more specific questions than "What's the effect of [target feature] on the predicted value?". For example, "What is the incremental effect of adding zip code to race on the predicted value?". That question agrees with our causal model of the data, as we know that race is an ancestor of zip code in the graph/lineage. Some scenarios don't help answer a refined question, for example the case based on the empty coaltion, where $\Delta_v(\text{zip}, \{\varnothing\})$ does not include the effect of race.
+We want to ask more specific questions than "What's the effect of [target feature] on the predicted value?". For example, "What is the incremental effect of adding zip code to race on the predicted value?". That question agrees with our causal model of the data, as we know that race is an ancestor of zip code in the graph/lineage. Some scenarios don't help answer a refined question, for example the case based on the empty coalition, where $\Delta_v(\text{zip}, \{\varnothing\})$ does not include the effect of race.
 
 Asymmetric Shapley gives us control over the scenarios by adjusting their weights depending on causal relationships. To get a look into its mechanics, we need to think about scenarios from feature ordering rather than coalitions, i.e. from (ordered) permutations rather than (unordered) combinations. If $t_{\text{zip}}$ builds a coalition using all variables that come before zip, e.g.
 
@@ -220,7 +220,7 @@ $t_{\text{zip}}$(*zip\|race\|income*, excl) = {$\varnothing$}
 
 $t_{\text{zip}}$(*zip\|race\|income*, incl) = {zip},
 
-then a Shapley value is a sum of all orderings with equal weigths.
+then a Shapley value is a sum of all orderings with equal weights.
 
 For example, $\phi_{\text{zip}}$ = $\frac{1}{6}$ (v(t(*zip\|race\|income*, incl)) - v(t(*zip\|race\|income*, excl)) ) +
 
@@ -255,7 +255,7 @@ Asymmetric Shapley values, or alternative approaches to improve vanilla Shapley 
 
 First, it does not have the user community that standard Shapley provides, e.g. R'`shapr` in R or python's [`shap`](https://github.com/slundberg/shap), where people answer each other's questions and contributors keep the projects active. In fact, I wrote a script based on the equations from the article because I could not get the authors’ [library](https://github.com/nredell/shapFlex) to work for my example.
 
-Then, it's not clear how it would scale beyond a few hundred observations. The implemention just mentioned uses Monte Carlo sampling, which sounds good but may  trade off accuracy for efficiency.
+Then, it's not clear how it would scale beyond a few hundred observations. The implementation just mentioned uses Monte Carlo sampling, which sounds good but may trade off accuracy for efficiency.
 
 Last, without a process to capture and validate causal knowledge, there is a risk of implementing wrong causal assumptions, which could be as bad as not using any. One organisational challenge I have seen is the functional isolation of teams delivering Shapley solutions - often software engineers or data scientists, which have no or low interactions with subject matter experts who have a mental model of causal relationships.
 
