@@ -121,7 +121,7 @@ $$
 
 The scenario under the empty set evaluates the impact of adding the zip code when there is no features. The no-feature outcome is the prediction of the expected value for every feature, $f(\mathbb{E(X)})$, estimated as the average prediction over the training set; the outcome when only zip code is present can be estimated with a sample of the remaining features conditioned on the known value for zip. We will come back to the estimation of out-of-coalitions features.
 
-Another interesting scenario is built on the 3rd combination that includes income and race. Looking at the effect of the zip code when income and race are known can tell us if zip code has any explanatory power at all because all other features are included. $\Delta $ captures any remaining effect of zip after everything else has been accounted for.
+Another interesting scenario is built on the 3rd combination that includes income and race. Looking at the effect of the zip code when income and race are known can tell us if zip code has any explanatory power at all because all other features are included. $\Delta_v$ captures any remaining effect of zip after everything else has been accounted for.
 $$
 Δ_v(\text{zip}, \{\text{income, race}\})=v_f(\{\text{income, race, zip}\}) - v_f(\{\text{income, race}\})
 $$
@@ -174,9 +174,10 @@ To recap, $v_{f,x}(\text{race})$ is approximated with $E_{X_{\text{income, zip}}
 ![sample distributions 010 vs 011](/assets/shap/23-010-vs-011.png){: width="500px"}
 {: refdef}
 
-A t-test for the difference in mean gives a p-value of c.0.34, supporting the view that $\Delta_v(\text{zip}, \{\text{race}\})$ = 0 i.e. that zip code has not incremental effect on the prediction when only race is known.
+A t-test for the difference in mean gives a p-value of c.0.34, supporting the view that $$\Delta_v(\text{zip}, \{\text{race}\})$$ = 0 i.e. that zip code has not incremental effect on the prediction when only race is known.
 
-To contrast this example with another scenario that captures a real effect, take for example $\Delta_v(\text{income}, \{\text{race}\})$. The sample distributions are different and the p-value of the t-test supports the opposite conclusion as before.
+To contrast this example with another scenario that captures a real effect, take for example $$\Delta_v(\text{income}, \{\text{race}\})$$. 
+The sample distributions are different and the p-value of the t-test supports the opposite conclusion as before.
 
 [source](https://github.com/mkffl/causal_shapley/blob/fead10117dd3217304b2fa09a9b9a7870e130091/recipe.R#L148)
 {:refdef: style="text-align: center;"}
@@ -208,7 +209,7 @@ For Erick’s application, most of the explanation goes to race rather than inco
 
 I will try and provide some intuitions on the implementation of asymmetric Shapley used for this blog. For more information, in particular about the mathematical foundations behind it, I would refer to the original article.
 
-We want to ask more specific questions than "What's the effect of [target feature] on the predicted value?". For example, "What is the incremental effect of adding zip code to race on the predicted value?". That question agrees with our causal model of the data, as we know that race is an ancestor of zip code in the graph/lineage. Some scenarios don't help answer a refined question, for example the case based on the empty coalition, where $\Delta_v(\text{zip}, \{\varnothing\})$ does not include the effect of race.
+We want to ask more specific questions than "What's the effect of [target feature] on the predicted value?". For example, "What is the incremental effect of adding zip code to race on the predicted value?". That question agrees with our causal model of the data, as we know that race is an ancestor of zip code in the graph/lineage. Some scenarios don't help answer a refined question, for example the case based on the empty coalition, where $$\Delta_v(\text{zip}, \{\varnothing\})$$ does not include the effect of race.
 
 Asymmetric Shapley gives us control over the scenarios by adjusting their weights depending on causal relationships. To get a look into its mechanics, we need to think about scenarios from feature ordering rather than coalitions, i.e. from (ordered) permutations rather than (unordered) combinations. If $t_{\text{zip}}$ builds a coalition using all variables that come before zip, e.g.
 
